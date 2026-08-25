@@ -1,0 +1,342 @@
+/* fvw-styles.css — estilos do balão flutuante, servido junto do painel. */
+
+.fvw-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease;
+  z-index: 2147482999;
+}
+
+.fvw-backdrop.fvw-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.fvw-wrapper {
+  position: fixed;
+  z-index: 2147483000;
+  width: 160px;
+  height: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 3px solid var(--fvw-border-color, #000);
+  /* Fundo acompanha a cor da borda, nao preto fixo: entre a curva interna
+     da borda e o recorte circular do .fvw-media-slot sobra sempre uma
+     fresta de subpixel, e com fundo preto ela aparecia como um filete
+     escuro por dentro de bordas claras. Com a mesma cor da borda, essa
+     fresta simplesmente some, seja qual for a cor escolhida no painel. */
+  background: var(--fvw-border-color, #000);
+  opacity: 0;
+  transform: translateY(16px) scale(0.9);
+  transition: opacity 0.35s ease, transform 0.35s ease, width 0.3s ease, height 0.3s ease,
+    border-radius 0.3s ease, top 0.3s ease, left 0.3s ease, right 0.3s ease, bottom 0.3s ease;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Sem overflow:hidden aqui de propósito — quem recorta o vídeo em
+     círculo/retângulo agora é o .fvw-media-slot (ver abaixo). Isso libera
+     o botão de fechar pra "vazar" um pouco pra fora da borda do balão,
+     em vez de ficar preso (e cortado) dentro do formato redondo. */
+}
+
+.fvw-wrapper.fvw-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Formato (bolha recolhida) */
+.fvw-shape-round { border-radius: 50%; }
+.fvw-shape-rectangular { border-radius: 16px; }
+
+/* Tamanho (bolha recolhida) — usa clamp() em vez de px fixo, pra ficar
+   proporcional à tela em qualquer aparelho (celular pequeno, tablet,
+   desktop) em vez de encolher desproporcionalmente no mobile. */
+.fvw-size-sm { width: clamp(88px, 24vw, 110px); height: clamp(88px, 24vw, 110px); }
+.fvw-size-md { width: clamp(120px, 32vw, 160px); height: clamp(120px, 32vw, 160px); }
+.fvw-size-lg { width: clamp(150px, 42vw, 220px); height: clamp(150px, 42vw, 220px); }
+.fvw-shape-rectangular.fvw-size-sm { width: clamp(120px, 32vw, 160px); height: clamp(150px, 40vw, 200px); }
+.fvw-shape-rectangular.fvw-size-md { width: clamp(150px, 40vw, 200px); height: clamp(195px, 52vw, 260px); }
+.fvw-shape-rectangular.fvw-size-lg { width: clamp(190px, 50vw, 260px); height: clamp(248px, 66vw, 340px); }
+
+/* Celular: a bolha recolhida usa uma faixa de vw maior (e um teto mais
+   alto) que a versão desktop, pra ficar claramente visível numa tela
+   pequena em vez de parecer um botãozinho perdido no canto. */
+@media (max-width: 640px) {
+  .fvw-size-sm { width: clamp(100px, 30vw, 130px); height: clamp(100px, 30vw, 130px); }
+  .fvw-size-md { width: clamp(130px, 38vw, 170px); height: clamp(130px, 38vw, 170px); }
+  .fvw-size-lg { width: clamp(160px, 46vw, 210px); height: clamp(160px, 46vw, 210px); }
+  .fvw-shape-rectangular.fvw-size-sm { width: clamp(130px, 38vw, 170px); height: clamp(170px, 48vw, 220px); }
+  .fvw-shape-rectangular.fvw-size-md { width: clamp(160px, 46vw, 210px); height: clamp(210px, 58vw, 270px); }
+  .fvw-shape-rectangular.fvw-size-lg { width: clamp(190px, 54vw, 250px); height: clamp(248px, 68vw, 320px); }
+}
+
+/* Posição — distância customizável definida pelo usuário no painel */
+.fvw-pos-bottom-right { right: var(--fvw-offset-x, 24px); bottom: var(--fvw-offset-y, 24px); }
+.fvw-pos-bottom-left { left: var(--fvw-offset-x, 24px); bottom: var(--fvw-offset-y, 24px); }
+
+/* Expandido — vira um player vertical grande no centro da tela,
+   estilo "reels" (Sharelo/VideoAsk). Regra vem depois das de posição
+   no arquivo, então tem prioridade sobre right/left/bottom fixos. */
+.fvw-wrapper.fvw-expanded {
+  width: min(92vw, 380px);
+  height: min(85vh, 680px);
+  border-radius: 20px;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  cursor: default;
+}
+
+/* Celular: sem teto em px — o vídeo expandido tem que dominar a tela
+   (estilo reels), não ficar limitado a um cartão de 380x680px que mal
+   se nota num aparelho de 400x850. */
+@media (max-width: 640px) {
+  .fvw-wrapper.fvw-expanded {
+    width: 88vw;
+    height: 80vh;
+    max-width: 480px;
+    max-height: 860px;
+  }
+}
+
+.fvw-media-slot,
+.fvw-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: 0;
+}
+
+.fvw-media-slot {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  /* overflow+border-radius sozinho NAO recorta um <iframe>: o iframe ganha
+     camada de composicao propria e o player do YouTube vazava por cima das
+     bordas nos cantos arredondados. Forcar uma camada aqui tambem faz o
+     recorte valer pro iframe. Um <div> comum recorta sem isso — por isso
+     o problema so aparece com o video real. */
+  transform: translateZ(0);
+  /* Recorta o vídeo no mesmo formato do balão (círculo ou retângulo) —
+     esse recorte saiu do .fvw-wrapper pra viver aqui, então o botão de
+     fechar (que fica no wrapper) pode vazar pra fora do círculo. */
+  border-radius: inherit;
+}
+
+/* iframe do YouTube: "object-fit" não alcança o vídeo desenhado dentro do
+   documento do iframe pra cortar o letterbox que o próprio YouTube gera
+   dentro do próprio player (as barras pretas do vídeo em si, não do CSS).
+   Isso só se aplica ao balão RECOLHIDO — no vídeo expandido o iframe usa
+   o tamanho normal (ver regra logo abaixo), porque ali o teto do zoom
+   ampliava demais e distorcia a visualização.
+   A solução: deixar o iframe bem maior que o balão (300%) e recortar (via
+   overflow:hidden do balão), sempre centralizado — como o vídeo do
+   YouTube fica sempre centralizado dentro do próprio player, um zoom
+   grande o suficiente empurra as barras pretas (que ficam nas bordas) pra
+   fora da área visível, deixando só o vídeo em si, ampliado. Com
+   !important porque o player do YouTube às vezes grava width/height
+   direto no atributo "style" do iframe, que teria prioridade sobre uma
+   regra normal do nosso CSS externo. */
+.fvw-wrapper:not(.fvw-expanded) .fvw-media-slot iframe {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 300% !important;
+  height: 300% !important;
+  max-width: none !important;
+  max-height: none !important;
+  transform: translate(-50%, -50%) !important;
+  border: 0 !important;
+  /* Ninguém deve conseguir clicar/tocar direto no iframe enquanto o
+     balão está recolhido — quem responde ao toque é o .fvw-click-catcher
+     por cima. Isso evita qualquer chance de o próprio player do YouTube
+     pausar o vídeo por um clique acidental. */
+  pointer-events: none !important;
+}
+
+/* Expandido: iframe no tamanho normal do player — sem o zoom acima, que
+   é só pra disfarçar o letterbox na bolha pequena e não deve esticar a
+   visualização quando a pessoa já abriu o vídeo em tamanho grande. */
+.fvw-wrapper.fvw-expanded .fvw-media-slot iframe {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  transform: none !important;
+  border: 0 !important;
+}
+
+/* Anel interno na cor da borda, por cima do video. O fundo preto do
+   proprio player do YouTube encosta na curva do recorte circular e vaza
+   como um filete escuro por dentro de bordas claras — isso vem de dentro
+   do iframe, entao nenhum ajuste de fundo/recorte do nosso lado alcanca.
+   Este anel cobre exatamente essa faixa. Fica acima do click-catcher
+   (z 1) e abaixo dos botoes (z 3+), e nao intercepta cliques. */
+.fvw-wrapper::after {
+  content: "";
+  position: absolute;
+  /* inset negativo de proposito: o anel precisa AVANCAR por baixo da
+     borda. Com inset:0 ele parava exatamente na curva do recorte, e a
+     beirada antisserrilhada do preto do iframe sobrava como um fio
+     entre a borda e o anel. Avancando 1px, a costura fica coberta —
+     invisivel, porque anel e borda usam a mesma cor. */
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 3px var(--fvw-border-color, #000);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Camada transparente sobre o iframe do YouTube, só pra capturar o
+   clique de expandir (o player do YouTube engole cliques internamente). */
+.fvw-click-catcher {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-click-catcher {
+  pointer-events: none;
+}
+
+/* Fica "vazando" um pouco pra fora da borda superior direita do balão
+   (metade dentro, metade fora), como um badge — em vez de escondido no
+   canto interno, onde o recorte circular do balão o cortava. O recorte
+   de círculo/retângulo agora é só no .fvw-media-slot, então este botão,
+   que fica direto no .fvw-wrapper, não é mais afetado por ele. */
+.fvw-close {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 5;
+  width: clamp(24px, 7vw, 28px);
+  height: clamp(24px, 7vw, 28px);
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+/* Botão de som — só aparece quando o vídeo está expandido, já que ele
+   sempre inicia mudo (exigência dos navegadores pra permitir autoplay) e
+   passa a tocar com som automaticamente ao expandir. */
+.fvw-mute {
+  display: none;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-mute {
+  display: flex;
+}
+
+/* Botão de reiniciar — mesma lógica do mute: só faz sentido quando o
+   vídeo já está expandido e tocando. */
+.fvw-restart {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 44px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-restart {
+  display: flex;
+}
+
+/* Barra de andamento do vídeo — fica encostada no topo do player
+   expandido; clicar nela pula pro ponto correspondente do vídeo. */
+.fvw-progress {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 4;
+  cursor: pointer;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-progress {
+  display: block;
+}
+
+.fvw-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #25d366;
+  transition: width 0.15s linear;
+}
+
+/* CTA só aparece quando o vídeo está expandido */
+.fvw-cta {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  padding: 12px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-cta {
+  display: flex;
+}
+
+.fvw-cta-btn {
+  display: block;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #25d366;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.fvw-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+}

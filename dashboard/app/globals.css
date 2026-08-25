@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* Paleta tirada do próprio logotipo (amostragem dos pixels): o degradê do
+   play vai do ciano ao violeta, e o texto é um navy quase preto. Usar
+   exatamente essas cores mantém a interface colada na marca em vez de
+   "parecida com". */
+@theme inline {
+  --color-brand-cyan: #00d6fc;
+  --color-brand-blue: #007fff;
+  --color-brand-violet: #3f1afb;
+  --color-brand-deep: #2c09dc;
+  --color-brand-ink: #00092d;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #00092d;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  /* Botão principal — mesmo degradê do play do logotipo. Concentrado numa
+     classe só pra não repetir o gradiente em cada botão e pra ajustar a
+     marca inteira num lugar. */
+  .btn-brand {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-brand-blue),
+      var(--color-brand-violet)
+    );
+    color: #fff;
+  }
+  .btn-brand:hover:not(:disabled) {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-brand-deep),
+      var(--color-brand-violet)
+    );
+  }
+
+  /* Texto com o degradê da marca, pra títulos curtos. */
+  .text-brand-gradient {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-brand-cyan),
+      var(--color-brand-blue),
+      var(--color-brand-violet)
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}

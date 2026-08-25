@@ -1,0 +1,35 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Build do Next.js
+.next/
+out/
+build/
+dist/
+
+# Ambiente — segredos reais nunca vão pro repositório.
+# .env.example fica versionado como referência; .env.production também,
+# porque só contém a URL e a anon key do Supabase, que são públicas por
+# design (já vão no player.js servido a qualquer visitante). A
+# service_role key mora só nas variáveis de ambiente da Vercel.
+.env
+.env.local
+.env*.local
+
+# Vercel
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Sistema / editores
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+
+# Repo antigo do Create Next App, guardado ao unificar tudo num repositorio so
+dashboard/.git-backup-createnextapp/

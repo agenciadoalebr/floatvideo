@@ -1,0 +1,107 @@
+/* styles.css — estilos do balão flutuante. Servido via CDN, carregado só quando o widget monta. */
+
+.fvw-wrapper {
+  position: fixed;
+  z-index: 2147483000; /* acima de quase tudo, sem estourar o max de 32-bit */
+  width: 160px;
+  height: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 3px solid var(--fvw-border-color, #000);
+  background: #000;
+  opacity: 0;
+  transform: translateY(16px) scale(0.9);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.fvw-wrapper.fvw-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Formato */
+.fvw-shape-round { border-radius: 50%; }
+.fvw-shape-rectangular { border-radius: 16px; }
+
+/* Tamanho */
+.fvw-size-sm { width: 110px; height: 110px; }
+.fvw-size-md { width: 160px; height: 160px; }
+.fvw-size-lg { width: 220px; height: 220px; }
+.fvw-shape-rectangular.fvw-size-sm { width: 160px; height: 200px; }
+.fvw-shape-rectangular.fvw-size-md { width: 200px; height: 260px; }
+.fvw-shape-rectangular.fvw-size-lg { width: 260px; height: 340px; }
+
+/* Posição na tela */
+.fvw-pos-bottom-right { right: 24px; bottom: 24px; }
+.fvw-pos-bottom-left { left: 24px; bottom: 24px; }
+
+.fvw-media-slot,
+.fvw-video,
+.fvw-media-slot iframe {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: 0;
+}
+
+.fvw-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fvw-cta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fvw-cta-btn {
+  display: block;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #25d366;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.fvw-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+}
+
+/* Mobile: reduz tamanho pra não tomar a tela toda */
+@media (max-width: 480px) {
+  .fvw-size-lg { width: 140px; height: 140px; }
+  .fvw-pos-bottom-right { right: 12px; bottom: 12px; }
+  .fvw-pos-bottom-left { left: 12px; bottom: 12px; }
+}

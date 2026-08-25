@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teste do Widget — Vídeo Flutuante</title>
+  </head>
+  <body>
+    <h1>Página de teste isolada</h1>
+    <p>
+      Se o balão de vídeo aparecer no canto da tela em alguns segundos, o
+      widget está funcionando corretamente fora do GTM.
+    </p>
+
+    <script>
+      window.FVW_EMBED_KEY = "177b92bcbf49cfa247551c434faa414e";
+    </script>
+    <!-- Caminho relativo de proposito: a pagina testa SEMPRE o widget da
+         origem que a esta servindo (localhost no dev, Vercel em producao).
+         Com URL absoluta, abrir localhost ainda carregava embed/player/CSS
+         de producao e as alteracoes locais nunca apareciam. -->
+    <script async src="/embed.js"></script>
+  </body>
+</html>
