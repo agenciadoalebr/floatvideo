@@ -3,22 +3,22 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Video, Widget, WidgetCta } from "@/lib/types";
+import type { Video, Widget, WidgetCta, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import WidgetPreview from "@/components/WidgetPreview";
-import EmbedCodeBox from "@/components/EmbedCodeBox";
+import PageRules from "@/components/PageRules";
 
 type Props = {
   projectId: string;
-  embedKey: string;
   videos: Video[];
   widget: Widget | null;
   cta: WidgetCta | null;
+  pageRules: PageRule[];
 };
 
 const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "ready");
 
-export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }: Props) {
+export default function WidgetPanel({ projectId, videos, widget, cta, pageRules }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -185,6 +185,18 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
             ))}
           </select>
         </div>
+
+        {/* A regra pertence ao video, entao mora logo abaixo de onde ele e
+            escolhido. So aparece com mais de um video: com um so, ele e o
+            padrao e cobre o site inteiro. */}
+        {readyVideos(videos).length > 1 && videoId && (
+          <PageRules
+            widgetId={widget?.id ?? null}
+            videoId={videoId}
+            rules={pageRules}
+            ehPadrao={widget?.video_id === videoId}
+          />
+        )}
         </Bloco>
 
         <Bloco titulo="Aparência">
@@ -430,10 +442,10 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
       {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar
           um campo lá embaixo sem enxergar o resultado era justamente o
           que tornava a edição às cegas. */}
-      {/* A prévia acompanha a rolagem; o código de instalação vem logo
-          abaixo dela, porque instalar é o passo seguinte natural de quem
-          acabou de configurar o widget. */}
-      <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+      {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar um
+          campo lá embaixo sem enxergar o resultado era o que tornava a
+          edição às cegas. */}
+      <div className="lg:sticky lg:top-4 lg:self-start">
         <WidgetPreview
           video={videos.find((v) => v.id === videoId)}
           shape={shape}
@@ -443,7 +455,6 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           offsetX={offsetX}
           offsetY={offsetY}
         />
-        <EmbedCodeBox embedKey={embedKey} />
       </div>
     </div>
   );

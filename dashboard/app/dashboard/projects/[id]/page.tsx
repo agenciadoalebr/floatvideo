@@ -9,7 +9,7 @@ import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import ProjectTabs from "@/components/ProjectTabs";
 import ProjectDomainField from "@/components/ProjectDomainField";
-import PageRules from "@/components/PageRules";
+import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
 export default async function ProjectPage({
@@ -168,9 +168,7 @@ export default async function ProjectPage({
             id: "widget",
             label: "Widget",
             content: (
-              <div className="space-y-6">
               <WidgetPanel
-                embedKey={project.embed_key}
                 // A key remonta o painel quando o vídeo do widget muda no
                 // servidor. É necessária porque as abas ficam montadas: sem
                 // ela, clicar "Editar widget" no card de um vídeo atualizava
@@ -181,17 +179,14 @@ export default async function ProjectPage({
                 videos={videos ?? []}
                 widget={widget}
                 cta={cta}
+                pageRules={pageRules}
               />
-              {readyVideos.length > 1 && (
-                <PageRules
-                  widgetId={widget?.id ?? null}
-                  videos={videos ?? []}
-                  rules={pageRules}
-                  defaultVideoId={widget?.video_id ?? null}
-                />
-              )}
-              </div>
             ),
+          },
+          {
+            id: "instalacao",
+            label: "Instalação",
+            content: <EmbedCodeBox embedKey={project.embed_key} />,
           },
           {
             id: "leads",

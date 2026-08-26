@@ -3,39 +3,35 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { PageRule, Video } from "@/lib/types";
-import { videoLabel } from "@/lib/video";
+import type { PageRule } from "@/lib/types";
 
 type Props = {
   widgetId: string | null;
-  videos: Video[];
+  /** Vídeo atualmente selecionado — as regras são dele. */
+  videoId: string;
+  /** Todas as regras do widget; aqui só entram as deste vídeo. */
   rules: PageRule[];
-  /** Vídeo do widget, usado quando nenhuma regra casa. */
-  defaultVideoId: string | null;
+  /** Se este é o vídeo padrão do widget (o que vale sem regra). */
+  ehPadrao: boolean;
 };
 
 /**
- * Regras por página: o mesmo código de instalação exibe vídeos
- * diferentes conforme a URL. Quem decide qual vídeo vale é o servidor,
- * na RPC — aqui é só o cadastro das regras.
+ * Onde este vídeo aparece. Fica logo abaixo do seletor de vídeo porque a
+ * regra pertence ao vídeo, não ao widget: a pergunta que a pessoa faz é
+ * "em que páginas este vídeo entra?".
+ *
+ * Vive dentro do <form> do widget, então todo botão precisa de
+ * type="button" e o Enter precisa ser contido — senão qualquer um deles
+ * dispararia o submit do formulário inteiro.
  */
-export default function PageRules({ widgetId, videos, rules, defaultVideoId }: Props) {
+export default function PageRules({ widgetId, videoId, rules, ehPadrao }: Props) {
   const router = useRouter();
-  const prontos = videos.filter((v) => v.status === "ready");
-
-  const [videoId, setVideoId] = useState(prontos[0]?.id ?? "");
   const [matchType, setMatchType] = useState<"contains" | "exact">("contains");
   const [pattern, setPattern] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
-  if (!widgetId) {
-    return (
-      <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
-        Salve o widget primeiro para poder criar regras por página.
-      </p>
-    );
-  }
+  const minhas = rules.filter((r) => r.video_id === videoId);
 
   async function adicionar() {
     const p = pattern.trim();
@@ -43,8 +39,8 @@ export default function PageRules({ widgetId, videos, rules, defaultVideoId }: P
       setErro("Escreva o trecho da URL.");
       return;
     }
-    if (!videoId) {
-      setErro("Escolha um vídeo.");
+    if (!widgetId) {
+      setErro("Salve o widget antes de criar regras.");
       return;
     }
     setErro("");
@@ -71,44 +67,36 @@ export default function PageRules({ widgetId, videos, rules, defaultVideoId }: P
     router.refresh();
   }
 
-  const nomeDoVideo = (id: string) => {
-    const v = videos.find((x) => x.id === id);
-    return v ? videoLabel(v) : "vídeo removido";
-  };
-
   return (
-    <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
-      <div>
-        <h3 className="text-sm font-semibold text-neutral-700">
-          Vídeo por página
-        </h3>
-        <p className="mt-1 text-xs text-neutral-500">
-          O site usa um código de instalação só. Aqui você define qual vídeo
-          aparece em cada página. Sem regra, vale o vídeo padrão do widget
-          {defaultVideoId && (
-            <> — hoje <strong>{nomeDoVideo(defaultVideoId)}</strong></>
-          )}
-          .
-        </p>
-      </div>
+    <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+      <p className="text-xs font-medium text-neutral-700">
+        Onde este vídeo aparece
+      </p>
+      <p className="mt-0.5 text-xs text-neutral-500">
+        {ehPadrao
+          ? "Este é o vídeo padrão: aparece em todas as páginas que não tiverem regra de outro vídeo."
+          : minhas.length === 0
+            ? "Sem regra, este vídeo não aparece em página nenhuma — o padrão é usado."
+            : "Este vídeo aparece só nas páginas abaixo."}
+      </p>
 
-      {rules.length > 0 && (
-        <ul className="divide-y divide-neutral-100 rounded-md border border-neutral-100">
-          {rules.map((r) => (
+      {minhas.length > 0 && (
+        <ul className="mt-2 divide-y divide-neutral-200 rounded border border-neutral-200 bg-white">
+          {minhas.map((r) => (
             <li
               key={r.id}
-              className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs"
+              className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs"
             >
               <span className="text-neutral-600">
                 {r.match_type === "exact" ? "URL é exatamente" : "URL contém"}{" "}
-                <code className="rounded bg-neutral-100 px-1 py-0.5 text-neutral-800">
+                <code className="rounded bg-neutral-100 px-1 text-neutral-800">
                   {r.pattern}
-                </code>{" "}
-                → <strong className="text-brand-ink">{nomeDoVideo(r.video_id)}</strong>
+                </code>
               </span>
               <button
+                type="button"
                 onClick={() => remover(r.id)}
-                className="text-red-600 hover:underline"
+                className="shrink-0 text-red-600 hover:underline"
               >
                 remover
               </button>
@@ -117,11 +105,11 @@ export default function PageRules({ widgetId, videos, rules, defaultVideoId }: P
         </ul>
       )}
 
-      <div className="grid gap-2 sm:grid-cols-[auto_1fr_auto_auto] sm:items-center">
+      <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
         <select
           value={matchType}
           onChange={(e) => setMatchType(e.target.value as "contains" | "exact")}
-          className="rounded-md border border-neutral-300 px-2 py-2 text-xs"
+          className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs"
         >
           <option value="contains">URL contém</option>
           <option value="exact">URL é exatamente</option>
@@ -130,37 +118,25 @@ export default function PageRules({ widgetId, videos, rules, defaultVideoId }: P
           value={pattern}
           onChange={(e) => setPattern(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") adicionar();
+            if (e.key === "Enter") {
+              // Sem isto, o Enter submeteria o formulário do widget.
+              e.preventDefault();
+              adicionar();
+            }
           }}
           placeholder={matchType === "exact" ? "site.com.br/contato" : "/precos"}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-xs outline-none focus:border-brand-blue"
+          className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
         />
-        <select
-          value={videoId}
-          onChange={(e) => setVideoId(e.target.value)}
-          className="rounded-md border border-neutral-300 px-2 py-2 text-xs"
-        >
-          {prontos.map((v) => (
-            <option key={v.id} value={v.id}>
-              {videoLabel(v)}
-            </option>
-          ))}
-        </select>
         <button
+          type="button"
           onClick={adicionar}
           disabled={salvando}
-          className="btn-brand rounded-md px-3 py-2 text-xs font-medium disabled:opacity-50"
+          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
         >
           {salvando ? "..." : "Adicionar"}
         </button>
       </div>
-      {erro && <p className="text-xs text-red-600">{erro}</p>}
-
-      <p className="text-xs text-neutral-400">
-        Quando mais de uma regra serve, vale a mais específica: &quot;é
-        exatamente&quot; ganha de &quot;contém&quot;, e entre as de
-        &quot;contém&quot; ganha o trecho mais longo.
-      </p>
+      {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
     </div>
   );
 }
