@@ -142,11 +142,24 @@ export default function VideoList({ videos, projectId, widget }: Props) {
               />
             ) : (
               <button
+                type="button"
                 onClick={() => startRename(video)}
-                title="Clique para renomear"
-                className="block w-full truncate text-left text-sm font-medium text-brand-ink hover:text-brand-blue"
+                title="Renomear vídeo"
+                aria-label={`Renomear ${videoLabel(video)}`}
+                className="group flex w-full items-center gap-1.5 text-left text-sm font-medium text-brand-ink hover:text-brand-blue"
               >
-                {videoLabel(video)}
+                <span className="truncate">{videoLabel(video)}</span>
+                {/* O lápis é o que sinaliza que dá pra editar: o título
+                    sozinho não passava essa impressão. Fica discreto e
+                    ganha cor junto do texto no hover/foco. */}
+                <svg
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition group-hover:text-brand-blue"
+                >
+                  <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
+                </svg>
               </button>
             )}
             <div className="flex items-center justify-between">
