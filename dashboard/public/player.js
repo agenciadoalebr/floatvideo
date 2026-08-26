@@ -215,9 +215,13 @@
     // mostrando "pausar".
     setPlayIcon(el, true);
     trackEvent(config, "expand");
+    // Ao expandir o video ja vem tocando do balao, entao o evento de
+    // "comecou a tocar" pode nao disparar de novo: confere na hora.
+    if (estaTocando(el)) maybeTrackPlay(el, config);
   }
 
   function collapse(el, backdrop, config) {
+    el._playTracked = false;
     el.classList.remove("fvw-expanded");
     backdrop.classList.remove("fvw-visible");
     setMuted(el, true);
@@ -236,6 +240,30 @@
         el._ytPlayer.setLoop(loop);
       } catch (e) {}
     }
+  }
+
+  // "Vídeo iniciou" so vale com o video ABERTO. No balao recolhido ele
+  // toca sozinho e em loop, entao contar ali dava um numero maior que o
+  // de impressoes (cada volta do loop disparava um evento) — media
+  // repeticao de animacao, nao interesse de quem visita.
+  //
+  // Uma contagem por abertura: a marca e limpa ao recolher, entao abrir
+  // duas vezes conta duas.
+  function maybeTrackPlay(el, config) {
+    if (!el.classList.contains("fvw-expanded")) return;
+    if (el._playTracked) return;
+    el._playTracked = true;
+    trackEvent(config, "play");
+  }
+
+  // Diz se a midia esta de fato rodando agora, seja video nativo ou YouTube.
+  function estaTocando(el) {
+    var video = el.querySelector(".fvw-video");
+    if (video) return !video.paused;
+    if (el._ytPlayer && typeof el._ytPlayer.getPlayerState === "function") {
+      return el._ytPlayer.getPlayerState() === 1;
+    }
+    return false;
   }
 
   // ---------- Som ----------
@@ -474,8 +502,8 @@
     }
 
     video.addEventListener("playing", function () {
-      trackEvent(config, "play");
-    }, { once: true });
+      maybeTrackPlay(el, config);
+    });
     video.addEventListener("ended", function () {
       trackEvent(config, "complete");
     });
@@ -550,7 +578,7 @@
             e.target.playVideo();
           },
           onStateChange: function (e) {
-            if (e.data === YT.PlayerState.PLAYING) trackEvent(config, "play");
+            if (e.data === YT.PlayerState.PLAYING) maybeTrackPlay(el, config);
             if (e.data === YT.PlayerState.ENDED) trackEvent(config, "complete");
             // Enquanto recolhido (balão), o vídeo nunca deve ficar
             // parado — se pausar por qualquer motivo (autoplay

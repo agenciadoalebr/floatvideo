@@ -16,8 +16,8 @@ type Props = {
 
 const LABELS: Record<string, string> = {
   impression: "Impressões (balão apareceu)",
-  expand: "Expansões (clicou pra assistir)",
-  play: "Vídeo iniciou",
+  expand: "Cliques para abrir o vídeo",
+  play: "Assistiu de fato (vídeo aberto)",
   complete: "Vídeo assistido até o fim",
   cta_click: "Cliques no botão de ação",
   close: "Fechamentos",
