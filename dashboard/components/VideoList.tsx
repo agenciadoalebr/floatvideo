@@ -88,16 +88,15 @@ export default function VideoList({ videos, projectId, widget }: Props) {
 
     setEditingId(null);
     router.refresh();
-    document.getElementById("widget-panel")?.scrollIntoView({ behavior: "smooth" });
+    window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "widget" }));
   }
 
-  // Abre o painel de métricas já filtrado neste vídeo. O painel é um
-  // componente separado, sem relação de pai/filho com este — o evento de
-  // janela evita ter que erguer esse estado até a página inteira só pra
-  // ligar um botão a um seletor.
+  // Troca para a aba de métricas já filtrada neste vídeo. Os dois
+  // componentes não têm relação de pai/filho, e o evento de janela evita
+  // erguer esse estado até a página inteira só pra ligar um botão.
   function handleSeeMetrics(video: Video) {
     window.dispatchEvent(new CustomEvent("fvw-show-metrics", { detail: video.id }));
-    document.getElementById("metrics-panel")?.scrollIntoView({ behavior: "smooth" });
+    window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "metricas" }));
   }
 
   if (videos.length === 0) return null;

@@ -101,9 +101,10 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
 
   // O nome é lido via ref no momento do insert: handleFile é um useCallback
   // e, se dependesse do state, cada tecla digitada recriaria a função (e
-  // com ela o handler de drop). Assim o campo não interfere no upload.
+  // com ela o handler de drop). O ref é atualizado no onChange, nunca
+  // durante o render — escrever nele no corpo do componente quebra o
+  // modelo de renderização concorrente do React.
   const nameRef = useRef("");
-  nameRef.current = name;
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -182,6 +183,7 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
       }
 
       setName("");
+      nameRef.current = "";
       router.refresh();
     },
     [projectId, router]
@@ -191,7 +193,10 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
     <div className="space-y-2">
       <input
         value={name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) => {
+          setName(e.target.value);
+          nameRef.current = e.target.value;
+        }}
         placeholder="Nome do vídeo (opcional)"
         className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
       />

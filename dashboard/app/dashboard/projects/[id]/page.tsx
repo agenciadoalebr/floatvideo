@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import VideoUploader from "@/components/VideoUploader";
@@ -6,6 +7,8 @@ import VideoList from "@/components/VideoList";
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
+import ProjectTabs from "@/components/ProjectTabs";
+import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead } from "@/lib/types";
 
 export default async function ProjectPage({
@@ -41,9 +44,10 @@ export default async function ProjectPage({
 
   let cta: WidgetCta | null = null;
   let leads: Lead[] = [];
-  let eventCounts: Record<string, number> = {};
-  let eventCountsByVideo: Record<string, Record<string, number>> = {};
+  const eventCounts: Record<string, number> = {};
+  const eventCountsByVideo: Record<string, Record<string, number>> = {};
   let unattributedEvents = 0;
+
   if (widget) {
     const { data } = await supabase
       .from("widget_ctas")
@@ -56,8 +60,7 @@ export default async function ProjectPage({
 
     // Leads e métricas somam TODOS os widgets do projeto, não só o atual:
     // um projeto pode ter tido widgets anteriores (com outro vídeo), e os
-    // números deles continuam valendo como histórico do site. Filtrando
-    // só pelo widget atual, esse histórico sumia da tela.
+    // números deles continuam valendo como histórico do site.
     const { data: widgetRows } = await supabase
       .from("widgets")
       .select("id")
@@ -92,60 +95,109 @@ export default async function ProjectPage({
     }
   }
 
+  const readyVideos = (videos ?? []).filter((v) => v.status === "ready");
+  const ativo = !!widget?.is_active;
+
   return (
-    <div className="space-y-10">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">{project.name}</h1>
-        <p className="text-sm text-neutral-500">
-          {project.domain || "Nenhum domínio definido"}
+        <Link
+          href="/dashboard"
+          className="text-xs text-neutral-400 hover:text-brand-blue"
+        >
+          ← Seus sites
+        </Link>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h1 className="text-xl font-semibold text-brand-ink">{project.name}</h1>
+          {widget && (
+            <span
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                ativo
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-neutral-200 text-neutral-600"
+              }`}
+            >
+              {ativo ? "Widget ativo" : "Widget pausado"}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-sm text-neutral-500">
+          {project.domain || "Nenhum domínio definido — o widget funciona em qualquer site"}
         </p>
       </div>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-neutral-700">1. Vídeo</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <VideoUploader projectId={project.id} />
-          <YouTubeForm projectId={project.id} />
-        </div>
-        <VideoList videos={videos ?? []} projectId={project.id} widget={widget} />
-      </section>
-
-      <section id="widget-panel" className="space-y-4 scroll-mt-4">
-        <h2 className="text-sm font-semibold text-neutral-700">
-          2. Widget flutuante
-        </h2>
-        <WidgetPanel
-          projectId={project.id}
-          embedKey={project.embed_key}
-          videos={videos ?? []}
-          widget={widget}
-          cta={cta}
-        />
-      </section>
-
-      {widget && (
-        <>
-          <section className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-700">3. Leads</h2>
-            <LeadsPanel leads={leads} />
-          </section>
-
-          <section id="metrics-panel" className="space-y-4 scroll-mt-4">
-            <h2 className="text-sm font-semibold text-neutral-700">
-              4. Métricas{" "}
-              <span className="font-normal text-neutral-400">
-                — por vídeo ou tudo somado
-              </span>
-            </h2>
-            <AnalyticsPanel
-              totals={eventCounts}
-              byVideo={eventCountsByVideo}
-              videos={videos ?? []}
-              unattributed={unattributedEvents}
-            />
-          </section>
-        </>
-      )}
+      <ProjectTabs
+        tabs={[
+          {
+            id: "videos",
+            label: "Vídeos",
+            count: readyVideos.length,
+            content: (
+              <div className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <VideoUploader projectId={project.id} />
+                  <YouTubeForm projectId={project.id} />
+                </div>
+                <VideoList
+                  videos={videos ?? []}
+                  projectId={project.id}
+                  widget={widget}
+                />
+              </div>
+            ),
+          },
+          {
+            id: "widget",
+            label: "Widget",
+            content: (
+              <WidgetPanel
+                projectId={project.id}
+                videos={videos ?? []}
+                widget={widget}
+                cta={cta}
+              />
+            ),
+          },
+          {
+            id: "instalacao",
+            label: "Instalação",
+            content: <EmbedCodeBox embedKey={project.embed_key} />,
+          },
+          {
+            id: "leads",
+            label: "Leads",
+            count: leads.length,
+            content: widget ? (
+              <LeadsPanel leads={leads} />
+            ) : (
+              <VazioSemWidget />
+            ),
+          },
+          {
+            id: "metricas",
+            label: "Métricas",
+            content: widget ? (
+              <AnalyticsPanel
+                totals={eventCounts}
+                byVideo={eventCountsByVideo}
+                videos={videos ?? []}
+                unattributed={unattributedEvents}
+              />
+            ) : (
+              <VazioSemWidget />
+            ),
+          },
+        ]}
+      />
     </div>
+  );
+}
+
+function VazioSemWidget() {
+  return (
+    <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+      Configure o widget primeiro — os dados aparecem aqui depois que ele
+      começar a rodar no site.
+    </p>
   );
 }

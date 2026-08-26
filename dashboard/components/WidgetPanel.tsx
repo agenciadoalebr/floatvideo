@@ -5,12 +5,10 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, WidgetCta } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
-import EmbedCodeBox from "@/components/EmbedCodeBox";
 import WidgetPreview from "@/components/WidgetPreview";
 
 type Props = {
   projectId: string;
-  embedKey: string;
   videos: Video[];
   widget: Widget | null;
   cta: WidgetCta | null;
@@ -18,7 +16,7 @@ type Props = {
 
 const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "ready");
 
-export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }: Props) {
+export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -152,6 +150,7 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
         onSubmit={handleSave}
         className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5"
       >
+        <Bloco titulo="Conteúdo">
         <div>
           <label className="block text-xs font-medium text-neutral-600">Vídeo</label>
           <select
@@ -166,7 +165,9 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
             ))}
           </select>
         </div>
+        </Bloco>
 
+        <Bloco titulo="Aparência">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-neutral-600">Formato</label>
@@ -215,6 +216,9 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           </div>
         </div>
 
+        </Bloco>
+
+        <Bloco titulo="Posição na tela">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-neutral-600">
@@ -242,6 +246,9 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           </div>
         </div>
 
+        </Bloco>
+
+        <Bloco titulo="Comportamento">
         <div>
           <label className="block text-xs font-medium text-neutral-600">
             Aparece depois de (segundos)
@@ -274,8 +281,9 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           </label>
         </div>
 
-        <hr className="border-neutral-200" />
+        </Bloco>
 
+        <Bloco titulo="Celular">
         <div>
           <label className="flex items-center gap-2 text-xs font-medium text-neutral-600">
             <input
@@ -346,8 +354,9 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           )}
         </div>
 
-        <hr className="border-neutral-200" />
+        </Bloco>
 
+        <Bloco titulo="Botão de ação">
         <div>
           <label className="block text-xs font-medium text-neutral-600">
             Botão de ação (CTA) — só aparece quando o vídeo é expandido
@@ -378,6 +387,8 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           />
         </div>
 
+        </Bloco>
+
         <button
           type="submit"
           disabled={saving}
@@ -388,7 +399,10 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
         {error && <p className="text-xs text-red-600">{error}</p>}
       </form>
 
-      <div className="space-y-4">
+      {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar
+          um campo lá embaixo sem enxergar o resultado era justamente o
+          que tornava a edição às cegas. */}
+      <div className="lg:sticky lg:top-4 lg:self-start">
         <WidgetPreview
           video={videos.find((v) => v.id === videoId)}
           shape={shape}
@@ -398,9 +412,21 @@ export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }
           offsetX={offsetX}
           offsetY={offsetY}
         />
-        <EmbedCodeBox embedKey={embedKey} />
       </div>
     </div>
+  );
+}
+
+/** Agrupa campos sob um titulo, pra o formulario deixar de ser uma
+ *  lista corrida de controles sem hierarquia. */
+function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="space-y-3">
+      <legend className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
+        {titulo}
+      </legend>
+      {children}
+    </fieldset>
   );
 }
 
