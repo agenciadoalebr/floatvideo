@@ -50,7 +50,16 @@
 
     init: function (config, embedKey) {
       ensureViewportMeta();
-      injectStyles();
+
+      // O widget vive dentro de um Shadow DOM: o CSS do site hospedeiro
+      // simplesmente não atravessa essa fronteira. Sem isso, qualquer
+      // regra genérica do tema (um "button { padding; background;
+      // border-radius }" de WordPress/Elementor, por exemplo) pintava e
+      // esticava os nossos botões — o X redondo virava uma pílula com a
+      // cor do site. Nada de !important nem de disputa de
+      // especificidade: o isolamento é real.
+      var root = createIsolatedRoot();
+      injectStyles(root);
 
       var backdrop = document.createElement("div");
       backdrop.className = "fvw-backdrop";
@@ -59,7 +68,7 @@
       // de esconder e só então reaparecer depois do delay.
       backdrop.style.opacity = "0";
       backdrop.style.visibility = "hidden";
-      document.body.appendChild(backdrop);
+      root.appendChild(backdrop);
 
       var el = buildWidgetDOM(config);
       el.style.position = "fixed";
@@ -67,7 +76,7 @@
       el.style.opacity = "0";
       el.style.pointerEvents = "none";
       el.style.transform = "translateY(16px) scale(0.9)";
-      document.body.appendChild(el);
+      root.appendChild(el);
 
       var delay = (config.delay_seconds || 0) * 1000;
       setTimeout(function () {
@@ -82,6 +91,7 @@
       wireExpand(el, backdrop, config);
       wireCTA(el, config);
       wireMuteToggle(el);
+      wirePlayToggle(el);
       wireRestartButton(el);
       wireProgressBar(el);
       startProgressLoop(el);
@@ -130,6 +140,7 @@
       '<button class="fvw-close" aria-label="Fechar vídeo">&times;</button>' +
       '<button class="fvw-restart" aria-label="Ver do início">↺</button>' +
       '<button class="fvw-mute" aria-label="Ativar som">🔇</button>' +
+      '<button class="fvw-play" aria-label="Pausar">❚❚</button>' +
       // Barra de progresso e CTA ficam DENTRO do .fvw-media-slot de
       // proposito: e ele que recorta no formato do balao. Como irmaos do
       // slot, encostados nas bordas, os cantos retos deles escapavam por
@@ -187,6 +198,9 @@
     backdrop.style.visibility = "";
     setMuted(el, false);
     setLoop(el, false);
+    // Ao expandir o video sempre segue tocando, entao o botao ja nasce
+    // mostrando "pausar".
+    setPlayIcon(el, true);
     trackEvent(config, "expand");
   }
 
@@ -239,6 +253,43 @@
       btn.textContent = muted ? "🔇" : "🔊";
       btn.setAttribute("aria-label", muted ? "Ativar som" : "Silenciar");
     }
+  }
+
+  // Play/pause proprio. Existe porque o iframe do YouTube nao recebe
+  // cliques (senao o overlay nativo dele aparece por cima do video) —
+  // entao a funcao de pausar precisa vir de um botao nosso.
+  function wirePlayToggle(el) {
+    var btn = el.querySelector(".fvw-play");
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var video = el.querySelector(".fvw-video");
+      var tocando;
+      if (video) {
+        tocando = !video.paused;
+        if (tocando) {
+          video.pause();
+        } else {
+          video.play().catch(function () {});
+        }
+      } else if (el._ytPlayer) {
+        tocando = el._ytPlayer.getPlayerState() === 1;
+        if (tocando) {
+          el._ytPlayer.pauseVideo();
+        } else {
+          el._ytPlayer.playVideo();
+        }
+      } else {
+        return;
+      }
+      setPlayIcon(el, !tocando);
+    });
+  }
+
+  function setPlayIcon(el, tocando) {
+    var btn = el.querySelector(".fvw-play");
+    if (!btn) return;
+    btn.textContent = tocando ? "❚❚" : "▶";
+    btn.setAttribute("aria-label", tocando ? "Pausar" : "Reproduzir");
   }
 
   // ---------- Barra de progresso e reiniciar ----------
@@ -295,6 +346,7 @@
       }
       var fill = el.querySelector(".fvw-progress-fill");
       if (fill) fill.style.width = "0%";
+      setPlayIcon(el, true);
     });
   }
 
@@ -428,8 +480,6 @@
   function mountYouTubePlayer(el, config) {
     var slot = el.querySelector(".fvw-media-slot");
     var mount = document.createElement("div");
-    var mountId = "fvw-yt-" + config.widget_id;
-    mount.id = mountId;
     slot.appendChild(mount);
 
     // Camada transparente por cima do iframe: o YouTube engole cliques
@@ -440,7 +490,9 @@
     slot.appendChild(clickCatcher);
 
     loadYouTubeAPI().then(function (YT) {
-      new YT.Player(mountId, {
+      // Passa o elemento em si, não um id: dentro do shadow root o
+      // YouTube não acharia o id via document.getElementById.
+      new YT.Player(mount, {
         videoId: config.video.youtube_id,
         playerVars: {
           autoplay: config.autoplay !== false ? 1 : 0,
@@ -537,13 +589,34 @@
     document.head.appendChild(meta);
   }
 
-  function injectStyles() {
-    if (document.getElementById("fvw-styles")) return;
+  // Cria a raiz isolada onde o widget inteiro vive. Devolve o shadow root
+  // quando o navegador suporta; se não suportar, cai no <body> e o widget
+  // segue funcionando (só volta a ficar sujeito ao CSS do site).
+  function createIsolatedRoot() {
+    var host = document.createElement("div");
+    host.className = "fvw-host";
+    // "all: initial" corta a herança vinda do site (fonte, cor,
+    // line-height, text-transform...). O que é herdável atravessa o
+    // shadow boundary pelo host, então zerar aqui é o que impede, por
+    // exemplo, um "text-transform: uppercase" global de chegar nos
+    // nossos botões.
+    host.setAttribute("style", "all: initial;");
+    document.body.appendChild(host);
+
+    if (typeof host.attachShadow !== "function") return host;
+    return host.attachShadow({ mode: "open" });
+  }
+
+  function injectStyles(root) {
+    // Dentro do shadow root o <link> é local: não polui o site e não
+    // pode ser sobrescrito por ele.
+    var doc = root.getElementById ? root : document;
+    if (doc.getElementById && doc.getElementById("fvw-styles")) return;
     var link = document.createElement("link");
     link.id = "fvw-styles";
     link.rel = "stylesheet";
     link.href = getScriptOrigin() + "/fvw-styles.css";
-    document.head.appendChild(link);
+    root.appendChild(link);
   }
 
   function getScriptOrigin() {

@@ -168,6 +168,39 @@
   height: 100% !important;
   transform: none !important;
   border: 0 !important;
+  /* Cliques tambem nao chegam ao iframe quando expandido. Um toque no
+     player do YouTube pausava o video, e ai o proprio YouTube desenhava
+     o overlay dele por cima (play gigante, avancar/voltar, barra com
+     compartilhar e logo) — exatamente o que aparecia desconfigurado. Com
+     "controls: 0" o YouTube ainda mostra esse overlay no estado pausado,
+     entao a saida e nao deixar o clique chegar la: quem controla o video
+     sao os nossos botoes (play/pause, som, reiniciar e a barra). */
+  pointer-events: none !important;
+}
+
+/* Play/pause proprio — substitui o controle nativo do YouTube, que fica
+   inacessivel de proposito (ver regra acima). */
+.fvw-play {
+  display: none;
+  position: absolute;
+  top: 6px;
+  left: 40px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-play {
+  display: flex;
 }
 
 /* Anel interno na cor da borda, por cima do video. O fundo preto do
