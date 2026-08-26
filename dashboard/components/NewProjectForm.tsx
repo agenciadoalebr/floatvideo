@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeDomain, isValidDomain } from "@/lib/domain";
 
 export default function NewProjectForm() {
   const [name, setName] = useState("");
@@ -13,8 +14,18 @@ export default function NewProjectForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError("");
+
+    // O domínio deixou de ser opcional: é ele que limita onde o widget
+    // pode rodar. Sem domínio, o widget funciona em qualquer site que
+    // tenha a chave de incorporação.
+    const dominio = normalizeDomain(domain);
+    if (!isValidDomain(dominio)) {
+      setError("Informe um domínio válido, como minhaloja.com.br");
+      return;
+    }
+
+    setLoading(true);
 
     const supabase = createClient();
     const {
@@ -46,7 +57,7 @@ export default function NewProjectForm() {
       .insert({
         organization_id: membership.organization_id,
         name,
-        domain: domain || null,
+        domain: dominio,
       })
       .select("id")
       .single();
@@ -83,9 +94,10 @@ export default function NewProjectForm() {
       </div>
       <div className="flex-1">
         <label className="block text-xs font-medium text-neutral-600">
-          Domínio (opcional)
+          Domínio do site
         </label>
         <input
+          required
           value={domain}
           onChange={(e) => setDomain(e.target.value)}
           placeholder="Ex: minhaloja.com.br"

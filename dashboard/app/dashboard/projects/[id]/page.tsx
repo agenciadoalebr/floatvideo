@@ -8,7 +8,7 @@ import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import ProjectTabs from "@/components/ProjectTabs";
-import EmbedCodeBox from "@/components/EmbedCodeBox";
+import ProjectDomainField from "@/components/ProjectDomainField";
 import type { Project, Video, Widget, WidgetCta, Lead } from "@/lib/types";
 
 export default async function ProjectPage({
@@ -121,9 +121,7 @@ export default async function ProjectPage({
             </span>
           )}
         </div>
-        <p className="mt-0.5 text-sm text-neutral-500">
-          {project.domain || "Nenhum domínio definido — o widget funciona em qualquer site"}
-        </p>
+        <ProjectDomainField projectId={project.id} domain={project.domain} />
       </div>
 
       <ProjectTabs
@@ -132,17 +130,27 @@ export default async function ProjectPage({
             id: "videos",
             label: "Vídeos",
             count: readyVideos.length,
-            content: (
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <VideoUploader projectId={project.id} />
-                  <YouTubeForm projectId={project.id} />
-                </div>
+            content:
+              (videos ?? []).length > 0 ? (
                 <VideoList
                   videos={videos ?? []}
                   projectId={project.id}
                   widget={widget}
                 />
+              ) : (
+                <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+                  Nenhum vídeo ainda. Use a aba <strong>Upload</strong> para
+                  enviar um arquivo ou colar um link do YouTube.
+                </p>
+              ),
+          },
+          {
+            id: "upload",
+            label: "Upload",
+            content: (
+              <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
+                <VideoUploader projectId={project.id} />
+                <YouTubeForm projectId={project.id} />
               </div>
             ),
           },
@@ -151,6 +159,7 @@ export default async function ProjectPage({
             label: "Widget",
             content: (
               <WidgetPanel
+                embedKey={project.embed_key}
                 // A key remonta o painel quando o vídeo do widget muda no
                 // servidor. É necessária porque as abas ficam montadas: sem
                 // ela, clicar "Editar widget" no card de um vídeo atualizava
@@ -163,11 +172,6 @@ export default async function ProjectPage({
                 cta={cta}
               />
             ),
-          },
-          {
-            id: "instalacao",
-            label: "Instalação",
-            content: <EmbedCodeBox embedKey={project.embed_key} />,
           },
           {
             id: "leads",

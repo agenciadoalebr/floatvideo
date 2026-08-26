@@ -87,8 +87,14 @@ export default function VideoList({ videos, projectId, widget }: Props) {
     }
 
     setEditingId(null);
-    router.refresh();
+    // Avisa o painel na hora qual vídeo foi escolhido. O router.refresh()
+    // leva uns segundos pra voltar do servidor, e sem esse aviso o
+    // seletor ficava exibindo o vídeo anterior nesse intervalo.
+    window.dispatchEvent(
+      new CustomEvent("fvw-set-widget-video", { detail: video.id })
+    );
     window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "widget" }));
+    router.refresh();
   }
 
   // Troca para a aba de métricas já filtrada neste vídeo. Os dois

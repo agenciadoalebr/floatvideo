@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, WidgetCta } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import WidgetPreview from "@/components/WidgetPreview";
+import EmbedCodeBox from "@/components/EmbedCodeBox";
 
 type Props = {
   projectId: string;
+  embedKey: string;
   videos: Video[];
   widget: Widget | null;
   cta: WidgetCta | null;
@@ -16,10 +18,11 @@ type Props = {
 
 const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "ready");
 
-export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
+export default function WidgetPanel({ projectId, embedKey, videos, widget, cta }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [salvo, setSalvo] = useState(false);
 
   const [videoId, setVideoId] = useState(widget?.video_id ?? readyVideos(videos)[0]?.id ?? "");
   const [shape, setShape] = useState<Widget["shape"]>(widget?.shape ?? "round");
@@ -50,6 +53,18 @@ export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
   const [mobileOffsetX, setMobileOffsetX] = useState(widget?.mobile_offset_x ?? 12);
   const [mobileOffsetY, setMobileOffsetY] = useState(widget?.mobile_offset_y ?? 12);
 
+  // Troca imediata quando o card do vídeo pede: o refresh do servidor
+  // confirma depois (e a key remonta o painel), mas o seletor já mostra
+  // o vídeo certo no instante do clique.
+  useEffect(() => {
+    function handle(e: Event) {
+      const id = (e as CustomEvent<string>).detail;
+      if (id) setVideoId(id);
+    }
+    window.addEventListener("fvw-set-widget-video", handle);
+    return () => window.removeEventListener("fvw-set-widget-video", handle);
+  }, []);
+
   // A lista de vídeos pode mudar (upload novo, exclusão) depois que este
   // componente já montou — sem isso, o formulário ficava "preso" num
   // vídeo que não existe mais e o salvamento quebrava com erro de FK.
@@ -64,6 +79,7 @@ export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSalvo(false);
 
     if (!videoId) {
       setError("Selecione um vídeo antes de salvar.");
@@ -133,6 +149,10 @@ export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
     }
 
     setSaving(false);
+    setSalvo(true);
+    // O aviso some sozinho: some depois de alguns segundos em vez de
+    // ficar preso na tela sugerindo que o estado atual foi salvo.
+    setTimeout(() => setSalvo(false), 4000);
     router.refresh();
   }
 
@@ -396,13 +416,24 @@ export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
         >
           {saving ? "Salvando..." : "Salvar widget"}
         </button>
+        {salvo && !error && (
+          <p
+            role="status"
+            className="rounded-md bg-emerald-50 px-3 py-2 text-center text-xs font-medium text-emerald-700"
+          >
+            Widget salvo — as mudanças já valem no site.
+          </p>
+        )}
         {error && <p className="text-xs text-red-600">{error}</p>}
       </form>
 
       {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar
           um campo lá embaixo sem enxergar o resultado era justamente o
           que tornava a edição às cegas. */}
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      {/* A prévia acompanha a rolagem; o código de instalação vem logo
+          abaixo dela, porque instalar é o passo seguinte natural de quem
+          acabou de configurar o widget. */}
+      <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
         <WidgetPreview
           video={videos.find((v) => v.id === videoId)}
           shape={shape}
@@ -412,6 +443,7 @@ export default function WidgetPanel({ projectId, videos, widget, cta }: Props) {
           offsetX={offsetX}
           offsetY={offsetY}
         />
+        <EmbedCodeBox embedKey={embedKey} />
       </div>
     </div>
   );
