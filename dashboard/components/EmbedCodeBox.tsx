@@ -65,6 +65,55 @@ export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
           Em qualquer outro ele simplesmente não carrega, sem erro visível.
         </p>
       </div>
+
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 text-xs text-neutral-600">
+        <p className="text-sm font-semibold text-neutral-700">
+          Medir conversões no Google Tag Manager
+        </p>
+        <p className="mt-1">
+          O widget empurra os eventos para o <code>dataLayer</code> da página.
+          Para contar o clique no WhatsApp como conversão, no GTM crie um
+          acionador de <strong>Evento personalizado</strong> com o nome:
+        </p>
+        <pre className="mt-2 overflow-x-auto rounded-md bg-brand-ink p-3 text-neutral-100">
+          <code>floatvideo_cta_click</code>
+        </pre>
+        <p className="mt-2">
+          e ligue nele a sua tag de conversão (Google Ads ou GA4). Não é
+          preciso mexer no site: o código de instalação acima já faz isso.
+        </p>
+
+        <p className="mt-3 font-medium text-neutral-700">Eventos disponíveis</p>
+        <ul className="mt-1 space-y-0.5">
+          <li><code>floatvideo_impression</code> — o balão apareceu</li>
+          <li><code>floatvideo_play</code> — o vídeo começou</li>
+          <li><code>floatvideo_expand</code> — clicaram para assistir</li>
+          <li><code>floatvideo_complete</code> — assistiram até o fim</li>
+          <li><code>floatvideo_cta_click</code> — clicaram no botão de ação</li>
+          <li><code>floatvideo_close</code> — fecharam o balão</li>
+        </ul>
+
+        <p className="mt-3 font-medium text-neutral-700">
+          Dados que acompanham cada evento
+        </p>
+        <p className="mt-1">
+          Ficam em <code>floatvideo</code> dentro do evento. Para usar no GTM,
+          crie uma <strong>Variável da camada de dados</strong> com o nome, por
+          exemplo, <code>floatvideo.cta_type</code>.
+        </p>
+        <ul className="mt-1 space-y-0.5">
+          <li><code>cta_type</code> — <code>whatsapp</code>, <code>link</code> ou <code>form</code></li>
+          <li><code>cta_label</code> — o texto do botão</li>
+          <li><code>cta_url</code> — o destino do clique</li>
+          <li><code>video</code> — qual vídeo estava tocando</li>
+          <li><code>page_url</code> e <code>widget_id</code></li>
+        </ul>
+        <p className="mt-2 text-neutral-500">
+          O que a pessoa digita num CTA de formulário{" "}
+          <strong>não</strong> vai para o dataLayer — ele é visível a qualquer
+          script da página. Esses dados ficam só no painel de Leads.
+        </p>
+      </div>
     </div>
   );
 }

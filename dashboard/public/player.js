@@ -416,7 +416,12 @@
           data[k] = v;
         });
         submitLead(config, data);
-        trackEvent(config, "cta_click");
+        // De proposito sem os campos preenchidos: o dataLayer e visivel
+        // pra qualquer script da pagina, entao dado de lead nao entra ai.
+        trackEvent(config, "cta_click", {
+          cta_type: "form",
+          cta_label: (config.cta && config.cta.label) || "",
+        });
       });
       return;
     }
@@ -424,7 +429,11 @@
     if (link) {
       link.addEventListener("click", function (e) {
         e.stopPropagation();
-        trackEvent(config, "cta_click");
+        trackEvent(config, "cta_click", {
+          cta_type: (config.cta && config.cta.type) || "link",
+          cta_label: (config.cta && config.cta.label) || "",
+          cta_url: link.href,
+        });
         // CTA de WhatsApp/link não tem formulário, mas o clique em si já
         // é um lead pro negócio (a pessoa demonstrou intenção de
         // contato) — sem isso, esse tipo de CTA nunca aparecia no
@@ -559,13 +568,47 @@
 
   // ---------- Analytics & Leads (via RPC pública do Supabase) ----------
 
-  function trackEvent(config, eventType) {
+  function trackEvent(config, eventType, extra) {
     rpc("record_widget_event", {
       p_widget_id: config.widget_id,
       p_event_type: eventType,
       p_page_url: location.href,
       p_session_id: getSessionId(),
     }).catch(function () {});
+
+    pushToDataLayer(config, eventType, extra);
+  }
+
+  // Empurra o evento pro dataLayer da pagina, que e por onde o Google Tag
+  // Manager escuta. Assim o cliente marca "clique no WhatsApp" como
+  // conversao no Google Ads / GA4 sem precisar de codigo extra no site:
+  // basta um gatilho de Evento personalizado no proprio GTM.
+  //
+  // Se nao houver GTM na pagina, o array so acumula e nada acontece — o
+  // dataLayer e um array comum, nao depende do GTM existir.
+  function pushToDataLayer(config, eventType, extra) {
+    try {
+      var dl = (global.dataLayer = global.dataLayer || []);
+      var payload = {
+        event: "floatvideo_" + eventType,
+        floatvideo: {
+          widget_id: config.widget_id,
+          page_url: location.href,
+          video:
+            config.video && config.video.source_type === "youtube"
+              ? "youtube:" + config.video.youtube_id
+              : "upload",
+        },
+      };
+      if (extra) {
+        for (var k in extra) {
+          if (Object.prototype.hasOwnProperty.call(extra, k)) {
+            payload.floatvideo[k] = extra[k];
+          }
+        }
+      }
+      dl.push(payload);
+    } catch (e) {}
   }
 
   function submitLead(config, data) {
