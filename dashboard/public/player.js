@@ -30,6 +30,12 @@
 
   var FVWPlayer = {
     boot: function (embedKey) {
+      // Atalho de teste: abrir a pagina com ?fvw_reset na URL apaga a
+      // supressao e traz o balao de volta. Sem isso, quem fecha o widget
+      // durante um teste precisa achar a chave no localStorage ou abrir
+      // uma janela anonima toda vez.
+      clearSuppression(embedKey);
+
       // Se a pessoa já fechou o balão nos últimos dias, não insiste —
       // evita irritar quem visita o site várias vezes.
       if (isSuppressed(embedKey)) return;
@@ -378,6 +384,13 @@
   function suppressForDays(embedKey, days) {
     try {
       localStorage.setItem("fvw_closed_" + embedKey, String(Date.now() + days * 86400000));
+    } catch (e) {}
+  }
+
+  function clearSuppression(embedKey) {
+    try {
+      if (location.search.indexOf("fvw_reset") === -1) return;
+      localStorage.removeItem("fvw_closed_" + embedKey);
     } catch (e) {}
   }
 

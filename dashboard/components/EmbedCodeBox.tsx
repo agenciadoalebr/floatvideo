@@ -54,8 +54,10 @@ export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
           <li>Abra o site numa janela anônima.</li>
           <li>Espere o tempo configurado em &quot;Aparece depois de&quot;.</li>
           <li>
-            Se você fechou o balão em algum teste, ele fica suprimido por 7 dias
-            naquele navegador — a janela anônima evita isso.
+            Se você fechou o balão em algum teste, ele fica suprimido por 7
+            dias <strong>naquele navegador</strong>. Para trazer de volta,
+            abra a página com <code>?fvw_reset</code> no fim da URL — ex.:{" "}
+            <code>seusite.com.br/?fvw_reset</code>.
           </li>
         </ol>
         <p className="mt-2">
