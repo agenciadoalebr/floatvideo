@@ -9,7 +9,8 @@ import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import ProjectTabs from "@/components/ProjectTabs";
 import ProjectDomainField from "@/components/ProjectDomainField";
-import type { Project, Video, Widget, WidgetCta, Lead } from "@/lib/types";
+import PageRules from "@/components/PageRules";
+import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
 export default async function ProjectPage({
   params,
@@ -43,6 +44,7 @@ export default async function ProjectPage({
     .maybeSingle<Widget>();
 
   let cta: WidgetCta | null = null;
+  let pageRules: PageRule[] = [];
   let leads: Lead[] = [];
   const eventCounts: Record<string, number> = {};
   const eventCountsByVideo: Record<string, Record<string, number>> = {};
@@ -57,6 +59,14 @@ export default async function ProjectPage({
       .limit(1)
       .maybeSingle<WidgetCta>();
     cta = data ?? null;
+
+    const { data: rulesData } = await supabase
+      .from("widget_page_rules")
+      .select("*")
+      .eq("widget_id", widget.id)
+      .order("created_at", { ascending: true })
+      .returns<PageRule[]>();
+    pageRules = rulesData ?? [];
 
     // Leads e métricas somam TODOS os widgets do projeto, não só o atual:
     // um projeto pode ter tido widgets anteriores (com outro vídeo), e os
@@ -158,6 +168,7 @@ export default async function ProjectPage({
             id: "widget",
             label: "Widget",
             content: (
+              <div className="space-y-6">
               <WidgetPanel
                 embedKey={project.embed_key}
                 // A key remonta o painel quando o vídeo do widget muda no
@@ -171,6 +182,15 @@ export default async function ProjectPage({
                 widget={widget}
                 cta={cta}
               />
+              {readyVideos.length > 1 && (
+                <PageRules
+                  widgetId={widget?.id ?? null}
+                  videos={videos ?? []}
+                  rules={pageRules}
+                  defaultVideoId={widget?.video_id ?? null}
+                />
+              )}
+              </div>
             ),
           },
           {

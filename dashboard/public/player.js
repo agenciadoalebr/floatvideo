@@ -34,7 +34,14 @@
       // evita irritar quem visita o site várias vezes.
       if (isSuppressed(embedKey)) return;
 
-      rpc("get_widget_config", { p_embed_key: embedKey, p_origin: location.origin })
+      // p_page_url deixa o servidor escolher o video pela regra de
+      // pagina. A escolha e feita la, e nao aqui, pra o mesmo criterio
+      // valer tambem no registro de evento e de lead.
+      rpc("get_widget_config", {
+        p_embed_key: embedKey,
+        p_origin: location.origin,
+        p_page_url: location.href,
+      })
         .then(function (res) {
           if (!res.ok) throw new Error("config indisponível");
           return res.json();

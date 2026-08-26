@@ -74,6 +74,15 @@ export type Lead = {
   created_at: string;
 };
 
+export type PageRule = {
+  id: string;
+  widget_id: string;
+  video_id: string;
+  match_type: "contains" | "exact";
+  pattern: string;
+  created_at: string;
+};
+
 export type WidgetCta = {
   id: string;
   widget_id: string;
