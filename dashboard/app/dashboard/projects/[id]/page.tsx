@@ -151,6 +151,12 @@ export default async function ProjectPage({
             label: "Widget",
             content: (
               <WidgetPanel
+                // A key remonta o painel quando o vídeo do widget muda no
+                // servidor. É necessária porque as abas ficam montadas: sem
+                // ela, clicar "Editar widget" no card de um vídeo atualizava
+                // o banco mas o seletor continuava exibindo o vídeo anterior,
+                // já que o estado inicial só é lido na primeira montagem.
+                key={widget?.video_id ?? "sem-widget"}
                 projectId={project.id}
                 videos={videos ?? []}
                 widget={widget}
