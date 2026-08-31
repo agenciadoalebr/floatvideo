@@ -47,6 +47,8 @@ export type Widget = {
   muted_start: boolean;
   delay_seconds: number;
   is_active: boolean;
+  notify_webhook_url: string | null;
+  notify_email: string | null;
   created_at: string;
 };
 
@@ -86,10 +88,19 @@ export type PageRule = {
   created_at: string;
 };
 
+export type CtaType =
+  | "whatsapp"
+  | "whatsapp_form"
+  | "form"
+  | "buy"
+  | "none"
+  /** Legado: projetos antigos podem ter isso gravado. */
+  | "link";
+
 export type WidgetCta = {
   id: string;
   widget_id: string;
-  type: "link" | "whatsapp" | "form";
+  type: CtaType;
   label: string;
   target_url: string | null;
   form_fields: { name: string; label: string; type: string; required: boolean }[] | null;

@@ -195,21 +195,51 @@
     wrapper.style.setProperty("--fvw-iframe-top", 50 + (50 - fy) * ZOOM + "%");
   }
 
+  // Os campos de cada formulario sao fixos, definidos aqui e nao no
+  // banco: sao dois formatos com proposito claro, e deixar a lista
+  // configuravel so adicionaria uma tela de montagem de formulario que
+  // ninguem pediu.
+  var CAMPOS = {
+    whatsapp_form: [
+      { name: "Nome", type: "text", required: true },
+      { name: "Telefone", type: "tel", required: true },
+    ],
+    form: [
+      { name: "Nome", type: "text", required: true },
+      { name: "Telefone", type: "tel", required: true },
+      { name: "E-mail", type: "email", required: true },
+      { name: "Assunto", type: "text", required: false },
+      { name: "Mensagem", type: "textarea", required: false },
+    ],
+  };
+
   function buildCTAMarkup(cta) {
-    if (cta.type === "form") {
-      var fields = (cta.form_fields || [])
+    if (cta.type === "none") return "";
+
+    var campos = CAMPOS[cta.type];
+    if (campos) {
+      var html = campos
         .map(function (f) {
+          var req = f.required ? "required" : "";
+          if (f.type === "textarea") {
+            return (
+              '<textarea class="fvw-input" name="' + f.name +
+              '" rows="2" placeholder="' + f.name + '" ' + req + "></textarea>"
+            );
+          }
           return (
-            '<input class="fvw-input" name="' + f.name + '" type="' + (f.type || "text") +
-            '" placeholder="' + f.label + '" ' + (f.required ? "required" : "") + " />"
+            '<input class="fvw-input" name="' + f.name +
+            '" type="' + f.type + '" placeholder="' + f.name + '" ' + req + " />"
           );
         })
         .join("");
       return (
-        '<form class="fvw-cta fvw-cta-form">' + fields +
-        '<button type="submit" class="fvw-cta-btn">' + escapeHtml(cta.label) + "</button></form>"
+        '<form class="fvw-cta fvw-cta-form">' + html +
+        '<button type="submit" class="fvw-cta-btn">' + escapeHtml(cta.label) +
+        "</button></form>"
       );
     }
+
     return (
       '<div class="fvw-cta"><a class="fvw-cta-btn" href="' + escapeAttr(cta.target_url) +
       '" target="_blank" rel="noopener noreferrer">' + escapeHtml(cta.label) + "</a></div>"
@@ -470,13 +500,35 @@
         new FormData(form).forEach(function (v, k) {
           data[k] = v;
         });
+
         submitLead(config, data);
         // De proposito sem os campos preenchidos: o dataLayer e visivel
         // pra qualquer script da pagina, entao dado de lead nao entra ai.
         trackEvent(config, "cta_click", {
-          cta_type: "form",
-          cta_label: (config.cta && config.cta.label) || "",
+          cta_type: config.cta.type,
+          cta_label: config.cta.label || "",
         });
+
+        // No formulario de WhatsApp o envio e so a primeira metade: a
+        // pessoa espera cair na conversa. Abre o WhatsApp ja com o nome
+        // dela na mensagem, pra quem atende saber quem chegou.
+        if (config.cta.type === "whatsapp_form" && config.cta.target_url) {
+          var texto = data["Nome"]
+            ? "Olá! Meu nome é " + data["Nome"] + "."
+            : "Olá!";
+          var url =
+            config.cta.target_url +
+            (config.cta.target_url.indexOf("?") === -1 ? "?" : "&") +
+            "text=" +
+            encodeURIComponent(texto);
+          // Aberto no mesmo gesto do envio: em popup bloqueado o
+          // navegador barraria uma janela nova sem interacao direta.
+          window.open(url, "_blank", "noopener");
+          mostrarAgradecimento(form, "Redirecionando pro WhatsApp...");
+          return;
+        }
+
+        mostrarAgradecimento(form, "Recebemos seu contato. Já retornamos!");
       });
       return;
     }
@@ -499,6 +551,16 @@
         });
       });
     }
+  }
+
+  // Troca o formulario por uma confirmacao. Sem isso a pessoa envia e a
+  // tela nao muda, entao ela envia de novo — e o limite anti-spam da RPC
+  // descarta o segundo envio em silencio.
+  function mostrarAgradecimento(form, mensagem) {
+    var aviso = document.createElement("p");
+    aviso.className = "fvw-obrigado";
+    aviso.textContent = mensagem;
+    form.parentNode.replaceChild(aviso, form);
   }
 
   // ---------- Vídeo próprio (self-hosted, servido via CDN do Supabase Storage) ----------

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Video, Widget, WidgetCta, PageRule } from "@/lib/types";
+import type { Video, Widget, WidgetCta, PageRule, CtaType } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import WidgetPreview from "@/components/WidgetPreview";
 import PageRules from "@/components/PageRules";
@@ -18,6 +18,19 @@ type Props = {
 };
 
 const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "ready");
+
+/** Tipos que levam a algum lugar e portanto precisam de destino. */
+const PRECISA_DESTINO: CtaType[] = ["whatsapp", "whatsapp_form", "link", "buy"];
+
+const AJUDA_CTA: Record<CtaType, string> = {
+  whatsapp: "Um botão que abre a conversa no WhatsApp direto.",
+  whatsapp_form:
+    "Pede nome e telefone e só então manda pro WhatsApp — o contato fica registrado mesmo se a pessoa desistir no meio.",
+  form: "Formulário completo. O lead fica no painel; não abre o WhatsApp.",
+  buy: "Em breve.",
+  none: "O vídeo aparece sem nenhum botão.",
+  link: "Link livre (formato antigo).",
+};
 
 export default function WidgetPanel({ projectId, videos, widget, cta, pageRules }: Props) {
   const router = useRouter();
@@ -44,11 +57,11 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
   const [delaySeconds, setDelaySeconds] = useState(widget?.delay_seconds ?? 3);
   const [isActive, setIsActive] = useState(widget?.is_active ?? true);
 
-  const [ctaType, setCtaType] = useState<"link" | "whatsapp">(
-    (cta?.type as "link" | "whatsapp") ?? "whatsapp"
-  );
+  const [ctaType, setCtaType] = useState<CtaType>(cta?.type ?? "whatsapp");
   const [ctaLabel, setCtaLabel] = useState(cta?.label ?? "Fale no WhatsApp");
   const [ctaUrl, setCtaUrl] = useState(cta?.target_url ?? "");
+  const [notifyEmail, setNotifyEmail] = useState(widget?.notify_email ?? "");
+  const [notifyWebhook, setNotifyWebhook] = useState(widget?.notify_webhook_url ?? "");
 
   const [customMobile, setCustomMobile] = useState(
     !!(widget?.mobile_size || widget?.mobile_position || widget?.mobile_offset_x || widget?.mobile_offset_y)
@@ -113,6 +126,8 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
       muted_start: true,
       delay_seconds: delaySeconds,
       is_active: isActive,
+      notify_email: notifyEmail.trim() || null,
+      notify_webhook_url: notifyWebhook.trim() || null,
     };
 
     let widgetId = widget?.id;
@@ -141,17 +156,33 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
       widgetId = created.id;
     }
 
-    if (ctaUrl) {
+    // "Sem botão" precisa apagar o CTA existente, senão o widget
+    // continuaria exibindo o botão antigo.
+    if (ctaType === "none") {
+      if (cta) {
+        await supabase.from("widget_ctas").delete().eq("id", cta.id);
+      }
+    } else if (!PRECISA_DESTINO.includes(ctaType) || ctaUrl) {
+      const ehWhats = ctaType === "whatsapp" || ctaType === "whatsapp_form";
       const ctaPayload = {
         widget_id: widgetId,
         type: ctaType,
         label: ctaLabel,
-        target_url: ctaType === "whatsapp" ? toWhatsAppLink(ctaUrl) : ctaUrl,
+        // Formulário completo não leva a lugar nenhum: o lead fica no
+        // painel. A regra do banco exige target_url só nos que levam.
+        target_url: PRECISA_DESTINO.includes(ctaType)
+          ? ehWhats
+            ? toWhatsAppLink(ctaUrl)
+            : ctaUrl
+          : null,
       };
-      if (cta) {
-        await supabase.from("widget_ctas").update(ctaPayload).eq("id", cta.id);
-      } else {
-        await supabase.from("widget_ctas").insert(ctaPayload);
+      const { error: ctaError } = cta
+        ? await supabase.from("widget_ctas").update(ctaPayload).eq("id", cta.id)
+        : await supabase.from("widget_ctas").insert(ctaPayload);
+      if (ctaError) {
+        setError(ctaError.message);
+        setSaving(false);
+        return;
       }
     }
 
@@ -411,33 +442,82 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
         <Bloco titulo="Botão de ação">
         <div>
           <label className="block text-xs font-medium text-neutral-600">
-            Botão de ação (CTA) — só aparece quando o vídeo é expandido
+            O que aparece no fim do vídeo
           </label>
-          <div className="mt-1 grid grid-cols-2 gap-2">
-            <select
-              value={ctaType}
-              onChange={(e) => setCtaType(e.target.value as "link" | "whatsapp")}
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            >
-              <option value="whatsapp">WhatsApp</option>
-              <option value="link">Link (ex: comprar)</option>
-            </select>
-            <input
-              value={ctaLabel}
-              onChange={(e) => setCtaLabel(e.target.value)}
-              placeholder="Texto do botão"
-              className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            />
-          </div>
+          <select
+            value={ctaType}
+            onChange={(e) => setCtaType(e.target.value as CtaType)}
+            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value="whatsapp">Clique de WhatsApp</option>
+            <option value="whatsapp_form">
+              Formulário de WhatsApp (nome e telefone)
+            </option>
+            <option value="form">
+              Formulário completo (nome, telefone, e-mail, assunto, mensagem)
+            </option>
+            <option value="buy" disabled>
+              Botão Comprar — em breve
+            </option>
+            <option value="none">Sem botão de ação</option>
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">{AJUDA_CTA[ctaType]}</p>
+        </div>
+
+        {ctaType !== "none" && ctaType !== "buy" && (
+          <input
+            value={ctaLabel}
+            onChange={(e) => setCtaLabel(e.target.value)}
+            placeholder="Texto do botão"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          />
+        )}
+
+        {PRECISA_DESTINO.includes(ctaType) && (
           <input
             value={ctaUrl}
             onChange={(e) => setCtaUrl(e.target.value)}
             placeholder={
-              ctaType === "whatsapp" ? "Número: 5511999999999" : "https://..."
+              ctaType === "whatsapp" || ctaType === "whatsapp_form"
+                ? "Número com DDI: 5511999999999"
+                : "https://..."
             }
-            className="mt-2 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
-        </div>
+        )}
+
+        {/* Notificação só faz sentido onde existe lead pra avisar. */}
+        {ctaType !== "none" && ctaType !== "buy" && (
+          <div className="space-y-2 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs font-medium text-neutral-700">
+              Avisar quando chegar um lead
+            </p>
+            <label className="block">
+              <span className="text-xs text-neutral-600">E-mail (opcional)</span>
+              <input
+                type="email"
+                value={notifyEmail}
+                onChange={(e) => setNotifyEmail(e.target.value)}
+                placeholder="voce@agenciadoale.com.br"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-neutral-600">Webhook (opcional)</span>
+              <input
+                type="url"
+                value={notifyWebhook}
+                onChange={(e) => setNotifyWebhook(e.target.value)}
+                placeholder="https://hook.make.com/..."
+                className="mt-1 w-full rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
+              />
+            </label>
+            <p className="text-xs text-neutral-400">
+              O webhook recebe um POST com os dados do lead — dá pra ligar no
+              Make, Zapier, n8n ou no CRM do cliente.
+            </p>
+          </div>
+        )}
 
         </Bloco>
 

@@ -344,11 +344,30 @@
   cursor: pointer;
 }
 
-.fvw-input {
+.fvw-obrigado {
+  margin: 0;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
+
+/* textarea entra na mesma aparencia dos inputs */
+.fvw-input,
+textarea.fvw-input {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 10px;
   border-radius: 6px;
   border: none;
   font-size: 13px;
+  font-family: inherit;
+  resize: none;
 }
