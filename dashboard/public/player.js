@@ -605,10 +605,16 @@
         events: {
           onReady: function (e) {
             el._ytPlayer = e.target;
+            insistirEmDesligarLegendas(e.target);
             e.target.playVideo();
           },
           onStateChange: function (e) {
-            if (e.data === YT.PlayerState.PLAYING) maybeTrackPlay(el, config);
+            if (e.data === YT.PlayerState.PLAYING) {
+              // O modulo de legenda so existe depois que o video comeca,
+              // entao desligar no onReady sozinho nao basta.
+              insistirEmDesligarLegendas(e.target);
+              maybeTrackPlay(el, config);
+            }
             if (e.data === YT.PlayerState.ENDED) trackEvent(config, "complete");
             // Enquanto recolhido (balão), o vídeo nunca deve ficar
             // parado — se pausar por qualquer motivo (autoplay
@@ -621,6 +627,41 @@
           },
         },
       });
+    });
+  }
+
+  // Desliga a legenda do YouTube.
+  //
+  // "cc_load_policy: 0" nos playerVars nao resolve sozinho: ele apenas
+  // deixa de FORCAR a legenda, e o YouTube continua ligando por conta
+  // propria conforme a preferencia de quem assiste — inclusive a legenda
+  // gerada automaticamente (kind "asr").
+  //
+  // Duas abordagens porque nenhuma e confiavel sozinha: setOption limpa
+  // a trilha ativa e unloadModule tira o modulo inteiro. Os nomes
+  // "captions" e "cc" mudam conforme a versao do player, e chamar o que
+  // nao existe e inofensivo.
+  function desligarLegendas(player) {
+    if (!player) return;
+    ["captions", "cc"].forEach(function (modulo) {
+      try {
+        player.setOption(modulo, "track", {});
+      } catch (e) {}
+      try {
+        player.unloadModule(modulo);
+      } catch (e) {}
+    });
+  }
+
+  // O modulo de legenda nao existe no onReady e nem sempre esta pronto
+  // quando o video comeca: ele aparece em algum momento dos primeiros
+  // segundos, e o instante varia com a rede. Em vez de apostar num
+  // unico momento, insiste algumas vezes e para.
+  function insistirEmDesligarLegendas(player) {
+    [0, 400, 1000, 2000, 4000].forEach(function (espera) {
+      setTimeout(function () {
+        desligarLegendas(player);
+      }, espera);
     });
   }
 
