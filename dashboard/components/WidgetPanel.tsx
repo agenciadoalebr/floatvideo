@@ -7,6 +7,7 @@ import type { Video, Widget, WidgetCta, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import WidgetPreview from "@/components/WidgetPreview";
 import PageRules from "@/components/PageRules";
+import VideoFraming from "@/components/VideoFraming";
 
 type Props = {
   projectId: string;
@@ -25,6 +26,12 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
   const [salvo, setSalvo] = useState(false);
 
   const [videoId, setVideoId] = useState(widget?.video_id ?? readyVideos(videos)[0]?.id ?? "");
+
+  // Enquadramento do vídeo selecionado. Mora aqui, e não dentro do
+  // controle, pra prévia acompanhar o arraste ao vivo.
+  const videoAtual = videos.find((v) => v.id === videoId);
+  const [focalX, setFocalX] = useState(videoAtual?.focal_x ?? 50);
+  const [focalY, setFocalY] = useState(videoAtual?.focal_y ?? 50);
   const [shape, setShape] = useState<Widget["shape"]>(widget?.shape ?? "round");
   const [size, setSize] = useState<Widget["size"]>(widget?.size ?? "md");
   const [position, setPosition] = useState<Widget["position"]>(
@@ -185,6 +192,18 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
             ))}
           </select>
         </div>
+
+        {videoId && (
+          <VideoFraming
+            videoId={videoId}
+            focalX={focalX}
+            focalY={focalY}
+            onChange={(x, y) => {
+              setFocalX(x);
+              setFocalY(y);
+            }}
+          />
+        )}
 
         {/* A regra pertence ao video, entao mora logo abaixo de onde ele e
             escolhido. So aparece com mais de um video: com um so, ele e o
@@ -447,7 +466,9 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
           edição às cegas. */}
       <div className="lg:sticky lg:top-4 lg:self-start">
         <WidgetPreview
-          video={videos.find((v) => v.id === videoId)}
+          video={videoAtual}
+          focalX={focalX}
+          focalY={focalY}
           shape={shape}
           size={size}
           position={position}

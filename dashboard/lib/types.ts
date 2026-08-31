@@ -22,6 +22,9 @@ export type Video = {
   duration_seconds: number | null;
   status: VideoStatus;
   error_message: string | null;
+  /** Enquadramento dentro do balão, 0..100 em cada eixo (50/50 = centro). */
+  focal_x: number;
+  focal_y: number;
   created_at: string;
 };
 

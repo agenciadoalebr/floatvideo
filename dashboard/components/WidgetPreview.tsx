@@ -11,6 +11,8 @@ type Props = {
   borderColor: string;
   offsetX: number;
   offsetY: number;
+  focalX: number;
+  focalY: number;
 };
 
 /**
@@ -27,6 +29,8 @@ export default function WidgetPreview({
   borderColor,
   offsetX,
   offsetY,
+  focalX,
+  focalY,
 }: Props) {
   // Todas as regras são prefixadas com .fvw-, então carregar a folha de
   // estilo do widget dentro do painel não afeta o resto da interface.
@@ -76,6 +80,12 @@ export default function WidgetPreview({
                 "--fvw-border-color": borderColor,
                 "--fvw-offset-x": `${offsetX}px`,
                 "--fvw-offset-y": `${offsetY}px`,
+                // Mesmo cálculo do player: o iframe do YouTube está a
+                // 300%, então andar 1% do vídeo é andar 3% do balão.
+                "--fvw-focal-x": `${focalX}%`,
+                "--fvw-focal-y": `${focalY}%`,
+                "--fvw-iframe-left": `${50 + (50 - focalX) * 3}%`,
+                "--fvw-iframe-top": `${50 + (50 - focalY) * 3}%`,
               } as React.CSSProperties
             }
           >

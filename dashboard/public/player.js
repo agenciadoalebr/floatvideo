@@ -15,6 +15,10 @@
   var SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobGJsc2x6dXl1Ymh1dHp5cGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMjI0MDEsImV4cCI6MjEwMjg5ODQwMX0.4x1jByYqrXG-KXkQo3SvAhIzgYpvTOPuS_KNHDz2-wk";
   var YT_API_SRC = "https://www.youtube.com/iframe_api";
+  // Precisa casar com o width/height do iframe recolhido no
+  // fvw-styles.css (300%): e o fator que converte "andar 1% do video"
+  // em "andar N% da altura do balao".
+  var ZOOM = 3;
 
   function rpc(name, body) {
     return fetch(SUPABASE_URL + "/rest/v1/rpc/" + name, {
@@ -148,6 +152,7 @@
     wrapper.style.setProperty("--fvw-border-color", config.border_color || "#000");
     wrapper.style.setProperty("--fvw-offset-x", layout.offsetX + "px");
     wrapper.style.setProperty("--fvw-offset-y", layout.offsetY + "px");
+    applyFocalPoint(wrapper, config.video);
 
     wrapper.innerHTML =
       '<button class="fvw-close" aria-label="Fechar vídeo">&times;</button>' +
@@ -166,6 +171,24 @@
       "</div>";
 
     return wrapper;
+  }
+
+  // Enquadramento do video dentro do balao.
+  //
+  // Video proprio: "object-position" resolve direto, porque o corte e
+  // feito pelo object-fit: cover.
+  //
+  // YouTube: o iframe e esticado a 300% e centralizado pra esconder o
+  // letterbox do proprio player. Deslocar o ponto focal ali exige levar
+  // em conta essa ampliacao — mover 1% do video equivale a 3% da altura
+  // do balao. Sem esse fator, o ajuste pareceria nao fazer quase nada.
+  function applyFocalPoint(wrapper, video) {
+    var fx = video && video.focal_x != null ? Number(video.focal_x) : 50;
+    var fy = video && video.focal_y != null ? Number(video.focal_y) : 50;
+    wrapper.style.setProperty("--fvw-focal-x", fx + "%");
+    wrapper.style.setProperty("--fvw-focal-y", fy + "%");
+    wrapper.style.setProperty("--fvw-iframe-left", 50 + (50 - fx) * ZOOM + "%");
+    wrapper.style.setProperty("--fvw-iframe-top", 50 + (50 - fy) * ZOOM + "%");
   }
 
   function buildCTAMarkup(cta) {

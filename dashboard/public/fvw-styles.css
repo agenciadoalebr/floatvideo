@@ -112,6 +112,12 @@
   border: 0;
 }
 
+/* Enquadramento do video proprio dentro do recorte. Vale nos dois
+   estados: mesmo expandido o balao e vertical e o video e cortado. */
+.fvw-video {
+  object-position: var(--fvw-focal-x, 50%) var(--fvw-focal-y, 50%);
+}
+
 .fvw-media-slot {
   position: relative;
   cursor: pointer;
@@ -144,8 +150,10 @@
    regra normal do nosso CSS externo. */
 .fvw-wrapper:not(.fvw-expanded) .fvw-media-slot iframe {
   position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
+  /* Ponto focal: sem ajuste vale 50%/50% (centro), que era o unico
+     comportamento antes. Ver applyFocalPoint no player.js. */
+  top: var(--fvw-iframe-top, 50%) !important;
+  left: var(--fvw-iframe-left, 50%) !important;
   width: 300% !important;
   height: 300% !important;
   max-width: none !important;
