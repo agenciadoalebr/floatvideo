@@ -205,10 +205,11 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
           />
         )}
 
-        {/* A regra pertence ao video, entao mora logo abaixo de onde ele e
-            escolhido. So aparece com mais de um video: com um so, ele e o
-            padrao e cobre o site inteiro. */}
-        {readyVideos(videos).length > 1 && videoId && (
+        {/* A regra pertence ao video, entao mora logo abaixo de onde ele
+            e escolhido. Vale desde o primeiro video: com um so, a regra
+            deixa de servir pra escolher entre videos e passa a limitar em
+            quais paginas o widget aparece. */}
+        {videoId && (
           <PageRules
             widgetId={widget?.id ?? null}
             videoId={videoId}

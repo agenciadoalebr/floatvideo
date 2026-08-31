@@ -74,7 +74,9 @@ export default function PageRules({ widgetId, videoId, rules, ehPadrao }: Props)
       </p>
       <p className="mt-0.5 text-xs text-neutral-500">
         {ehPadrao
-          ? "Este é o vídeo padrão: aparece em todas as páginas que não tiverem regra de outro vídeo."
+          ? minhas.length === 0
+            ? "Este é o vídeo padrão: sem regra, aparece em todas as páginas do site."
+            : "Com regra, o vídeo padrão fica restrito a ela — nas demais páginas o widget não aparece."
           : minhas.length === 0
             ? "Sem regra, este vídeo não aparece em página nenhuma — o padrão é usado."
             : "Este vídeo aparece só nas páginas abaixo."}
