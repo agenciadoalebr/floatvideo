@@ -98,7 +98,7 @@ export default function WidgetPreview({
                   // key força recriar o iframe ao trocar de vídeo — sem
                   // isso o YouTube às vezes mantém o vídeo anterior.
                   key={video.youtube_id}
-                  src={`https://www.youtube.com/embed/${video.youtube_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.youtube_id}&playsinline=1&modestbranding=1&rel=0`}
+                  src={`https://www.youtube.com/embed/${video.youtube_id}?autoplay=1&mute=1&controls=0&loop=1&playlist=${video.youtube_id}&playsinline=1&modestbranding=1&rel=0&cc_load_policy=0`}
                   allow="autoplay; encrypted-media"
                   title="Prévia do vídeo"
                 />

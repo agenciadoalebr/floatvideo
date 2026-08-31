@@ -156,9 +156,13 @@
 
     wrapper.innerHTML =
       '<button class="fvw-close" aria-label="Fechar vídeo">&times;</button>' +
-      '<button class="fvw-restart" aria-label="Ver do início">↺</button>' +
-      '<button class="fvw-mute" aria-label="Ativar som">🔇</button>' +
+      // Os tres controles do video ficam juntos numa barra so; o fechar
+      // segue separado, como badge na borda do balao.
+      '<div class="fvw-controls">' +
       '<button class="fvw-play" aria-label="Pausar">❚❚</button>' +
+      '<button class="fvw-mute" aria-label="Ativar som">🔇</button>' +
+      '<button class="fvw-restart" aria-label="Ver do início">↺</button>' +
+      "</div>" +
       // Barra de progresso e CTA ficam DENTRO do .fvw-media-slot de
       // proposito: e ele que recorta no formato do balao. Como irmaos do
       // slot, encostados nas bordas, os cantos retos deles escapavam por
@@ -583,6 +587,9 @@
           rel: 0,
           playsinline: 1,
           iv_load_policy: 3,
+          // Nao ligar a legenda automatica: os videos ja costumam ter
+          // legenda embutida, e a do YouTube entrava por cima, dobrada.
+          cc_load_policy: 0,
           // Loop de vídeo único no player do YouTube só funciona com
           // "playlist" apontando pro próprio vídeo — começa em loop
           // (balão recolhido) e setLoop(false) desliga isso ao expandir.

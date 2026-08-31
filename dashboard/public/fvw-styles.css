@@ -186,30 +186,7 @@
   pointer-events: none !important;
 }
 
-/* Play/pause proprio — substitui o controle nativo do YouTube, que fica
-   inacessivel de proposito (ver regra acima). */
-.fvw-play {
-  display: none;
-  position: absolute;
-  top: 6px;
-  left: 40px;
-  z-index: 3;
-  width: 28px;
-  height: 28px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-}
 
-.fvw-wrapper.fvw-expanded .fvw-play {
-  display: flex;
-}
 
 /* Anel interno na cor da borda, por cima do video. O fundo preto do
    proprio player do YouTube encosta na curva do recorte circular e vaza
@@ -266,54 +243,48 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-/* Botão de som — só aparece quando o vídeo está expandido, já que ele
-   sempre inicia mudo (exigência dos navegadores pra permitir autoplay) e
-   passa a tocar com som automaticamente ao expandir. */
-.fvw-mute {
+
+
+
+
+/* Os tres controles do video moram numa barra so, encostados no canto
+   superior esquerdo. Antes cada um tinha posicao propria (um a
+   esquerda, outro no meio, o terceiro colado no botao de fechar) e o
+   resultado parecia tres botoes soltos em vez de um grupo. */
+.fvw-controls {
   display: none;
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 14px;
+  left: 10px;
   z-index: 3;
-  width: 28px;
-  height: 28px;
+  gap: 6px;
   align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
 }
 
-.fvw-wrapper.fvw-expanded .fvw-mute {
+.fvw-wrapper.fvw-expanded .fvw-controls {
   display: flex;
 }
 
-/* Botão de reiniciar — mesma lógica do mute: só faz sentido quando o
-   vídeo já está expandido e tocando. */
-.fvw-restart {
-  display: none;
-  position: absolute;
-  top: 6px;
-  right: 44px;
-  z-index: 3;
-  width: 28px;
-  height: 28px;
+/* Aparencia comum aos tres — o que muda entre eles e so o simbolo. */
+.fvw-controls button {
+  width: 30px;
+  height: 30px;
+  display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
   border: none;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1;
   cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease;
 }
 
-.fvw-wrapper.fvw-expanded .fvw-restart {
-  display: flex;
+.fvw-controls button:hover {
+  background: rgba(0, 0, 0, 0.75);
 }
 
 /* Barra de andamento do vídeo — fica encostada no topo do player
