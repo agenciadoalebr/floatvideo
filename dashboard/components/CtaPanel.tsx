@@ -179,7 +179,10 @@ export default function CtaPanel({ widget, cta }: Props) {
   }
 
   return (
-    <form onSubmit={salvar} className="max-w-2xl space-y-4">
+    // Mesmo desenho da aba Widget: o que se edita fica à esquerda e a
+    // prévia acompanha à direita, parada na tela enquanto se rola.
+    <form onSubmit={salvar} className="grid gap-6 lg:grid-cols-2">
+      <div className="space-y-4">
       <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
         <div>
           <h3 className="text-sm font-semibold text-neutral-700">Botão de ação</h3>
@@ -365,16 +368,6 @@ export default function CtaPanel({ widget, cta }: Props) {
         )}
       </div>
 
-      {tipo !== "none" && (
-        <CtaPreview
-          tipo={tipo}
-          estilo={estilo}
-          rotulo={rotulo}
-          subRotulo={estilo === "card" ? subRotulo : ""}
-          cor={cor}
-        />
-      )}
-
       {/* Aviso só existe onde alguém deixou dados esperando retorno. No
           clique direto a pessoa já caiu na conversa. */}
       {ehFormulario && (
@@ -430,6 +423,23 @@ export default function CtaPanel({ widget, cta }: Props) {
         )}
       </div>
       {erro && <p className="text-xs text-red-600">{erro}</p>}
+      </div>
+
+      <div className="lg:sticky lg:top-4 lg:self-start">
+        {tipo !== "none" ? (
+          <CtaPreview
+            tipo={tipo}
+            estilo={estilo}
+            rotulo={rotulo}
+            subRotulo={estilo === "card" ? subRotulo : ""}
+            cor={cor}
+          />
+        ) : (
+          <p className="rounded-lg border border-neutral-200 bg-white p-5 text-sm text-neutral-500">
+            Sem botão de ação: o vídeo aparece sozinho, sem nada por cima.
+          </p>
+        )}
+      </div>
     </form>
   );
 }
