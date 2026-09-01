@@ -355,6 +355,23 @@ export default function AnalyticsSettings({ widget }: Props) {
             <code className="rounded bg-neutral-100 px-1">dataLayer</code> no
             console do navegador na página do cliente.
           </p>
+
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs text-neutral-600">
+              <strong>Se o GA4 ficar poluído:</strong> a impressão dispara em
+              toda página onde o balão aparece, então é o evento mais frequente
+              de longe. Para deixá-la de fora, troque o nome do evento no
+              acionador por{" "}
+              <code className="block break-all rounded bg-neutral-100 px-1 py-0.5">
+                floatvideo_(expand|play|progress_3s|progress_25|progress_50|progress_75|complete|cta_click|close)
+              </code>
+            </p>
+            <p className="mt-2 text-xs text-neutral-500">
+              Lembre que essa lista é fixa: evento novo que criarmos aqui não
+              entra no GA4 até ser acrescentado nela. As métricas deste painel
+              não mudam — nelas a impressão é o denominador de tudo.
+            </p>
+          </div>
         </div>
       </div>
 
