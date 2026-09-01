@@ -147,6 +147,7 @@ export default async function ProjectPage({
                   videos={videos ?? []}
                   projectId={project.id}
                   widget={widget}
+                  pageRules={pageRules}
                 />
               ) : (
                 <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
@@ -179,7 +180,6 @@ export default async function ProjectPage({
                 projectId={project.id}
                 videos={videos ?? []}
                 widget={widget}
-                pageRules={pageRules}
               />
             ),
           },

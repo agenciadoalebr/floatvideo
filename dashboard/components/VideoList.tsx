@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Video, Widget } from "@/lib/types";
+import type { Video, Widget, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
+import PageRules from "@/components/PageRules";
 
 const statusLabel: Record<Video["status"], string> = {
   processing: "Processando...",
@@ -22,13 +23,16 @@ type Props = {
   videos: Video[];
   projectId: string;
   widget: Widget | null;
+  pageRules: PageRule[];
 };
 
-export default function VideoList({ videos, projectId, widget }: Props) {
+export default function VideoList({ videos, projectId, widget, pageRules }: Props) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Qual card está com as regras de página abertas. Um por vez: dois
+  // cards abertos lado a lado deixariam a lista alta e confusa.
+  const [regrasAbertas, setRegrasAbertas] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
 
   function startRename(video: Video) {
@@ -66,34 +70,6 @@ export default function VideoList({ videos, projectId, widget }: Props) {
     await supabase.from("videos").delete().eq("id", video.id);
 
     setDeletingId(null);
-    router.refresh();
-  }
-
-  // "Editar" usa este vídeo no widget do projeto (cria o widget se ainda
-  // não existir) e leva direto pra seção de configuração — atalho pra
-  // editar o widget de um vídeo já carregado sem precisar rolar a tela
-  // e escolher no seletor manualmente.
-  async function handleEdit(video: Video) {
-    setEditingId(video.id);
-    const supabase = createClient();
-
-    if (widget) {
-      await supabase.from("widgets").update({ video_id: video.id }).eq("id", widget.id);
-    } else {
-      await supabase.from("widgets").insert({
-        project_id: projectId,
-        video_id: video.id,
-      });
-    }
-
-    setEditingId(null);
-    // Avisa o painel na hora qual vídeo foi escolhido. O router.refresh()
-    // leva uns segundos pra voltar do servidor, e sem esse aviso o
-    // seletor ficava exibindo o vídeo anterior nesse intervalo.
-    window.dispatchEvent(
-      new CustomEvent("fvw-set-widget-video", { detail: video.id })
-    );
-    window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "widget" }));
     router.refresh();
   }
 
@@ -178,11 +154,18 @@ export default function VideoList({ videos, projectId, widget }: Props) {
           </div>
           <div className="grid grid-cols-3 border-t border-neutral-100">
             <button
-              onClick={() => handleEdit(video)}
-              disabled={video.status !== "ready" || editingId === video.id}
-              className="border-r border-neutral-100 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+              type="button"
+              onClick={() =>
+                setRegrasAbertas(regrasAbertas === video.id ? null : video.id)
+              }
+              aria-expanded={regrasAbertas === video.id}
+              className={`border-r border-neutral-100 py-1.5 text-xs hover:bg-neutral-50 ${
+                regrasAbertas === video.id
+                  ? "font-medium text-brand-blue"
+                  : "text-neutral-700"
+              }`}
             >
-              {editingId === video.id ? "Aplicando..." : "Editar widget"}
+              Onde aparece?
             </button>
             <button
               onClick={() => handleSeeMetrics(video)}
@@ -198,6 +181,18 @@ export default function VideoList({ videos, projectId, widget }: Props) {
               {deletingId === video.id ? "Excluindo..." : "Excluir vídeo"}
             </button>
           </div>
+
+          {/* As regras pertencem ao vídeo, então moram no card dele. */}
+          {regrasAbertas === video.id && (
+            <div className="border-t border-neutral-100 p-2">
+              <PageRules
+                widgetId={widget?.id ?? null}
+                videoId={video.id}
+                rules={pageRules}
+                ehPadrao={widget?.video_id === video.id}
+              />
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -3,23 +3,21 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Video, Widget, PageRule } from "@/lib/types";
+import type { Video, Widget } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import WidgetPreview from "@/components/WidgetPreview";
-import PageRules from "@/components/PageRules";
 import VideoFraming from "@/components/VideoFraming";
 
 type Props = {
   projectId: string;
   videos: Video[];
   widget: Widget | null;
-  pageRules: PageRule[];
 };
 
 const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "ready");
 
 
-export default function WidgetPanel({ projectId, videos, widget, pageRules }: Props) {
+export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -188,18 +186,6 @@ export default function WidgetPanel({ projectId, videos, widget, pageRules }: Pr
           />
         )}
 
-        {/* A regra pertence ao video, entao mora logo abaixo de onde ele
-            e escolhido. Vale desde o primeiro video: com um so, a regra
-            deixa de servir pra escolher entre videos e passa a limitar em
-            quais paginas o widget aparece. */}
-        {videoId && (
-          <PageRules
-            widgetId={widget?.id ?? null}
-            videoId={videoId}
-            rules={pageRules}
-            ehPadrao={widget?.video_id === videoId}
-          />
-        )}
         </Bloco>
 
         <Bloco titulo="Aparência">
