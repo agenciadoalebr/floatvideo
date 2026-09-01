@@ -189,36 +189,109 @@ export default function AnalyticsSettings({ widget }: Props) {
               passo: o evento já entra no GA4 sozinho.
             </p>
           </div>
-          <ol className="list-decimal space-y-2 pl-4 text-xs text-neutral-600">
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
             <li>
-              No GTM, crie um <strong>Acionador</strong> do tipo &quot;Evento
-              personalizado&quot;.
+              <strong>Crie o acionador.</strong> No menu à esquerda, clique em{" "}
+              <em>Acionadores</em> → <em>Novo</em>. Dê o nome{" "}
+              <strong>Float Video Event</strong> no topo da tela. Clique na
+              caixa <em>Configuração do acionador</em>, escolha{" "}
+              <em>Evento personalizado</em> (fica no fim da lista, em
+              &quot;Outros&quot;).
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+                <li>
+                  Em <em>Nome do evento</em>, escreva{" "}
+                  <code className="rounded bg-neutral-100 px-1">
+                    floatvideo_.*
+                  </code>
+                </li>
+                <li>
+                  Marque a caixinha{" "}
+                  <em>Usar correspondência de expressão regular</em> — é ela que
+                  faz um acionador só valer para todos os nossos eventos
+                </li>
+                <li>
+                  Deixe <em>Este acionador é ativado em: Todos os eventos
+                  personalizados</em>
+                </li>
+                <li>Clique em Salvar</li>
+              </ul>
             </li>
+
             <li>
-              No nome do evento, escreva{" "}
-              <code className="rounded bg-neutral-100 px-1">floatvideo_.*</code>{" "}
-              e marque <strong>&quot;Usar correspondência de expressão
-              regular&quot;</strong>.
-            </li>
-            <li>
-              Crie uma <strong>Tag</strong> do GA4 (Evento) e use{" "}
+              <strong>Ligue a variável do nome do evento.</strong> Ainda no
+              menu à esquerda, vá em <em>Variáveis</em> → em &quot;Variáveis
+              integradas&quot;, clique em <em>Configurar</em> e marque{" "}
+              <strong>Event</strong>. Sem isso o{" "}
               <code className="rounded bg-neutral-100 px-1">{"{{Event}}"}</code>{" "}
-              como nome do evento — assim ele repassa o nome que chegou.
+              do passo seguinte não existe na sua conta.
             </li>
+
             <li>
-              Para marcar conversão no Google Ads, use o{" "}
+              <strong>Crie a tag.</strong> Menu <em>Tags</em> → <em>Novo</em>.
+              Dê o nome <strong>GA4 - Float Video</strong>. Em{" "}
+              <em>Configuração da tag</em>, escolha{" "}
+              <em>Google Analytics: evento do GA4</em>.
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+                <li>
+                  Aponte para a sua configuração do GA4 (a tag de configuração
+                  que já existe na conta, ou o ID de métrica{" "}
+                  <code className="rounded bg-neutral-100 px-1">G-XXXXXXX</code>
+                  )
+                </li>
+                <li>
+                  Em <em>Nome do evento</em>, escreva{" "}
+                  <code className="rounded bg-neutral-100 px-1">
+                    {"{{Event}}"}
+                  </code>{" "}
+                  — assim a tag repassa ao GA4 o mesmo nome que chegou, e você
+                  não precisa de uma tag por evento
+                </li>
+                <li>
+                  Mais abaixo, em <em>Acionamento</em>, escolha{" "}
+                  <strong>Float Video Event</strong>
+                </li>
+                <li>Salve</li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Teste antes de publicar.</strong> Clique em{" "}
+              <em>Visualizar</em> (canto superior direito), informe o endereço
+              do site e abra. Na janela que abrir, acrescente{" "}
+              <code className="rounded bg-neutral-100 px-1">?fvw_reset</code> no
+              fim da URL, espere o balão aparecer, clique nele e clique no botão
+              de ação. Os eventos{" "}
+              <code className="rounded bg-neutral-100 px-1">floatvideo_...</code>{" "}
+              vão aparecendo na coluna da esquerda do painel de depuração, e ao
+              clicar em cada um dá para conferir se a tag disparou.
+            </li>
+
+            <li>
+              <strong>Publique.</strong> De volta ao GTM, clique em{" "}
+              <em>Enviar</em> → dê um nome à versão (ex.: &quot;Float
+              Video&quot;) → <em>Publicar</em>. Antes disso, nada do que você
+              configurou está valendo no site de verdade.
+            </li>
+
+            <li>
+              <strong>Marque a conversão.</strong> No GA4: Administrador →{" "}
+              <em>Eventos</em> → encontre{" "}
               <code className="rounded bg-neutral-100 px-1">
                 floatvideo_cta_click
-              </code>
-              .
+              </code>{" "}
+              e ligue a chave <em>Marcar como evento principal</em>. Ele só
+              aparece nessa lista depois de acontecer pelo menos uma vez — se
+              ainda não estiver lá, faça o teste do passo 4 e volte mais tarde.
+              No Google Ads, importe esse evento como conversão.
             </li>
           </ol>
 
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs font-medium text-neutral-700">
+          <details className="rounded-md border border-neutral-200 bg-neutral-50 p-3 [&[open]>summary>span]:rotate-90">
+            <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-neutral-700 marker:content-none">
+              <span className="inline-block transition-transform">›</span>
               Opcional: saber de qual vídeo veio cada clique
-            </p>
-            <p className="mt-1 text-xs text-neutral-600">
+            </summary>
+            <p className="mt-2 text-xs text-neutral-600">
               Com os passos acima você já mede <em>quantos</em> cliques houve.
               Os detalhes (qual vídeo, qual tipo de botão) vêm dentro do evento,
               mas o GTM só os enxerga se você apontar um dedo para cada campo —
@@ -276,7 +349,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               os cliques, em vez de só o total. Mas o GA4 não preenche o que
               passou — feito depois, vale só dali para frente.
             </p>
-          </div>
+          </details>
           <p className="text-xs text-neutral-400">
             Para conferir se está chegando: abra o Preview do GTM, ou digite{" "}
             <code className="rounded bg-neutral-100 px-1">dataLayer</code> no
