@@ -146,16 +146,23 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
               </span>
             )}
 
-            {/* Só para os que ficaram sem imagem: o envio novo já gera. */}
+            {/* Só nos que ficaram sem imagem: o envio novo já gera sozinho.
+                Ocupa o card inteiro de propósito — como chip no canto, por
+                cima do vídeo, ninguém achava. */}
             {!video.thumbnail_url && video.mp4_url && video.original_file_key && (
-              <button
-                type="button"
-                onClick={() => gerarMiniatura(video)}
-                disabled={gerandoId === video.id}
-                className="absolute bottom-1 left-1 rounded bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-black disabled:opacity-60"
-              >
-                {gerandoId === video.id ? "Gerando..." : "Gerar miniatura"}
-              </button>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/45 text-center">
+                <p className="px-2 text-[11px] font-medium text-white">
+                  Este vídeo está sem miniatura
+                </p>
+                <button
+                  type="button"
+                  onClick={() => gerarMiniatura(video)}
+                  disabled={gerandoId === video.id}
+                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-brand-ink shadow hover:bg-neutral-100 disabled:opacity-60"
+                >
+                  {gerandoId === video.id ? "Gerando..." : "Gerar miniatura"}
+                </button>
+              </div>
             )}
           </div>
           <div className="space-y-1 p-2">
