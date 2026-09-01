@@ -28,6 +28,13 @@ function Icone({ tipo }: { tipo: CtaType }) {
       </svg>
     );
   }
+  if (tipo === "link") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3zM5 5h5V3H3v18h18v-7h-2v5H5z" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M7 9h10v2H7zm0-4h10v2H7zm0 8h7v2H7z" />

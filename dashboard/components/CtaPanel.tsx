@@ -22,6 +22,7 @@ const ROTULO_PADRAO: Partial<Record<CtaType, string>> = {
   whatsapp_form: "Quer saber mais?",
   form: "Fale com a gente",
   buy: "Comprar agora",
+  link: "Veja mais",
 };
 
 /** Segunda linha sugerida, usada só no estilo cartão. */
@@ -30,6 +31,7 @@ const SUBROTULO_PADRAO: Partial<Record<CtaType, string>> = {
   whatsapp_form: "Chame pelo WhatsApp",
   form: "Deixe seu contato",
   buy: "Ver o produto",
+  link: "Abrir a página",
 };
 
 const AJUDA: Record<CtaType, string> = {
@@ -40,7 +42,8 @@ const AJUDA: Record<CtaType, string> = {
   buy:
     "Fecha o vídeo e leva a pessoa até o botão de compra da própria página, com um destaque piscando nele.",
   none: "O vídeo aparece sem nenhum botão.",
-  link: "Link livre (formato antigo).",
+  link:
+    "Abre o endereço que você escolher numa aba nova — página de produto, catálogo, agendamento, o que for.",
 };
 
 /**
@@ -203,6 +206,7 @@ export default function CtaPanel({ widget, cta }: Props) {
               Formulário completo (nome, telefone, e-mail, assunto, mensagem)
             </option>
             <option value="buy">Botão Comprar (e-commerce)</option>
+            <option value="link">Link personalizado</option>
             <option value="none">Sem botão de ação</option>
           </select>
           <p className="mt-1 text-xs text-neutral-500">{AJUDA[tipo]}</p>

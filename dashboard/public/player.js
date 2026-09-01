@@ -228,11 +228,14 @@
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4m10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4M6.2 15h11.1c.7 0 1.3-.4 1.6-1l3-5.5A1 1 0 0 0 21 7H6.3l-.7-3H2v2h2.2l2.9 12.4A2 2 0 0 0 9 20h11v-2H9.3z"/></svg>',
     balao:
       '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M7 9h10v2H7zm0-4h10v2H7zm0 8h7v2H7z"/></svg>',
+    link:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3zM5 5h5V3H3v18h18v-7h-2v5H5z"/></svg>',
   };
 
   function iconeDoCta(tipo) {
     if (tipo === "whatsapp" || tipo === "whatsapp_form") return ICONES.whatsapp;
     if (tipo === "buy") return ICONES.carrinho;
+    if (tipo === "link") return ICONES.link;
     return ICONES.balao;
   }
 
