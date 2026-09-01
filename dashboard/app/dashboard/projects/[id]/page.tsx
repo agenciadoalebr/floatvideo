@@ -9,6 +9,7 @@ import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import ProjectTabs from "@/components/ProjectTabs";
 import ProjectDomainField from "@/components/ProjectDomainField";
+import CtaPanel from "@/components/CtaPanel";
 import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
@@ -178,10 +179,14 @@ export default async function ProjectPage({
                 projectId={project.id}
                 videos={videos ?? []}
                 widget={widget}
-                cta={cta}
                 pageRules={pageRules}
               />
             ),
+          },
+          {
+            id: "cta",
+            label: "Botão de ação",
+            content: <CtaPanel widget={widget} cta={cta} />,
           },
           {
             id: "instalacao",

@@ -329,8 +329,16 @@
   // digitos. Feita na digitacao pra pessoa ver o formato enquanto
   // escreve, em vez de descobrir que errou so ao enviar.
   function aplicarMascaraTelefone(input) {
-    input.addEventListener("input", function () {
+    input.addEventListener("input", function (e) {
       var d = input.value.replace(/\D/g, "").slice(0, 11);
+
+      // Sem isto o backspace trava: o cursor come um caractere da
+      // mascara — o ")" ou o espaco — e a formatacao recria na hora,
+      // entao o campo nunca encolhe.
+      var apagando = e && e.inputType && e.inputType.indexOf("delete") === 0;
+      if (apagando && /[()\s-]$/.test(input.value)) {
+        d = d.slice(0, -1);
+      }
       var out = "";
       if (d.length > 0) out = "(" + d.slice(0, 2);
       if (d.length >= 2) out += ") ";

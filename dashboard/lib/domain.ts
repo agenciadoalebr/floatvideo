@@ -27,8 +27,18 @@ export function isValidDomain(domain: string): boolean {
  * para quem digita conferir o número enquanto escreve, em vez de
  * descobrir que errou depois que o widget já está no ar.
  */
-export function formatarTelefone(valor: string): string {
-  const d = valor.replace(/\D/g, "").replace(/^55/, "").slice(0, 11);
+export function formatarTelefone(valor: string, apagando = false): string {
+  let d = valor.replace(/\D/g, "").replace(/^55/, "").slice(0, 11);
+
+  // Sem isto o backspace trava. Ao apagar, o cursor come primeiro um
+  // caractere da máscara — o ")" ou o espaço — e a formatação o recria
+  // na sequência, então o campo nunca encolhe e só dá pra corrigir
+  // selecionando tudo. Se o que sobrou termina em separador, o apagar
+  // tinha a intenção de remover um dígito: removemos de verdade.
+  if (apagando && /[()\s-]$/.test(valor)) {
+    d = d.slice(0, -1);
+  }
+
   if (!d) return "";
   let out = "+55 (" + d.slice(0, 2);
   if (d.length >= 2) out += ") ";
