@@ -25,6 +25,20 @@ const LABELS: Record<string, string> = {
 
 const ORDER = ["impression", "expand", "play", "complete", "cta_click", "close"];
 
+/**
+ * A escada de retenção. Fica num quadro separado, e não junto do funil
+ * acima, porque a base de comparação é outra: aqui tudo é medido contra
+ * quem abriu o vídeo, não contra quem viu o balão.
+ */
+const RETENCAO = [
+  { key: "play", label: "Abriram o vídeo" },
+  { key: "progress_3s", label: "Passaram dos 3 segundos" },
+  { key: "progress_25", label: "Passaram de 25%" },
+  { key: "progress_50", label: "Passaram da metade" },
+  { key: "progress_75", label: "Passaram de 75%" },
+  { key: "complete", label: "Assistiram até o fim" },
+];
+
 const ALL = "__all__";
 
 export default function AnalyticsPanel({ totals, byVideo, videos, unattributed }: Props) {
@@ -45,6 +59,9 @@ export default function AnalyticsPanel({ totals, byVideo, videos, unattributed }
 
   const counts = selected === ALL ? totals : (byVideo[selected] ?? {});
   const impressions = counts.impression ?? 0;
+  // A retenção se mede contra quem abriu o vídeo, não contra quem viu
+  // o balão passar na tela.
+  const aberturas = counts.play ?? 0;
   const max = Math.max(1, ...ORDER.map((k) => counts[k] ?? 0));
 
   const tabs = [
@@ -99,6 +116,46 @@ export default function AnalyticsPanel({ totals, byVideo, videos, unattributed }
               </div>
             );
           })}
+        </div>
+      )}
+
+      {aberturas > 0 && (
+        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-700">
+              Retenção do vídeo
+            </h3>
+            <p className="mt-1 text-xs text-neutral-500">
+              De cada 100 pessoas que abriram o vídeo, quantas chegaram a cada
+              ponto. O degrau mais fundo é onde elas desistem.
+            </p>
+          </div>
+          {RETENCAO.map((etapa) => {
+            const value = counts[etapa.key] ?? 0;
+            const pct = Math.round((value / aberturas) * 100);
+            return (
+              <div key={etapa.key}>
+                <div className="flex items-center justify-between text-xs text-neutral-600">
+                  <span>{etapa.label}</span>
+                  <span className="font-medium text-neutral-900">
+                    {value} · {pct}%
+                  </span>
+                </div>
+                <div className="mt-1 h-2 rounded-full bg-neutral-100">
+                  <div
+                    className="h-2 rounded-full bg-gradient-to-r from-brand-blue to-brand-violet"
+                    style={{ width: `${Math.max(2, pct)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          {(counts.progress_25 ?? 0) === 0 && (
+            <p className="text-xs text-neutral-400">
+              Os marcos de retenção passaram a ser medidos agora — as
+              aberturas anteriores a isso aparecem só na primeira linha.
+            </p>
+          )}
         </div>
       )}
 

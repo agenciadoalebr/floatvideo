@@ -111,7 +111,7 @@
       wirePlayToggle(el);
       wireRestartButton(el);
       wireProgressBar(el);
-      startProgressLoop(el);
+      startProgressLoop(el, config);
 
       if (config.video.source_type === "youtube") {
         mountYouTubePlayer(el, config);
@@ -451,6 +451,9 @@
 
   function collapse(el, backdrop, config) {
     el._playTracked = false;
+    // Zera junto com o play: reabrir o video e uma nova assistida, e o
+    // expand ja faz o video voltar pro comeco.
+    el._marcos = null;
     el.classList.remove("fvw-expanded");
     backdrop.classList.remove("fvw-visible");
     setMuted(el, true);
@@ -567,7 +570,46 @@
   // Funciona tanto pro vídeo nativo (evento "timeupdate") quanto pro
   // player do YouTube (que não dispara esse evento) — por isso um polling
   // simples cobre os dois casos com o mesmo código.
-  function startProgressLoop(el) {
+  // Marcos de retencao. Os quartis comparam videos de duracoes
+  // diferentes de forma justa (e sao o que se mostra pro cliente); o de 3
+  // segundos e o que denuncia abertura fraca, que em video vertical curto
+  // e onde a maior parte das pessoas desiste.
+  var MARCOS = [
+    { chave: "progress_3s", segundos: 3 },
+    { chave: "progress_25", fracao: 0.25 },
+    { chave: "progress_50", fracao: 0.5 },
+    { chave: "progress_75", fracao: 0.75 },
+  ];
+
+  function marcarRetencao(el, config, currentTime, duration) {
+    // Mesma regra do "assistiu": so conta com o video aberto. No balao
+    // recolhido o video roda em loop o tempo todo e marcaria retencao
+    // pra sempre, exatamente como o play inflado que ja corrigimos.
+    if (!el.classList.contains("fvw-expanded")) return;
+    if (!(duration > 0)) return;
+
+    var vistos = el._marcos || (el._marcos = {});
+    for (var i = 0; i < MARCOS.length; i++) {
+      var marco = MARCOS[i];
+      if (vistos[marco.chave]) continue;
+
+      var alvo = marco.segundos != null ? marco.segundos : marco.fracao * duration;
+      // Marco alem do fim do video (3s num video de 2s) simplesmente nao
+      // existe pra ele — nao fica pendente nem vira evento.
+      if (!(alvo > 0) || alvo > duration) continue;
+
+      // A janela de 1,5s e o que separa "assistiu ate aqui" de "arrastou
+      // a barra pra frente": passando de verdade, o laco de 250ms pega o
+      // instante; pulando, o tempo salta pra muito depois do marco e ele
+      // continua sem ser contado.
+      if (currentTime >= alvo && currentTime < alvo + 1.5) {
+        vistos[marco.chave] = true;
+        trackEvent(config, marco.chave);
+      }
+    }
+  }
+
+  function startProgressLoop(el, config) {
     setInterval(function () {
       var fill = el.querySelector(".fvw-progress-fill");
       if (!fill) return;
@@ -585,6 +627,7 @@
         var pct = Math.min(100, (currentTime / duration) * 100);
         fill.style.width = pct + "%";
       }
+      marcarRetencao(el, config, currentTime, duration);
     }, 250);
   }
 
