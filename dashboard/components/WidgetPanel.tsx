@@ -60,6 +60,9 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const [autoplay, setAutoplay] = useState(widget?.autoplay ?? true);
   const [delaySeconds, setDelaySeconds] = useState(widget?.delay_seconds ?? 3);
   const [reappearHours, setReappearHours] = useState(widget?.reappear_hours ?? 1);
+  const [analytics, setAnalytics] = useState<Widget["analytics_mode"]>(
+    widget?.analytics_mode ?? "auto"
+  );
   const [isActive, setIsActive] = useState(widget?.is_active ?? true);
 
 
@@ -118,6 +121,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
       muted_start: true,
       delay_seconds: delaySeconds,
       reappear_hours: reappearHours,
+      analytics_mode: analytics,
       is_active: isActive,
     };
 
@@ -293,6 +297,30 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
           <p className="mt-1 text-xs text-neutral-500">
             Vale só para o vídeo que a pessoa fechou. Os vídeos das outras
             páginas continuam aparecendo normalmente.
+          </p>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-neutral-600">
+            Enviar eventos para o Analytics do site
+          </label>
+          <select
+            value={analytics}
+            onChange={(e) =>
+              setAnalytics(e.target.value as Widget["analytics_mode"])
+            }
+            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value="auto">Automático (recomendado)</option>
+            <option value="gtm">Só Google Tag Manager</option>
+            <option value="gtag">Só gtag (GA4 direto)</option>
+            <option value="none">Não enviar</option>
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            No automático, o widget usa o dataLayer do GTM e só chama o gtag
+            se não houver GTM na página — com os dois, o mesmo evento
+            chegaria duas vezes no GA4. As métricas deste painel não dependem
+            disso.
           </p>
         </div>
 

@@ -1250,39 +1250,61 @@
       p_session_id: getSessionId(),
     }).catch(function () {});
 
-    pushToDataLayer(config, eventType, extra);
+    enviarParaAnalytics(config, eventType, extra);
   }
 
-  // Empurra o evento pro dataLayer da pagina, que e por onde o Google Tag
-  // Manager escuta. Assim o cliente marca "clique no WhatsApp" como
-  // conversao no Google Ads / GA4 sem precisar de codigo extra no site:
-  // basta um gatilho de Evento personalizado no proprio GTM.
+  // Manda o evento pras ferramentas de medicao do proprio site. O
+  // caminho principal e o dataLayer, que e por onde o Google Tag Manager
+  // escuta: com um gatilho de Evento personalizado, o cliente marca
+  // "clique no WhatsApp" como conversao no GA4 / Google Ads sem uma
+  // linha de codigo a mais. Sem GTM na pagina, o array so acumula — ele
+  // e um array comum, nao depende do GTM existir.
   //
-  // Se nao houver GTM na pagina, o array so acumula e nada acontece — o
-  // dataLayer e um array comum, nao depende do GTM existir.
-  function pushToDataLayer(config, eventType, extra) {
-    try {
-      var dl = (global.dataLayer = global.dataLayer || []);
-      var payload = {
-        event: "floatvideo_" + eventType,
-        floatvideo: {
-          widget_id: config.widget_id,
-          page_url: location.href,
-          video:
-            config.video && config.video.source_type === "youtube"
-              ? "youtube:" + config.video.youtube_id
-              : "upload",
-        },
-      };
-      if (extra) {
-        for (var k in extra) {
-          if (Object.prototype.hasOwnProperty.call(extra, k)) {
-            payload.floatvideo[k] = extra[k];
-          }
+  // O modo vem do painel, e o padrao ("auto") existe por causa de uma
+  // armadilha: gtag e GTM dividem o MESMO dataLayer. Num site com os
+  // dois, mandar pelos dois caminhos faria o evento chegar duas vezes no
+  // GA4, e a conversao apareceria dobrada — numero inflado e pior que
+  // numero faltando, porque e nele que o cliente decide gasto de midia.
+  function enviarParaAnalytics(config, eventType, extra) {
+    var modo = config.analytics_mode || "auto";
+    if (modo === "none") return;
+
+    var nome = "floatvideo_" + eventType;
+    var dados = {
+      widget_id: config.widget_id,
+      page_url: location.href,
+      video:
+        config.video && config.video.source_type === "youtube"
+          ? "youtube:" + config.video.youtube_id
+          : "upload",
+    };
+    if (extra) {
+      for (var k in extra) {
+        if (Object.prototype.hasOwnProperty.call(extra, k)) {
+          dados[k] = extra[k];
         }
       }
-      dl.push(payload);
-    } catch (e) {}
+    }
+
+    if (modo !== "gtag") {
+      try {
+        var dl = (global.dataLayer = global.dataLayer || []);
+        dl.push({ event: nome, floatvideo: dados });
+      } catch (e) {}
+    }
+
+    // "google_tag_manager" e deixado na pagina pelo proprio container do
+    // GTM: e como saber que ele esta ali sem perguntar pro cliente.
+    var temGtm = !!global.google_tag_manager;
+    var usarGtag =
+      typeof global.gtag === "function" &&
+      (modo === "gtag" || (modo === "auto" && !temGtm));
+
+    if (usarGtag) {
+      try {
+        global.gtag("event", nome, dados);
+      } catch (e) {}
+    }
   }
 
   function submitLead(config, data) {

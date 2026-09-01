@@ -50,6 +50,8 @@ export type Widget = {
   delay_seconds: number;
   /** Depois de fechado, quantas horas até o vídeo voltar a aparecer. */
   reappear_hours: number;
+  /** Por onde os eventos saem da página do cliente. */
+  analytics_mode: "auto" | "gtm" | "gtag" | "none";
   is_active: boolean;
   notify_webhook_url: string | null;
   notify_email: string | null;
