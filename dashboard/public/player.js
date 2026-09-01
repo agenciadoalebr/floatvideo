@@ -275,11 +275,13 @@
       "fvw-modal " + (ehWhats ? "fvw-modal-whats" : "fvw-modal-padrao");
     // A cor da marca precisa ser repetida aqui: ela e definida no balao,
     // e o modal vive fora dele (irmao no shadow root), entao nao herda.
-    // Sem isto o cabecalho e o botao caem na cor de reserva.
-    modal.style.setProperty(
-      "--fvw-border-color",
-      config.border_color || "#111"
-    );
+    var cor = config.border_color || "#111";
+    modal.style.setProperty("--fvw-border-color", cor);
+    // Texto do cabecalho e do botao conforme a cor de fundo. Sem isto,
+    // uma cor de marca clara (o widget da Agencia do Ale usa #cdd9e4)
+    // ficava com texto branco por cima: parecia desbotado e o rotulo
+    // sumia. A escolha e por luminancia, nao no olho.
+    modal.style.setProperty("--fvw-modal-fg", corDeTextoPara(cor));
     modal.innerHTML =
       '<div class="fvw-modal-card">' +
       '<div class="fvw-modal-head">' +
@@ -304,6 +306,23 @@
       "</div>" +
       "</div>";
     return modal;
+  }
+
+  // Preto ou branco, o que ler melhor sobre a cor dada. Usa a formula de
+  // luminancia relativa do WCAG: o olho enxerga verde bem mais que azul,
+  // entao uma media simples dos canais erraria em cores como amarelo.
+  function corDeTextoPara(hex) {
+    var m = String(hex).replace("#", "");
+    if (m.length === 3) {
+      m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    }
+    if (m.length !== 6) return "#fff";
+    var canal = function (i) {
+      var c = parseInt(m.substr(i, 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    var lum = 0.2126 * canal(0) + 0.7152 * canal(2) + 0.0722 * canal(4);
+    return lum > 0.45 ? "#111" : "#fff";
   }
 
   // Mascara de telefone brasileiro: (11) 99999-9999, aceitando fixo de 8

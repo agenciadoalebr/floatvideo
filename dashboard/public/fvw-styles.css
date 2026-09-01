@@ -408,8 +408,27 @@ textarea.fvw-input {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
-/* O cabecalho usa a cor da borda escolhida no painel, pro modal sair
-   parecido com a marca do cliente em vez de um cinza generico. */
+/* Cabecalho do modal de WhatsApp: verde do proprio aplicativo, fixo.
+   Aqui a cor da marca nao entra de proposito — quem abre isso espera
+   reconhecer o WhatsApp, e uma cor clara de marca deixava a faixa
+   lavada e o texto ilegivel. */
+.fvw-modal-whats .fvw-modal-head {
+  background: #075e54;
+  color: #fff;
+}
+
+.fvw-modal-whats .fvw-modal-title,
+.fvw-modal-whats .fvw-modal-sub,
+.fvw-modal-whats .fvw-modal-close {
+  color: #fff;
+}
+
+.fvw-modal-whats .fvw-modal-sub {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* No formulario comum o cabecalho segue a cor escolhida no painel, mas
+   o texto se ajusta por contraste (ver corDeTextoPara no player.js). */
 .fvw-modal-head {
   display: flex;
   align-items: center;
@@ -424,13 +443,14 @@ textarea.fvw-input {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #fff;
+  color: var(--fvw-modal-fg, #fff);
 }
 
 .fvw-modal-sub {
   margin: 2px 0 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--fvw-modal-fg, #fff);
+  opacity: 0.8;
 }
 
 .fvw-modal-close {
@@ -442,8 +462,8 @@ textarea.fvw-input {
   justify-content: center;
   border: none;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  background: rgba(127, 127, 127, 0.25);
+  color: var(--fvw-modal-fg, #fff);
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
@@ -498,6 +518,7 @@ textarea.fvw-input {
    escolhida no painel. */
 .fvw-modal-padrao .fvw-modal-body .fvw-cta-btn {
   background: var(--fvw-border-color, #111);
+  color: var(--fvw-modal-fg, #fff);
 }
 
 .fvw-modal-body .fvw-input:focus {
