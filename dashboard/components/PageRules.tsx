@@ -14,17 +14,18 @@ type Props = {
 };
 
 /**
- * Onde este vídeo aparece. Fica logo abaixo do seletor de vídeo porque a
- * regra pertence ao vídeo, não ao widget: a pergunta que a pessoa faz é
- * "em que páginas este vídeo entra?".
+ * Onde este vídeo aparece. Mora no modal "Onde aparece?" da aba Vídeos
+ * porque a regra pertence ao vídeo, não ao widget — a aparência é global,
+ * a página onde ele entra é de cada um.
  *
- * Vive dentro do <form> do widget, então todo botão precisa de
- * type="button" e o Enter precisa ser contido — senão qualquer um deles
- * dispararia o submit do formulário inteiro.
+ * Um vídeo sem nenhuma regra não aparece em lugar nenhum.
+ *
+ * Já viveu dentro do <form> do widget; por isso todo botão tem
+ * type="button" e o Enter é contido — o que continua correto.
  */
 export default function PageRules({ widgetId, videoId, rules }: Props) {
   const router = useRouter();
-  const [matchType, setMatchType] = useState<"contains" | "exact">("contains");
+  const [matchType, setMatchType] = useState<"contains" | "exact" | "all">("all");
   const [pattern, setPattern] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -32,7 +33,9 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
   const minhas = rules.filter((r) => r.video_id === videoId);
 
   async function adicionar() {
-    const p = pattern.trim();
+    // "Todas as páginas" não tem trecho pra digitar; grava um marcador
+    // só porque a coluna do banco não aceita vazio.
+    const p = matchType === "all" ? "*" : pattern.trim();
     if (!p) {
       setErro("Escreva o trecho da URL.");
       return;
@@ -72,8 +75,8 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
       </p>
       <p className="mt-1 text-xs text-neutral-500">
         {minhas.length === 0
-          ? "Sem regra, este vídeo entra nas páginas que não têm regra de nenhum outro vídeo. Havendo mais de um assim, aparece o mais recente."
-          : "Este vídeo aparece só nas páginas abaixo."}
+          ? "Sem nenhuma regra, este vídeo não aparece em lugar nenhum. Adicione ao menos uma abaixo."
+          : "Este vídeo aparece só onde as regras abaixo mandam."}
       </p>
 
       {minhas.length > 0 && (
@@ -84,10 +87,16 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
               className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs"
             >
               <span className="text-neutral-600">
-                {r.match_type === "exact" ? "URL é exatamente" : "URL contém"}{" "}
-                <code className="rounded bg-neutral-100 px-1 text-neutral-800">
-                  {r.pattern}
-                </code>
+                {r.match_type === "all" ? (
+                  "Todas as páginas do site"
+                ) : (
+                  <>
+                    {r.match_type === "exact" ? "URL é exatamente" : "URL contém"}{" "}
+                    <code className="rounded bg-neutral-100 px-1 text-neutral-800">
+                      {r.pattern}
+                    </code>
+                  </>
+                )}
               </span>
               <button
                 type="button"
@@ -104,25 +113,33 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
       <div className="mt-2 grid gap-2 sm:grid-cols-[auto_1fr_auto]">
         <select
           value={matchType}
-          onChange={(e) => setMatchType(e.target.value as "contains" | "exact")}
+          onChange={(e) =>
+            setMatchType(e.target.value as "contains" | "exact" | "all")
+          }
           className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs"
         >
+          <option value="all">Todas as páginas do site</option>
           <option value="contains">URL contém</option>
           <option value="exact">URL é exatamente</option>
         </select>
-        <input
-          value={pattern}
-          onChange={(e) => setPattern(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              // Sem isto, o Enter submeteria o formulário do widget.
-              e.preventDefault();
-              adicionar();
-            }
-          }}
-          placeholder={matchType === "exact" ? "site.com.br/contato" : "/precos"}
-          className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
-        />
+        {matchType === "all" ? (
+          <span className="self-center text-xs text-neutral-400">
+            sem trecho a preencher
+          </span>
+        ) : (
+          <input
+            value={pattern}
+            onChange={(e) => setPattern(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                adicionar();
+              }
+            }}
+            placeholder={matchType === "exact" ? "site.com.br/contato" : "/precos"}
+            className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
+          />
+        )}
         <button
           type="button"
           onClick={adicionar}
