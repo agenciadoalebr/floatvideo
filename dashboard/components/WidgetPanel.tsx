@@ -59,6 +59,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const [offsetY, setOffsetY] = useState(widget?.offset_y ?? 24);
   const [autoplay, setAutoplay] = useState(widget?.autoplay ?? true);
   const [delaySeconds, setDelaySeconds] = useState(widget?.delay_seconds ?? 3);
+  const [reappearHours, setReappearHours] = useState(widget?.reappear_hours ?? 1);
   const [isActive, setIsActive] = useState(widget?.is_active ?? true);
 
 
@@ -116,6 +117,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
       autoplay,
       muted_start: true,
       delay_seconds: delaySeconds,
+      reappear_hours: reappearHours,
       is_active: isActive,
     };
 
@@ -271,6 +273,27 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
             onChange={(e) => setDelaySeconds(Number(e.target.value))}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-neutral-600">
+            Se a pessoa fechar, volta a aparecer em
+          </label>
+          <select
+            value={reappearHours}
+            onChange={(e) => setReappearHours(Number(e.target.value))}
+            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          >
+            <option value={1}>1 hora</option>
+            <option value={6}>6 horas</option>
+            <option value={24}>1 dia</option>
+            <option value={72}>3 dias</option>
+            <option value={168}>7 dias</option>
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            Vale só para o vídeo que a pessoa fechou. Os vídeos das outras
+            páginas continuam aparecendo normalmente.
+          </p>
         </div>
 
         <div className="flex items-center gap-4 text-sm text-neutral-700">

@@ -51,6 +51,7 @@ export default function CtaPanel({ widget, cta }: Props) {
     cta?.buy_platform ?? "auto"
   );
   const [seletor, setSeletor] = useState(cta?.buy_selector ?? "");
+  const [cor, setCor] = useState(widget?.cta_color ?? "#25d366");
   const [email, setEmail] = useState(widget?.notify_email ?? "");
   const [webhook, setWebhook] = useState(widget?.notify_webhook_url ?? "");
   const [salvando, setSalvando] = useState(false);
@@ -95,6 +96,7 @@ export default function CtaPanel({ widget, cta }: Props) {
     const { error: erroWidget } = await supabase
       .from("widgets")
       .update({
+        cta_color: cor,
         notify_email: email.trim() || null,
         notify_webhook_url: webhook.trim() || null,
       })
@@ -193,6 +195,33 @@ export default function CtaPanel({ widget, cta }: Props) {
               className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
             />
           </label>
+        )}
+
+        {tipo !== "none" && (
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">
+              Cor do botão
+            </label>
+            <div className="mt-1 flex items-center gap-3">
+              <input
+                type="color"
+                value={cor}
+                onChange={(e) => setCor(e.target.value)}
+                className="h-9 w-16 rounded-md border border-neutral-300"
+              />
+              <button
+                type="button"
+                onClick={() => setCor("#25d366")}
+                className="text-xs text-neutral-500 underline hover:text-brand-blue"
+              >
+                voltar ao verde
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-neutral-500">
+              Vale para qualquer tipo de botão. O texto vira branco ou preto
+              sozinho, conforme a cor escolhida.
+            </p>
+          </div>
         )}
 
         {ehComprar && (

@@ -40,10 +40,6 @@
       // uma janela anonima toda vez.
       clearSuppression(embedKey);
 
-      // Se a pessoa já fechou o balão nos últimos dias, não insiste —
-      // evita irritar quem visita o site várias vezes.
-      if (isSuppressed(embedKey)) return;
-
       // p_page_url deixa o servidor escolher o video pela regra de
       // pagina. A escolha e feita la, e nao aqui, pra o mesmo criterio
       // valer tambem no registro de evento e de lead.
@@ -58,6 +54,10 @@
         })
         .then(function (config) {
           if (!config || config.is_active === false || !config.video) return;
+          // A supressao e por video, entao so da pra consultar depois de
+          // saber qual video esta pagina pediu: quem fechou o video de um
+          // produto continua vendo o dos outros.
+          if (isSuppressed(embedKey, config.video.id)) return;
           FVWPlayer.init(config, embedKey);
         })
         .catch(function (err) {
@@ -150,12 +150,12 @@
       "fvw-pos-" + layout.position,
     ].join(" ");
     wrapper.style.setProperty("--fvw-border-color", config.border_color || "#000");
-    // Usada pelo botao Comprar, que segue a cor da marca (e nao o verde
-    // do WhatsApp): sobre cor clara o texto branco sumia.
-    wrapper.style.setProperty(
-      "--fvw-cta-fg",
-      corDeTextoPara(config.border_color || "#000")
-    );
+    // Cor do botao de acao, escolhida no painel e valida pra qualquer
+    // tipo de CTA. O texto se ajusta por contraste: sobre um amarelo,
+    // por exemplo, o branco sumiria.
+    var corCta = config.cta_color || "#25d366";
+    wrapper.style.setProperty("--fvw-cta-bg", corCta);
+    wrapper.style.setProperty("--fvw-cta-fg", corDeTextoPara(corCta));
     wrapper.style.setProperty("--fvw-offset-x", layout.offsetX + "px");
     wrapper.style.setProperty("--fvw-offset-y", layout.offsetY + "px");
     applyFocalPoint(wrapper, config.video);
@@ -297,6 +297,11 @@
     // ficava com texto branco por cima: parecia desbotado e o rotulo
     // sumia. A escolha e por luminancia, nao no olho.
     modal.style.setProperty("--fvw-modal-fg", corDeTextoPara(cor));
+    // Idem pro botao de enviar: mesma cor do botao do balao, pra pessoa
+    // reconhecer que e a continuacao do que ela clicou.
+    var corCta = config.cta_color || "#25d366";
+    modal.style.setProperty("--fvw-cta-bg", corCta);
+    modal.style.setProperty("--fvw-cta-fg", corDeTextoPara(corCta));
     modal.innerHTML =
       '<div class="fvw-modal-card">' +
       '<div class="fvw-modal-head">' +
@@ -587,29 +592,52 @@
       backdrop.classList.remove("fvw-visible");
       trackEvent(config, "close");
       // Fechou o balão de vez (não é o "recolher" do vídeo expandido) —
-      // não mostra de novo pra essa pessoa por uns dias.
-      suppressForDays(embedKey, 7);
+      // some com ESTE vídeo pelo tempo configurado no painel.
+      suprimir(embedKey, config.video.id, config.reappear_hours);
     });
   }
 
+  // A chave carrega o video: fechar o video de um produto nao pode
+  // calar o video dos outros produtos da mesma loja. Sem id de video
+  // (config antiga), cai na chave antiga, que valia pro site inteiro.
+  function chaveSupressao(embedKey, videoId) {
+    return "fvw_closed_" + embedKey + (videoId ? "_" + videoId : "");
+  }
+
   // Guarda no navegador de quem fechou o balão, pra não insistir toda
-  // vez que a pessoa volta ao site.
-  function suppressForDays(embedKey, days) {
+  // vez que a pessoa volta ao site. O prazo vem do painel: uma hora
+  // costuma bastar numa loja, onde a pessoa volta no mesmo dia pra
+  // decidir a compra.
+  function suprimir(embedKey, videoId, horas) {
+    var prazo = Number(horas) > 0 ? Number(horas) : 1;
     try {
-      localStorage.setItem("fvw_closed_" + embedKey, String(Date.now() + days * 86400000));
+      localStorage.setItem(
+        chaveSupressao(embedKey, videoId),
+        String(Date.now() + prazo * 3600000)
+      );
     } catch (e) {}
   }
 
+  // ?fvw_reset limpa a supressao de TODOS os vídeos deste site — quem
+  // está testando fechou vários e não vai adivinhar o id de cada um.
   function clearSuppression(embedKey) {
     try {
       if (location.search.indexOf("fvw_reset") === -1) return;
-      localStorage.removeItem("fvw_closed_" + embedKey);
+      var prefixo = "fvw_closed_" + embedKey;
+      var apagar = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var chave = localStorage.key(i);
+        if (chave && chave.indexOf(prefixo) === 0) apagar.push(chave);
+      }
+      for (var j = 0; j < apagar.length; j++) {
+        localStorage.removeItem(apagar[j]);
+      }
     } catch (e) {}
   }
 
-  function isSuppressed(embedKey) {
+  function isSuppressed(embedKey, videoId) {
     try {
-      var until = localStorage.getItem("fvw_closed_" + embedKey);
+      var until = localStorage.getItem(chaveSupressao(embedKey, videoId));
       return !!until && Date.now() < Number(until);
     } catch (e) {
       return false;
@@ -805,7 +833,7 @@
       esconderBalao(el, backdrop, config);
 
       if (alvo) {
-        levarAte(alvo, root, config.border_color || '#111');
+        levarAte(alvo, root, config.cta_color || "#25d366");
         return;
       }
       // Sem botao na pagina vale a URL de reserva (a pagina do produto,
@@ -907,7 +935,7 @@
     anel.className = "fvw-realce";
     // O anel e irmao do balao, nao filho: a variavel de cor da marca vive
     // no wrapper e nao chegaria ate aqui sozinha.
-    anel.style.setProperty("--fvw-border-color", cor || "#111");
+    anel.style.setProperty("--fvw-realce-cor", cor || "#25d366");
     try {
       anel.style.borderRadius = getComputedStyle(alvo).borderRadius || "8px";
     } catch (err) {}

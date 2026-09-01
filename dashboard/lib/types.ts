@@ -37,6 +37,8 @@ export type Widget = {
   size: "sm" | "md" | "lg";
   position: "bottom-left" | "bottom-right";
   border_color: string;
+  /** Cor do botão de ação, para qualquer tipo de CTA. */
+  cta_color: string;
   offset_x: number;
   offset_y: number;
   mobile_size: "sm" | "md" | "lg" | null;
@@ -46,6 +48,8 @@ export type Widget = {
   autoplay: boolean;
   muted_start: boolean;
   delay_seconds: number;
+  /** Depois de fechado, quantas horas até o vídeo voltar a aparecer. */
+  reappear_hours: number;
   is_active: boolean;
   notify_webhook_url: string | null;
   notify_email: string | null;
