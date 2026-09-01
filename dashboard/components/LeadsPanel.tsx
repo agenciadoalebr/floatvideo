@@ -68,6 +68,7 @@ export default function LeadsPanel({ leads }: Props) {
                   {k}
                 </th>
               ))}
+              <th className="px-3 py-2 font-medium">Página</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
@@ -81,6 +82,23 @@ export default function LeadsPanel({ leads }: Props) {
                     {String(lead.data?.[k] ?? "—")}
                   </td>
                 ))}
+                <td className="px-3 py-2 text-neutral-600">
+                  {lead.page_url ? (
+                    <a
+                      href={lead.page_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      // O endereco inteiro no title: numa loja ele passa
+                      // fácil dos 100 caracteres e esticaria a tabela.
+                      title={lead.page_url}
+                      className="hover:text-brand-blue hover:underline"
+                    >
+                      {caminhoDaUrl(lead.page_url)}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -88,6 +106,16 @@ export default function LeadsPanel({ leads }: Props) {
       </div>
     </div>
   );
+}
+
+/** Só o caminho da URL: o domínio é o mesmo em todas as linhas. */
+function caminhoDaUrl(url: string) {
+  try {
+    const u = new URL(url);
+    return (u.pathname + u.search) || "/";
+  } catch {
+    return url;
+  }
 }
 
 function escapeCsvValue(value: string) {
