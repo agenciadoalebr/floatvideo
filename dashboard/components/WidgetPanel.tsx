@@ -23,13 +23,32 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const [error, setError] = useState("");
   const [salvo, setSalvo] = useState(false);
 
+  // Dois vídeos diferentes, de propósito:
+  //
+  // videoId  — o padrão do widget, configuração global do site: é o que
+  //            aparece nas páginas sem regra de outro vídeo.
+  // videoFocoId — apenas qual vídeo está sendo enquadrado no momento.
+  //            Trocar aqui não muda o que vai ao ar; serve pra ajustar o
+  //            recorte de cada vídeo sem mexer na configuração do site.
   const [videoId, setVideoId] = useState(widget?.video_id ?? readyVideos(videos)[0]?.id ?? "");
+  const [videoFocoId, setVideoFocoId] = useState(
+    widget?.video_id ?? readyVideos(videos)[0]?.id ?? ""
+  );
 
-  // Enquadramento do vídeo selecionado. Mora aqui, e não dentro do
-  // controle, pra prévia acompanhar o arraste ao vivo.
-  const videoAtual = videos.find((v) => v.id === videoId);
-  const [focalX, setFocalX] = useState(videoAtual?.focal_x ?? 50);
-  const [focalY, setFocalY] = useState(videoAtual?.focal_y ?? 50);
+  const videoFoco = videos.find((v) => v.id === videoFocoId);
+  const [focalX, setFocalX] = useState(videoFoco?.focal_x ?? 50);
+  const [focalY, setFocalY] = useState(videoFoco?.focal_y ?? 50);
+
+  // Ao trocar o vídeo em enquadramento, os controles precisam mostrar o
+  // ajuste daquele vídeo. Feito durante o render (padrão do React para
+  // estado derivado de prop) em vez de efeito, que renderizaria duas
+  // vezes e deixaria os controles um passo atrás.
+  const [focoAnterior, setFocoAnterior] = useState(videoFocoId);
+  if (focoAnterior !== videoFocoId) {
+    setFocoAnterior(videoFocoId);
+    setFocalX(videoFoco?.focal_x ?? 50);
+    setFocalY(videoFoco?.focal_y ?? 50);
+  }
   const [shape, setShape] = useState<Widget["shape"]>(widget?.shape ?? "round");
   const [size, setSize] = useState<Widget["size"]>(widget?.size ?? "md");
   const [position, setPosition] = useState<Widget["position"]>(
@@ -158,13 +177,21 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
         onSubmit={handleSave}
         className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5"
       >
-        <Bloco titulo="Conteúdo">
+        <div className="border-b border-neutral-100 pb-3">
+          <h3 className="text-sm font-semibold text-neutral-700">
+            Edição global
+          </h3>
+          <p className="mt-1 text-xs text-neutral-500">
+            Vale para <strong>todos os vídeos</strong> deste site.
+          </p>
+        </div>
+
+        <Bloco titulo="Vídeo padrão">
         <div>
-          <label className="block text-xs font-medium text-neutral-600">Vídeo</label>
           <select
             value={videoId}
             onChange={(e) => setVideoId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           >
             {readyVideos(videos).map((v) => (
               <option key={v.id} value={v.id}>
@@ -172,20 +199,12 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            Aparece nas páginas que não tiverem regra de outro vídeo. Para
+            definir onde cada um entra, use &quot;Onde aparece?&quot; na aba
+            Vídeos.
+          </p>
         </div>
-
-        {videoId && (
-          <VideoFraming
-            videoId={videoId}
-            focalX={focalX}
-            focalY={focalY}
-            onChange={(x, y) => {
-              setFocalX(x);
-              setFocalY(y);
-            }}
-          />
-        )}
-
         </Bloco>
 
         <Bloco titulo="Aparência">
@@ -402,9 +421,46 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
       {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar um
           campo lá embaixo sem enxergar o resultado era o que tornava a
           edição às cegas. */}
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
+        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-700">
+              Enquadramento por vídeo
+            </h3>
+            <p className="mt-1 text-xs text-neutral-500">
+              Escolha o vídeo para ajustar como ele fica dentro do balão.
+              Trocar aqui não muda o vídeo que vai ao ar.
+            </p>
+          </div>
+
+          <select
+            value={videoFocoId}
+            onChange={(e) => setVideoFocoId(e.target.value)}
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+          >
+            {readyVideos(videos).map((v) => (
+              <option key={v.id} value={v.id}>
+                {videoLabel(v)}
+                {v.id === videoId ? " — padrão" : ""}
+              </option>
+            ))}
+          </select>
+
+          {videoFocoId && (
+            <VideoFraming
+              videoId={videoFocoId}
+              focalX={focalX}
+              focalY={focalY}
+              onChange={(x, y) => {
+                setFocalX(x);
+                setFocalY(y);
+              }}
+            />
+          )}
+        </div>
+
         <WidgetPreview
-          video={videoAtual}
+          video={videoFoco}
           focalX={focalX}
           focalY={focalY}
           shape={shape}
