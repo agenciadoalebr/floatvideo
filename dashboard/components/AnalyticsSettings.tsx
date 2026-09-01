@@ -108,17 +108,11 @@ export default function AnalyticsSettings({ widget }: Props) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
-        <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Enviar eventos para o Analytics do site
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              O widget avisa o site a cada passo de quem assiste. Quem escuta
-              esses avisos é o Google Tag Manager (ou o GA4 direto) do próprio
-              cliente.
-            </p>
-          </div>
+        <Secao
+          aberta
+          titulo="Enviar eventos para o Analytics do site"
+          descricao="O widget avisa o site a cada passo de quem assiste. Quem escuta esses avisos é o Google Tag Manager (ou o GA4 direto) do próprio cliente."
+        >
 
           <div>
             <select
@@ -165,18 +159,12 @@ export default function AnalyticsSettings({ widget }: Props) {
             )}
           </div>
           {erro && <p className="text-xs text-red-600">{erro}</p>}
-        </div>
+        </Secao>
 
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Como ligar no Google Tag Manager
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              Um gatilho só dá conta de todos os eventos, inclusive os que
-              criarmos no futuro.
-            </p>
-          </div>
+        <Secao
+          titulo="Como ligar no Google Tag Manager"
+          descricao="Um gatilho só dá conta de todos os eventos, inclusive os que criarmos no futuro."
+        >
           <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-600">
               <strong>Precisa mesmo fazer isso?</strong> Com o script
@@ -355,17 +343,12 @@ export default function AnalyticsSettings({ widget }: Props) {
               não mudam — nelas a impressão é o denominador de tudo.
             </p>
           </div>
-        </div>
+        </Secao>
 
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Conversão no Google Ads
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              Para o Ads otimizar a campanha por quem clicou no botão de ação.
-            </p>
-          </div>
+        <Secao
+          titulo="Conversão no Google Ads"
+          descricao="Para o Ads otimizar a campanha por quem clicou no botão de ação."
+        >
 
           <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
             <p className="text-xs text-emerald-900">
@@ -450,20 +433,13 @@ export default function AnalyticsSettings({ widget }: Props) {
             quase sempre é o Vinculador de conversões faltando ou o contêiner
             que não chegou a ser publicado.
           </p>
-        </div>
+        </Secao>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-        <div>
-          <h3 className="text-sm font-semibold text-neutral-700">
-            Eventos que o widget envia
-          </h3>
-          <p className="mt-1 text-xs text-neutral-500">
-            Na ordem em que acontecem. Todos levam junto um objeto{" "}
-            <code className="rounded bg-neutral-100 px-1">floatvideo</code> com
-            o widget, a página e o vídeo.
-          </p>
-        </div>
+      <Secao
+        titulo="Eventos que o widget envia"
+        descricao="Na ordem em que acontecem. Todos levam junto um objeto floatvideo com o widget, a página e o vídeo."
+      >
         <ul className="divide-y divide-neutral-100 text-xs">
           {EVENTOS.map((e) => (
             <li key={e.nome} className="py-2">
@@ -484,7 +460,50 @@ export default function AnalyticsSettings({ widget }: Props) {
           Dados de lead (nome, telefone, e-mail) <strong>nunca</strong> entram
           aí: o dataLayer é visível para qualquer script da página.
         </p>
-      </div>
+      </Secao>
     </div>
+  );
+}
+
+/**
+ * Cada assunto desta aba num bloco que abre e fecha. São três tutoriais e
+ * uma lista de dez eventos: com tudo aberto de uma vez a tela virava uma
+ * parede de texto, e a única coisa que se configura aqui — o seletor de
+ * envio — sumia no meio.
+ */
+function Secao({
+  titulo,
+  descricao,
+  aberta = false,
+  children,
+}: {
+  titulo: string;
+  descricao: string;
+  /** Começa aberta: só para a seção que tem a configuração em si. */
+  aberta?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={aberta}
+      className="rounded-lg border border-neutral-200 bg-white [&[open]_.fv-seta]:rotate-90"
+    >
+      <summary className="flex cursor-pointer list-none items-start gap-2 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
+        <span className="fv-seta mt-0.5 text-neutral-400 transition-transform">
+          ›
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-semibold text-neutral-700">
+            {titulo}
+          </span>
+          <span className="mt-1 block text-xs text-neutral-500">
+            {descricao}
+          </span>
+        </span>
+      </summary>
+      <div className="space-y-3 border-t border-neutral-100 p-5 pt-4">
+        {children}
+      </div>
+    </details>
   );
 }
