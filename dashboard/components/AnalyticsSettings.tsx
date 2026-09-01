@@ -176,6 +176,19 @@ export default function AnalyticsSettings({ widget }: Props) {
               criarmos no futuro.
             </p>
           </div>
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs text-neutral-600">
+              <strong>Precisa mesmo fazer isso?</strong> Com o script
+              instalado, os eventos já chegam sozinhos na página. Mas o GTM
+              ignora por padrão eventos que ele não conhece — sem um acionador,
+              ele não repassa nada ao GA4. E não dá para configurarmos isso
+              daqui: as tags vivem dentro da conta do cliente.
+            </p>
+            <p className="mt-2 text-xs text-neutral-600">
+              Em site com GA4 direto, <strong>sem</strong> GTM, não há esse
+              passo: o evento já entra no GA4 sozinho.
+            </p>
+          </div>
           <ol className="list-decimal space-y-2 pl-4 text-xs text-neutral-600">
             <li>
               No GTM, crie um <strong>Acionador</strong> do tipo &quot;Evento
