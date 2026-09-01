@@ -106,7 +106,7 @@
 
       wireCloseButton(el, backdrop, config, embedKey);
       wireExpand(el, backdrop, config);
-      wireCTA(el, config);
+      wireCTA(el, config, root);
       wireMuteToggle(el);
       wirePlayToggle(el);
       wireRestartButton(el);
@@ -216,27 +216,14 @@
   function buildCTAMarkup(cta) {
     if (cta.type === "none") return "";
 
-    var campos = CAMPOS[cta.type];
-    if (campos) {
-      var html = campos
-        .map(function (f) {
-          var req = f.required ? "required" : "";
-          if (f.type === "textarea") {
-            return (
-              '<textarea class="fvw-input" name="' + f.name +
-              '" rows="2" placeholder="' + f.name + '" ' + req + "></textarea>"
-            );
-          }
-          return (
-            '<input class="fvw-input" name="' + f.name +
-            '" type="' + f.type + '" placeholder="' + f.name + '" ' + req + " />"
-          );
-        })
-        .join("");
+    // Formularios nao ficam mais dentro do video: o CTA e sempre um
+    // botao, e o formulario abre num modal por cima. Empilhar campos
+    // sobre o video comia a imagem justamente enquanto a pessoa assiste,
+    // e num balao pequeno nao sobrava espaco pra cinco campos.
+    if (CAMPOS[cta.type]) {
       return (
-        '<form class="fvw-cta fvw-cta-form">' + html +
-        '<button type="submit" class="fvw-cta-btn">' + escapeHtml(cta.label) +
-        "</button></form>"
+        '<div class="fvw-cta"><button type="button" class="fvw-cta-btn">' +
+        escapeHtml(cta.label) + "</button></div>"
       );
     }
 
@@ -244,6 +231,86 @@
       '<div class="fvw-cta"><a class="fvw-cta-btn" href="' + escapeAttr(cta.target_url) +
       '" target="_blank" rel="noopener noreferrer">' + escapeHtml(cta.label) + "</a></div>"
     );
+  }
+
+  // Modal do formulario. Fica fora do balao pra nao herdar o recorte
+  // (circulo/retangulo) nem o tamanho dele.
+  function buildFormModal(config) {
+    var cta = config.cta;
+    var campos = CAMPOS[cta.type] || [];
+    var ehWhats = cta.type === "whatsapp_form";
+
+    var inputs = campos
+      .map(function (f) {
+        var req = f.required ? "required" : "";
+        if (f.type === "textarea") {
+          return (
+            '<textarea class="fvw-input" name="' + f.name +
+            '" rows="3" placeholder="' + f.name + '" ' + req + "></textarea>"
+          );
+        }
+        if (f.type === "tel") {
+          // O +55 fica fixo ao lado, e nao dentro do campo, pra ninguem
+          // apagar sem querer nem digitar o pais de novo.
+          return (
+            '<div class="fvw-tel"><span class="fvw-tel-ddi">+55</span>' +
+            '<input class="fvw-input" name="' + f.name +
+            '" type="tel" inputmode="numeric" placeholder="(11) 99999-9999" ' +
+            req + " /></div>"
+          );
+        }
+        return (
+          '<input class="fvw-input" name="' + f.name +
+          '" type="' + f.type + '" placeholder="' + f.name + '" ' + req + " />"
+        );
+      })
+      .join("");
+
+    var modal = document.createElement("div");
+    modal.className = "fvw-modal";
+    modal.innerHTML =
+      '<div class="fvw-modal-card">' +
+      '<div class="fvw-modal-head">' +
+      "<div>" +
+      '<p class="fvw-modal-title">' + escapeHtml(config.project_name || "Fale conosco") + "</p>" +
+      '<p class="fvw-modal-sub">' +
+      (ehWhats ? "Atendimento via WhatsApp" : "Envie sua mensagem") +
+      "</p>" +
+      "</div>" +
+      '<button type="button" class="fvw-modal-close" aria-label="Fechar">&times;</button>' +
+      "</div>" +
+      '<div class="fvw-modal-body">' +
+      '<p class="fvw-modal-intro">' +
+      (ehWhats
+        ? "Informe seus dados abaixo para falar com nossa equipe pelo WhatsApp."
+        : "Preencha os campos abaixo e retornaremos em breve.") +
+      "</p>" +
+      '<form class="fvw-cta-form">' + inputs +
+      '<button type="submit" class="fvw-cta-btn">' + escapeHtml(cta.label) + "</button>" +
+      "</form>" +
+      '<p class="fvw-modal-foot">Seus dados são usados apenas para o seu atendimento.</p>' +
+      "</div>" +
+      "</div>";
+    return modal;
+  }
+
+  // Mascara de telefone brasileiro: (11) 99999-9999, aceitando fixo de 8
+  // digitos. Feita na digitacao pra pessoa ver o formato enquanto
+  // escreve, em vez de descobrir que errou so ao enviar.
+  function aplicarMascaraTelefone(input) {
+    input.addEventListener("input", function () {
+      var d = input.value.replace(/\D/g, "").slice(0, 11);
+      var out = "";
+      if (d.length > 0) out = "(" + d.slice(0, 2);
+      if (d.length >= 2) out += ") ";
+      if (d.length > 2) {
+        var corpo = d.length > 10 ? d.slice(2, 7) : d.slice(2, 6);
+        out += corpo;
+        var fim = d.length > 10 ? d.slice(7) : d.slice(6);
+        if (fim) out += "-" + fim;
+      }
+      input.value = out;
+    });
   }
 
   // ---------- Expandir / recolher (estilo "reels") ----------
@@ -488,17 +555,46 @@
     }
   }
 
-  function wireCTA(el, config) {
-    var form = el.querySelector(".fvw-cta-form");
-    if (form) {
-      form.addEventListener("click", function (e) {
+  function wireCTA(el, config, root) {
+    if (!config.cta || config.cta.type === "none") return;
+
+    // Formulario: o botao do balao apenas abre o modal.
+    if (CAMPOS[config.cta.type]) {
+      var botao = el.querySelector("button.fvw-cta-btn");
+      if (!botao) return;
+      var modal = buildFormModal(config);
+      root.appendChild(modal);
+
+      var form = modal.querySelector(".fvw-cta-form");
+      var tel = modal.querySelector('input[type="tel"]');
+      if (tel) aplicarMascaraTelefone(tel);
+
+      function abrir(e) {
         e.stopPropagation();
+        modal.classList.add("fvw-modal-aberto");
+        var primeiro = modal.querySelector(".fvw-input");
+        if (primeiro) primeiro.focus();
+      }
+      function fechar() {
+        modal.classList.remove("fvw-modal-aberto");
+      }
+
+      botao.addEventListener("click", abrir);
+      modal.querySelector(".fvw-modal-close").addEventListener("click", fechar);
+      // Clique fora do cartao fecha; dentro, nao.
+      modal.addEventListener("click", function (e) {
+        if (e.target === modal) fechar();
       });
+
       form.addEventListener("submit", function (e) {
         e.preventDefault();
         var data = {};
         new FormData(form).forEach(function (v, k) {
-          data[k] = v;
+          // Telefone vai com o +55 na frente: quem recebe o lead precisa
+          // do numero completo pra discar ou importar no CRM.
+          data[k] = k.toLowerCase().indexOf("telefone") !== -1
+            ? "+55 " + v
+            : v;
         });
 
         submitLead(config, data);
@@ -510,19 +606,16 @@
         });
 
         // No formulario de WhatsApp o envio e so a primeira metade: a
-        // pessoa espera cair na conversa. Abre o WhatsApp ja com o nome
-        // dela na mensagem, pra quem atende saber quem chegou.
+        // pessoa espera cair na conversa. Abre ja com o nome dela na
+        // mensagem, pra quem atende saber quem chegou.
         if (config.cta.type === "whatsapp_form" && config.cta.target_url) {
-          var texto = data["Nome"]
-            ? "Olá! Meu nome é " + data["Nome"] + "."
-            : "Olá!";
+          var texto = data["Nome"] ? "Olá! Meu nome é " + data["Nome"] + "." : "Olá!";
           var url =
             config.cta.target_url +
             (config.cta.target_url.indexOf("?") === -1 ? "?" : "&") +
-            "text=" +
-            encodeURIComponent(texto);
-          // Aberto no mesmo gesto do envio: em popup bloqueado o
-          // navegador barraria uma janela nova sem interacao direta.
+            "text=" + encodeURIComponent(texto);
+          // Aberto no mesmo gesto do envio: sem interacao direta o
+          // navegador barraria a janela nova como popup.
           window.open(url, "_blank", "noopener");
           mostrarAgradecimento(form, "Redirecionando pro WhatsApp...");
           return;
@@ -532,13 +625,14 @@
       });
       return;
     }
+
     var link = el.querySelector("a.fvw-cta-btn");
     if (link) {
       link.addEventListener("click", function (e) {
         e.stopPropagation();
         trackEvent(config, "cta_click", {
-          cta_type: (config.cta && config.cta.type) || "link",
-          cta_label: (config.cta && config.cta.label) || "",
+          cta_type: config.cta.type,
+          cta_label: config.cta.label || "",
           cta_url: link.href,
         });
         // CTA de WhatsApp/link não tem formulário, mas o clique em si já
@@ -546,15 +640,15 @@
         // contato) — sem isso, esse tipo de CTA nunca aparecia no
         // painel de Leads, só nas Métricas.
         submitLead(config, {
-          Ação: config.cta && config.cta.type === "whatsapp" ? "Clique no WhatsApp" : "Clique no link",
+          Ação: config.cta.type === "whatsapp" ? "Clique no WhatsApp" : "Clique no link",
           Destino: link.href,
         });
       });
     }
   }
 
-  // Troca o formulario por uma confirmacao. Sem isso a pessoa envia e a
-  // tela nao muda, entao ela envia de novo — e o limite anti-spam da RPC
+  // Troca o formulario por uma confirmacao. Sem isso a tela nao muda
+  // depois do envio, a pessoa envia de novo, e o limite anti-spam da RPC
   // descarta o segundo envio em silencio.
   function mostrarAgradecimento(form, mensagem) {
     var aviso = document.createElement("p");

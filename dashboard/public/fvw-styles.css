@@ -371,3 +371,156 @@ textarea.fvw-input {
   font-family: inherit;
   resize: none;
 }
+
+
+/* ---------- Modal do formulario ----------
+   Vive fora do balao: dentro dele herdaria o recorte redondo e o
+   tamanho da bolha. Fica acima de tudo, inclusive do video expandido. */
+.fvw-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483100;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.55);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.fvw-modal.fvw-modal-aberto {
+  display: flex;
+}
+
+.fvw-modal-card {
+  width: 100%;
+  max-width: 380px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: #f2ede8;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+
+/* O cabecalho usa a cor da borda escolhida no painel, pro modal sair
+   parecido com a marca do cliente em vez de um cinza generico. */
+.fvw-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--fvw-border-color, #0b3d2e);
+  border-radius: 14px 14px 0 0;
+}
+
+.fvw-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.fvw-modal-sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.fvw-modal-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fvw-modal-body {
+  padding: 16px;
+}
+
+.fvw-modal-intro {
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #1a1a1a;
+}
+
+.fvw-modal-body .fvw-cta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: static;
+  padding: 0;
+  background: none;
+}
+
+.fvw-modal-body .fvw-input {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e0d9d2;
+  background: #fff;
+  font-size: 14px;
+}
+
+.fvw-modal-body .fvw-input:focus {
+  outline: none;
+  border-color: var(--fvw-border-color, #25d366);
+}
+
+/* Telefone: o +55 fica fixo ao lado do campo, entao ninguem apaga sem
+   querer nem digita o pais de novo. */
+.fvw-tel {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.fvw-tel-ddi {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #e0d9d2;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #444;
+}
+
+.fvw-tel .fvw-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.fvw-modal-body .fvw-cta-btn {
+  margin-top: 2px;
+  padding: 13px 12px;
+  font-size: 15px;
+}
+
+.fvw-modal-foot {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #7a7169;
+}
+
+.fvw-modal-body .fvw-obrigado {
+  position: static;
+  background: none;
+  color: #1a1a1a;
+  padding: 24px 8px;
+}

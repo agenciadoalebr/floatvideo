@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, WidgetCta, PageRule, CtaType } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
+import { formatarTelefone, telefoneParaWhatsApp } from "@/lib/domain";
 import WidgetPreview from "@/components/WidgetPreview";
 import PageRules from "@/components/PageRules";
 import VideoFraming from "@/components/VideoFraming";
@@ -59,7 +60,12 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
 
   const [ctaType, setCtaType] = useState<CtaType>(cta?.type ?? "whatsapp");
   const [ctaLabel, setCtaLabel] = useState(cta?.label ?? "Fale no WhatsApp");
-  const [ctaUrl, setCtaUrl] = useState(cta?.target_url ?? "");
+  const [ctaUrl, setCtaUrl] = useState(() => {
+    // O que fica gravado é a URL do wa.me; na tela mostramos o número
+    // formatado, que é o que a pessoa reconhece.
+    const salvo = cta?.target_url ?? "";
+    return salvo.includes("wa.me/") ? formatarTelefone(salvo) : salvo;
+  });
   const [notifyEmail, setNotifyEmail] = useState(widget?.notify_email ?? "");
   const [notifyWebhook, setNotifyWebhook] = useState(widget?.notify_webhook_url ?? "");
 
@@ -172,7 +178,7 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
         // painel. A regra do banco exige target_url só nos que levam.
         target_url: PRECISA_DESTINO.includes(ctaType)
           ? ehWhats
-            ? toWhatsAppLink(ctaUrl)
+            ? "https://wa.me/" + telefoneParaWhatsApp(ctaUrl)
             : ctaUrl
           : null,
       };
@@ -193,6 +199,8 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
     setTimeout(() => setSalvo(false), 4000);
     router.refresh();
   }
+
+  const ehWhatsApp = ctaType === "whatsapp" || ctaType === "whatsapp_form";
 
   if (readyVideos(videos).length === 0) {
     return (
@@ -474,16 +482,21 @@ export default function WidgetPanel({ projectId, videos, widget, cta, pageRules 
         )}
 
         {PRECISA_DESTINO.includes(ctaType) && (
-          <input
-            value={ctaUrl}
-            onChange={(e) => setCtaUrl(e.target.value)}
-            placeholder={
-              ctaType === "whatsapp" || ctaType === "whatsapp_form"
-                ? "Número com DDI: 5511999999999"
-                : "https://..."
-            }
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
+          <label className="block">
+            <span className="text-xs text-neutral-600">
+              {ehWhatsApp ? "Número do WhatsApp" : "Endereço de destino"}
+            </span>
+            <input
+              value={ctaUrl}
+              onChange={(e) =>
+                setCtaUrl(
+                  ehWhatsApp ? formatarTelefone(e.target.value) : e.target.value
+                )
+              }
+              placeholder={ehWhatsApp ? "+55 (11) 96713-6667" : "https://..."}
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+            />
+          </label>
         )}
 
         {/* Notificação só faz sentido onde existe lead pra avisar. */}
@@ -575,8 +588,3 @@ function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode
   );
 }
 
-function toWhatsAppLink(value: string) {
-  if (value.startsWith("http")) return value;
-  const digits = value.replace(/\D/g, "");
-  return `https://wa.me/${digits}`;
-}
