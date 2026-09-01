@@ -96,6 +96,14 @@
       root.appendChild(el);
 
       agendarAparicao(config, function (gatilho) {
+        // O vídeo só é carregado agora, e não no load da página. Para o
+        // YouTube isso é o que mais pesa: a API dele são centenas de KB
+        // que antes desciam junto com a loja abrindo, mesmo quando o
+        // balão só ia aparecer 8 segundos depois — ou nunca, no gatilho
+        // de saída. Aqui, o download acontece durante a animação de
+        // entrada do balão.
+        montarVideo(el, config);
+
         el.classList.add("fvw-visible");
         el.style.opacity = "";
         el.style.pointerEvents = "";
@@ -115,13 +123,18 @@
       wireProgressBar(el);
       startProgressLoop(el, config);
 
-      if (config.video.source_type === "youtube") {
-        mountYouTubePlayer(el, config);
-      } else {
-        mountNativeVideo(el, config);
-      }
     },
   };
+
+  function montarVideo(el, config) {
+    if (el._videoMontado) return;
+    el._videoMontado = true;
+    if (config.video.source_type === "youtube") {
+      mountYouTubePlayer(el, config);
+    } else {
+      mountNativeVideo(el, config);
+    }
+  }
 
   // ---------- DOM ----------
 
@@ -1432,11 +1445,27 @@
     return host.attachShadow({ mode: "open" });
   }
 
+  // A build troca este marcador pelo CSS inteiro, minificado (ver
+  // scripts/build-widget.mjs). Em desenvolvimento ele continua vazio, e
+  // aí o estilo vem por <link> como sempre veio.
+  var CSS_EMBUTIDO = "__FVW_CSS__";
+
   function injectStyles(root) {
-    // Dentro do shadow root o <link> é local: não polui o site e não
-    // pode ser sobrescrito por ele.
     var doc = root.getElementById ? root : document;
     if (doc.getElementById && doc.getElementById("fvw-styles")) return;
+
+    // Dentro do shadow root, tanto o <style> quanto o <link> são locais:
+    // não poluem o site e não podem ser sobrescritos por ele. Embutido
+    // poupa uma ida e volta de rede — e o balão nunca aparece sem estilo,
+    // porque o CSS chega junto do próprio script.
+    if (CSS_EMBUTIDO && CSS_EMBUTIDO !== "__FVW_CSS__") {
+      var style = document.createElement("style");
+      style.id = "fvw-styles";
+      style.textContent = CSS_EMBUTIDO;
+      root.appendChild(style);
+      return;
+    }
+
     var link = document.createElement("link");
     link.id = "fvw-styles";
     link.rel = "stylesheet";

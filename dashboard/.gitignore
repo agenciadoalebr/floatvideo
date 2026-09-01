@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# gerado pela build (scripts/build-widget.mjs)
+/public/player.min.js

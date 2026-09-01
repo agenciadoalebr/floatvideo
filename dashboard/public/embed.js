@@ -33,7 +33,10 @@
     SCRIPT_URL.searchParams.get("key") ||
     CURRENT_SCRIPT.getAttribute("data-key");
   var SCRIPT_ORIGIN = SCRIPT_URL.origin;
-  var PLAYER_BUNDLE_URL = SCRIPT_ORIGIN + "/player.js";
+  // O minificado é gerado na build e já traz o CSS dentro. O original
+  // fica como reserva: em desenvolvimento ele é o único que existe.
+  var PLAYER_BUNDLE_URL = SCRIPT_ORIGIN + "/player.min.js";
+  var PLAYER_FALLBACK_URL = SCRIPT_ORIGIN + "/player.js";
 
   if (!EMBED_KEY) {
     console.error("[FloatingVideoWidget] data-key ausente no <script>.");
@@ -43,9 +46,9 @@
   if (window.__FVW_LOADED__) return;
   window.__FVW_LOADED__ = true;
 
-  function boot() {
+  function carregar(url, aoFalhar) {
     var s = document.createElement("script");
-    s.src = PLAYER_BUNDLE_URL;
+    s.src = url;
     s.async = true;
     s.defer = true;
     s.onload = function () {
@@ -53,7 +56,14 @@
         window.FVWPlayer.boot(EMBED_KEY);
       }
     };
+    if (aoFalhar) s.onerror = aoFalhar;
     document.head.appendChild(s);
+  }
+
+  function boot() {
+    carregar(PLAYER_BUNDLE_URL, function () {
+      carregar(PLAYER_FALLBACK_URL);
+    });
   }
 
   if (document.readyState === "complete") {
