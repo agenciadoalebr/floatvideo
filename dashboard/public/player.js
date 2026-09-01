@@ -374,9 +374,10 @@
     backdrop.style.visibility = "";
     setMuted(el, false);
     setLoop(el, false);
-    // Ao expandir o video sempre segue tocando, entao o botao ja nasce
-    // mostrando "pausar".
-    setPlayIcon(el, true);
+    // Comeca do inicio: no balao o video roda em loop o tempo todo, entao
+    // ao expandir ele estaria num ponto qualquer do meio. Quem clica pra
+    // assistir espera ver desde o comeco.
+    reiniciarVideo(el);
     trackEvent(config, "expand");
     // Ao expandir o video ja vem tocando do balao, entao o evento de
     // "comecou a tocar" pode nao disparar de novo: confere na hora.
@@ -537,20 +538,26 @@
     });
   }
 
+  // Volta o video pro comeco e toca. Serve ao botao de reiniciar e ao
+  // expandir — nos dois casos a pessoa quer ver desde o inicio.
+  function reiniciarVideo(el) {
+    var video = el.querySelector(".fvw-video");
+    if (video) {
+      video.currentTime = 0;
+      video.play().catch(function () {});
+    } else if (el._ytPlayer && typeof el._ytPlayer.seekTo === "function") {
+      el._ytPlayer.seekTo(0, true);
+      el._ytPlayer.playVideo();
+    }
+    var fill = el.querySelector(".fvw-progress-fill");
+    if (fill) fill.style.width = "0%";
+    setPlayIcon(el, true);
+  }
+
   function wireRestartButton(el) {
     el.querySelector(".fvw-restart").addEventListener("click", function (e) {
       e.stopPropagation();
-      var video = el.querySelector(".fvw-video");
-      if (video) {
-        video.currentTime = 0;
-        video.play().catch(function () {});
-      } else if (el._ytPlayer) {
-        el._ytPlayer.seekTo(0, true);
-        el._ytPlayer.playVideo();
-      }
-      var fill = el.querySelector(".fvw-progress-fill");
-      if (fill) fill.style.width = "0%";
-      setPlayIcon(el, true);
+      reiniciarVideo(el);
     });
   }
 
