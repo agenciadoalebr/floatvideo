@@ -392,13 +392,19 @@ textarea.fvw-input {
   display: flex;
 }
 
+.fvw-modal-whats .fvw-modal-card {
+  background: #f2ede8;
+}
+
 .fvw-modal-card {
-  width: 100%;
-  max-width: 380px;
+  /* Um degrau mais estreito que o video expandido (min(92vw, 380px)),
+     pra ficar claro que e uma camada por cima e nao a continuacao do
+     player. */
+  width: min(86vw, 340px);
   max-height: 90vh;
   overflow-y: auto;
   border-radius: 14px;
-  background: #f2ede8;
+  background: #fff;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
 }
 
@@ -449,12 +455,22 @@ textarea.fvw-input {
 
 .fvw-modal-intro {
   margin: 0 0 12px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  background: #fff;
   font-size: 14px;
   line-height: 1.4;
   color: #1a1a1a;
+}
+
+/* No WhatsApp a introducao imita um balao de mensagem recebida. */
+.fvw-modal-whats .fvw-modal-intro {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* No formulario comum e so um texto de apoio, mais discreto. */
+.fvw-modal-padrao .fvw-modal-intro {
+  font-size: 13px;
+  color: #555;
 }
 
 .fvw-modal-body .fvw-cta-form {
@@ -472,6 +488,16 @@ textarea.fvw-input {
   border: 1px solid #e0d9d2;
   background: #fff;
   font-size: 14px;
+}
+
+.fvw-modal-padrao .fvw-modal-body .fvw-input {
+  border-color: #d8d8d8;
+}
+
+/* O verde do .fvw-cta-btn e do WhatsApp. Fora dele, o botao segue a cor
+   escolhida no painel. */
+.fvw-modal-padrao .fvw-modal-body .fvw-cta-btn {
+  background: var(--fvw-border-color, #111);
 }
 
 .fvw-modal-body .fvw-input:focus {

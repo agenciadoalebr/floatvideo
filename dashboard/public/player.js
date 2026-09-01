@@ -267,7 +267,19 @@
       .join("");
 
     var modal = document.createElement("div");
-    modal.className = "fvw-modal";
+    // Dois visuais: o de WhatsApp imita a cara do aplicativo (fundo
+    // bege, balao de mensagem, botao verde) porque a pessoa esta indo
+    // pra la mesmo. O formulario comum nao vai pro WhatsApp, entao
+    // usa cartao branco e a cor da marca do cliente.
+    modal.className =
+      "fvw-modal " + (ehWhats ? "fvw-modal-whats" : "fvw-modal-padrao");
+    // A cor da marca precisa ser repetida aqui: ela e definida no balao,
+    // e o modal vive fora dele (irmao no shadow root), entao nao herda.
+    // Sem isto o cabecalho e o botao caem na cor de reserva.
+    modal.style.setProperty(
+      "--fvw-border-color",
+      config.border_color || "#111"
+    );
     modal.innerHTML =
       '<div class="fvw-modal-card">' +
       '<div class="fvw-modal-head">' +
