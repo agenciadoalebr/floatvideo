@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Widget, WidgetCta, CtaType, BuyPlatform } from "@/lib/types";
 import { PLATAFORMAS } from "@/lib/ecommerce";
+import CtaPreview from "@/components/CtaPreview";
 import { formatarTelefone, telefoneParaWhatsApp } from "@/lib/domain";
 
 type Props = {
@@ -359,6 +360,16 @@ export default function CtaPanel({ widget, cta }: Props) {
           </label>
         )}
       </div>
+
+      {tipo !== "none" && (
+        <CtaPreview
+          tipo={tipo}
+          estilo={estilo}
+          rotulo={rotulo}
+          subRotulo={estilo === "card" ? subRotulo : ""}
+          cor={cor}
+        />
+      )}
 
       {/* Aviso só existe onde alguém deixou dados esperando retorno. No
           clique direto a pessoa já caiu na conversa. */}
