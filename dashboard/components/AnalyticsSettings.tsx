@@ -106,8 +106,7 @@ export default function AnalyticsSettings({ widget }: Props) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-4">
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <Secao
           aberta
           titulo="Enviar eventos para o Analytics do site"
@@ -161,6 +160,7 @@ export default function AnalyticsSettings({ widget }: Props) {
           {erro && <p className="text-xs text-red-600">{erro}</p>}
         </Secao>
 
+      <div className="space-y-4">
         <Secao
           titulo="Como ligar no Google Tag Manager"
           descricao="Um gatilho só dá conta de todos os eventos, inclusive os que criarmos no futuro."
@@ -434,10 +434,9 @@ export default function AnalyticsSettings({ widget }: Props) {
             que não chegou a ser publicado.
           </p>
         </Secao>
-      </div>
 
-      <Secao
-        titulo="Eventos que o widget envia"
+        <Secao
+          titulo="Eventos que o widget envia"
         descricao="Na ordem em que acontecem. Todos levam junto um objeto floatvideo com o widget, a página e o vídeo."
       >
         <ul className="divide-y divide-neutral-100 text-xs">
@@ -460,7 +459,8 @@ export default function AnalyticsSettings({ widget }: Props) {
           Dados de lead (nome, telefone, e-mail) <strong>nunca</strong> entram
           aí: o dataLayer é visível para qualquer script da página.
         </p>
-      </Secao>
+        </Secao>
+      </div>
     </div>
   );
 }
