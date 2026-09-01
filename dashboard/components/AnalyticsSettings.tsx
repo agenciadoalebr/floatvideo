@@ -356,6 +356,101 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
         </div>
+
+        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-700">
+              Conversão no Google Ads
+            </h3>
+            <p className="mt-1 text-xs text-neutral-500">
+              Para o Ads otimizar a campanha por quem clicou no botão de ação.
+            </p>
+          </div>
+
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-xs text-emerald-900">
+              <strong>Se o GA4 já está ligado ao Ads, pare por aqui:</strong>{" "}
+              marque o <Copiavel texto="floatvideo_cta_click" /> como evento
+              principal no GA4 e, no Google Ads, vá em Metas → Conversões →
+              Importar → Google Analytics 4. Nada de novo no GTM.
+            </p>
+          </div>
+
+          <p className="text-xs text-neutral-600">
+            O passo a passo abaixo é o outro caminho: a tag de conversão do Ads
+            direto no GTM. Mais direto e não depende do vínculo com o GA4.
+          </p>
+
+          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+            <p className="text-xs text-red-900">
+              <strong>Não reaproveite o acionador do GA4 aqui.</strong> Ele
+              dispara em nove eventos por visualização — ligado à conversão,
+              contaria nove conversões por pessoa. Esta tag precisa de um
+              acionador só dela, com o nome exato do evento e{" "}
+              <strong>sem</strong> regex.
+            </p>
+          </div>
+
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
+            <li>
+              <strong>Crie a ação de conversão no Google Ads.</strong> Metas →
+              Conversões → <em>Nova ação de conversão</em> → <em>Site</em>.
+              Informe o domínio e, quando ele oferecer, escolha configurar{" "}
+              <em>manualmente com código</em>. Anote o{" "}
+              <strong>ID de conversão</strong> (começa com{" "}
+              <code className="rounded bg-neutral-100 px-1">AW-</code>) e o{" "}
+              <strong>rótulo de conversão</strong> — os dois aparecem juntos na
+              tela de instalação.
+            </li>
+
+            <li>
+              <strong>Crie o acionador no GTM.</strong> Acionadores →{" "}
+              <em>Novo</em> → nome <Copiavel texto="Float Video - CTA click" />{" "}
+              → <em>Evento personalizado</em>.
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+                <li>
+                  Nome do evento: <Copiavel texto="floatvideo_cta_click" />
+                </li>
+                <li>
+                  <strong>Deixe a caixinha de regex desmarcada</strong> — aqui
+                  queremos só este evento
+                </li>
+                <li>Todos os eventos personalizados → Salvar</li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Crie a tag.</strong> Tags → <em>Novo</em> → nome{" "}
+              <Copiavel texto="Google Ads - Float Video" /> → tipo{" "}
+              <em>Google Ads: rastreamento de conversões</em>. Preencha o ID e o
+              rótulo do passo 1, e em <em>Acionamento</em> escolha{" "}
+              <strong>Float Video - CTA click</strong>. Salve.
+            </li>
+
+            <li>
+              <strong>Confirme o Vinculador de conversões.</strong> Precisa
+              existir uma tag <em>Vinculador de conversões</em> disparando em
+              todas as páginas — é ela que guarda o clique do anúncio para a
+              conversão ser atribuída. Quase toda conta que já anuncia tem;
+              se não tiver, crie uma com o acionador <em>All Pages</em>.
+            </li>
+
+            <li>
+              <strong>Teste e publique.</strong> No <em>Visualizar</em>, abra o
+              site com <Copiavel texto="?fvw_reset" />, assista ao vídeo e
+              clique no botão de ação: a tag do Ads deve disparar{" "}
+              <strong>uma única vez</strong>, e só nesse momento. Depois,
+              Enviar → Publicar.
+            </li>
+          </ol>
+
+          <p className="text-xs text-neutral-400">
+            No Ads a conversão leva algumas horas para sair de &quot;não
+            verificada&quot;. Se depois de um dia continuar sem registrar,
+            quase sempre é o Vinculador de conversões faltando ou o contêiner
+            que não chegou a ser publicado.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
