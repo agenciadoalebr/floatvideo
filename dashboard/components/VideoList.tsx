@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, PageRule } from "@/lib/types";
@@ -34,6 +34,17 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
   // cards abertos lado a lado deixariam a lista alta e confusa.
   const [regrasAbertas, setRegrasAbertas] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+
+  // Esc fecha o modal de regras. Fica aqui, e não no modal, pra o
+  // listener existir uma vez só em vez de um por card.
+  useEffect(() => {
+    if (!regrasAbertas) return;
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === "Escape") setRegrasAbertas(null);
+    }
+    window.addEventListener("keydown", aoTeclar);
+    return () => window.removeEventListener("keydown", aoTeclar);
+  }, [regrasAbertas]);
 
   function startRename(video: Video) {
     setRenamingId(video.id);
@@ -83,8 +94,11 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
 
   if (videos.length === 0) return null;
 
+  const videoAberto = videos.find((v) => v.id === regrasAbertas);
+
   return (
-    <div className="grid gap-3 sm:grid-cols-3">
+    <>
+      <div className="grid gap-3 sm:grid-cols-3">
       {videos.map((video) => (
         <div
           key={video.id}
@@ -181,20 +195,52 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
               {deletingId === video.id ? "Excluindo..." : "Excluir vídeo"}
             </button>
           </div>
-
-          {/* As regras pertencem ao vídeo, então moram no card dele. */}
-          {regrasAbertas === video.id && (
-            <div className="border-t border-neutral-100 p-2">
-              <PageRules
-                widgetId={widget?.id ?? null}
-                videoId={video.id}
-                rules={pageRules}
-                ehPadrao={widget?.video_id === video.id}
-              />
-            </div>
-          )}
         </div>
       ))}
-    </div>
+      </div>
+
+      {/* Modal fora da grade: dentro do card os campos ficavam espremidos
+          em um terço da largura, e o card crescia empurrando a lista. */}
+      {videoAberto && (
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRegrasAbertas(null);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Onde aparece: ${videoLabel(videoAberto)}`}
+        >
+          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
+              <div>
+                <p className="text-sm font-semibold text-brand-ink">
+                  Onde aparece?
+                </p>
+                <p className="text-xs text-neutral-500">
+                  {videoLabel(videoAberto)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegrasAbertas(null)}
+                aria-label="Fechar"
+                className="rounded-md px-2 py-1 text-lg leading-none text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-5">
+              <PageRules
+                widgetId={widget?.id ?? null}
+                videoId={videoAberto.id}
+                rules={pageRules}
+                ehPadrao={widget?.video_id === videoAberto.id}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
