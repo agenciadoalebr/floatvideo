@@ -17,10 +17,18 @@ const PRECISA_DESTINO: CtaType[] = ["whatsapp", "whatsapp_form", "link"];
 
 /** Texto sugerido para cada tipo de botao. */
 const ROTULO_PADRAO: Partial<Record<CtaType, string>> = {
-  whatsapp: "Fale no WhatsApp",
-  whatsapp_form: "Fale no WhatsApp",
+  whatsapp: "Quer saber mais?",
+  whatsapp_form: "Quer saber mais?",
   form: "Fale com a gente",
   buy: "Comprar agora",
+};
+
+/** Segunda linha sugerida, usada só no estilo cartão. */
+const SUBROTULO_PADRAO: Partial<Record<CtaType, string>> = {
+  whatsapp: "Chame pelo WhatsApp",
+  whatsapp_form: "Chame pelo WhatsApp",
+  form: "Deixe seu contato",
+  buy: "Ver o produto",
 };
 
 const AJUDA: Record<CtaType, string> = {
@@ -42,7 +50,13 @@ const AJUDA: Record<CtaType, string> = {
 export default function CtaPanel({ widget, cta }: Props) {
   const router = useRouter();
   const [tipo, setTipo] = useState<CtaType>(cta?.type ?? "whatsapp");
-  const [rotulo, setRotulo] = useState(cta?.label ?? "Fale no WhatsApp");
+  const [rotulo, setRotulo] = useState(cta?.label ?? "Quer saber mais?");
+  const [subRotulo, setSubRotulo] = useState(
+    cta?.sublabel ?? "Chame pelo WhatsApp"
+  );
+  const [estilo, setEstilo] = useState<"card" | "solid">(
+    cta?.button_style ?? "card"
+  );
   const [destino, setDestino] = useState(() => {
     const salvo = cta?.target_url ?? "";
     return salvo.includes("wa.me/") ? formatarTelefone(salvo) : salvo;
@@ -71,6 +85,12 @@ export default function CtaPanel({ widget, cta }: Props) {
     const eraPadrao =
       !rotulo.trim() || Object.values(ROTULO_PADRAO).includes(rotulo.trim());
     if (padrao && eraPadrao) setRotulo(padrao);
+
+    const subPadrao = SUBROTULO_PADRAO[novo];
+    const subEraPadrao =
+      !subRotulo.trim() ||
+      Object.values(SUBROTULO_PADRAO).includes(subRotulo.trim());
+    if (subPadrao && subEraPadrao) setSubRotulo(subPadrao);
   }
 
   async function salvar(e: React.FormEvent) {
@@ -116,6 +136,8 @@ export default function CtaPanel({ widget, cta }: Props) {
         widget_id: widget.id,
         type: tipo,
         label: rotulo,
+        sublabel: estilo === "card" && subRotulo.trim() ? subRotulo.trim() : null,
+        button_style: estilo,
         // No Comprar o destino é opcional: só entra em cena quando o
         // botão de compra não é encontrado na página.
         target_url: ehComprar
@@ -186,15 +208,47 @@ export default function CtaPanel({ widget, cta }: Props) {
         </div>
 
         {tipo !== "none" && (
-          <label className="block">
-            <span className="text-xs text-neutral-600">Texto do botão</span>
-            <input
-              value={rotulo}
-              onChange={(e) => setRotulo(e.target.value)}
-              placeholder="Fale no WhatsApp"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-            />
-          </label>
+          <>
+            <div>
+              <label className="block text-xs font-medium text-neutral-600">
+                Formato do botão
+              </label>
+              <select
+                value={estilo}
+                onChange={(e) => setEstilo(e.target.value as "card" | "solid")}
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              >
+                <option value="card">Cartão com ícone (duas linhas)</option>
+                <option value="solid">Barra colorida (uma linha)</option>
+              </select>
+            </div>
+
+            <label className="block">
+              <span className="text-xs text-neutral-600">
+                {estilo === "card" ? "Primeira linha" : "Texto do botão"}
+              </span>
+              <input
+                value={rotulo}
+                onChange={(e) => setRotulo(e.target.value)}
+                placeholder="Quer saber mais?"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+              />
+            </label>
+
+            {estilo === "card" && (
+              <label className="block">
+                <span className="text-xs text-neutral-600">
+                  Segunda linha (opcional)
+                </span>
+                <input
+                  value={subRotulo}
+                  onChange={(e) => setSubRotulo(e.target.value)}
+                  placeholder="Chame pelo WhatsApp"
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+                />
+              </label>
+            )}
+          </>
         )}
 
         {tipo !== "none" && (

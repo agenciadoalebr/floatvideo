@@ -219,6 +219,38 @@
     ],
   };
 
+  // Icones do cartao. Sao caminhos SVG inline: um <img> externo pediria
+  // outra requisicao e ficaria sujeito ao CSP do site do cliente.
+  var ICONES = {
+    whatsapp:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.7.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.28-.2-.57-.34M12.05 21.8h-.01c-1.77 0-3.51-.48-5.03-1.38l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.43 9.9-9.88 9.9"/></svg>',
+    carrinho:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4m10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4M6.2 15h11.1c.7 0 1.3-.4 1.6-1l3-5.5A1 1 0 0 0 21 7H6.3l-.7-3H2v2h2.2l2.9 12.4A2 2 0 0 0 9 20h11v-2H9.3z"/></svg>',
+    balao:
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2M7 9h10v2H7zm0-4h10v2H7zm0 8h7v2H7z"/></svg>',
+  };
+
+  function iconeDoCta(tipo) {
+    if (tipo === "whatsapp" || tipo === "whatsapp_form") return ICONES.whatsapp;
+    if (tipo === "buy") return ICONES.carrinho;
+    return ICONES.balao;
+  }
+
+  // Miolo do cartao: circulo colorido com o icone + as duas linhas de
+  // texto. A segunda linha e opcional; sem ela o cartao fica de uma
+  // linha so, e nao com um vazio embaixo do titulo.
+  function conteudoCartao(cta) {
+    return (
+      '<span class="fvw-cta-icone">' + iconeDoCta(cta.type) + "</span>" +
+      '<span class="fvw-cta-textos">' +
+      '<span class="fvw-cta-titulo">' + escapeHtml(cta.label) + "</span>" +
+      (cta.sublabel
+        ? '<span class="fvw-cta-sub">' + escapeHtml(cta.sublabel) + "</span>"
+        : "") +
+      "</span>"
+    );
+  }
+
   function buildCTAMarkup(cta) {
     if (cta.type === "none") return "";
 
@@ -226,10 +258,19 @@
     // botao, e o formulario abre num modal por cima. Empilhar campos
     // sobre o video comia a imagem justamente enquanto a pessoa assiste,
     // e num balao pequeno nao sobrava espaco pra cinco campos.
+    // Cartao: fundo claro, icone redondo na cor escolhida e duas linhas
+    // de texto. Chama mais atencao que a barra chapada e nao come tanto
+    // do video. A barra solida continua disponivel no painel.
+    var cartao = cta.button_style !== "solid";
+    var classes = "fvw-cta-btn" + (cartao ? " fvw-cta-card" : "");
+    // As classes de sempre continuam ai: e por elas que o wireCTA
+    // encontra o botao, seja qual for o estilo.
+    var miolo = cartao ? conteudoCartao(cta) : escapeHtml(cta.label);
+
     if (CAMPOS[cta.type]) {
       return (
-        '<div class="fvw-cta"><button type="button" class="fvw-cta-btn">' +
-        escapeHtml(cta.label) + "</button></div>"
+        '<div class="fvw-cta"><button type="button" class="' + classes + '">' +
+        miolo + "</button></div>"
       );
     }
 
@@ -237,14 +278,15 @@
     // o proprio botao de compra que ja existe nesta.
     if (cta.type === "buy") {
       return (
-        '<div class="fvw-cta"><button type="button" class="fvw-cta-btn fvw-cta-comprar">' +
-        escapeHtml(cta.label) + "</button></div>"
+        '<div class="fvw-cta"><button type="button" class="' + classes +
+        ' fvw-cta-comprar">' + miolo + "</button></div>"
       );
     }
 
     return (
-      '<div class="fvw-cta"><a class="fvw-cta-btn" href="' + escapeAttr(cta.target_url) +
-      '" target="_blank" rel="noopener noreferrer">' + escapeHtml(cta.label) + "</a></div>"
+      '<div class="fvw-cta"><a class="' + classes + '" href="' +
+      escapeAttr(cta.target_url) +
+      '" target="_blank" rel="noopener noreferrer">' + miolo + "</a></div>"
     );
   }
 

@@ -118,6 +118,9 @@ export type WidgetCta = {
   widget_id: string;
   type: CtaType;
   label: string;
+  sublabel: string | null;
+  /** "card" = ícone + duas linhas; "solid" = barra chapada. */
+  button_style: "card" | "solid";
   target_url: string | null;
   form_fields: { name: string; label: string; type: string; required: boolean }[] | null;
   buy_platform: BuyPlatform | null;
