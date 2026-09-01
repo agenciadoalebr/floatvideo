@@ -35,7 +35,7 @@ const EVENTOS: { nome: string; quando: string }[] = [
   {
     nome: "floatvideo_cta_click",
     quando:
-      "Clicou no botão de ação. É este que vale marcar como conversão no Google Ads.",
+      "A pessoa concluiu a ação: clicou no WhatsApp, enviou o formulário, clicou em Comprar ou abriu o link. Nos formulários é o envio que conta — abrir o formulário e desistir não dispara nada. É este que vale marcar como conversão no Google Ads.",
   },
   {
     nome: "floatvideo_close",
