@@ -10,6 +10,7 @@ import AnalyticsPanel from "@/components/AnalyticsPanel";
 import ProjectTabs from "@/components/ProjectTabs";
 import ProjectDomainField from "@/components/ProjectDomainField";
 import CtaPanel from "@/components/CtaPanel";
+import AnalyticsSettings from "@/components/AnalyticsSettings";
 import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
@@ -192,6 +193,11 @@ export default async function ProjectPage({
             id: "instalacao",
             label: "Instalação",
             content: <EmbedCodeBox embedKey={project.embed_key} />,
+          },
+          {
+            id: "analytics",
+            label: "Analytics do site",
+            content: <AnalyticsSettings widget={widget} />,
           },
           {
             id: "leads",
