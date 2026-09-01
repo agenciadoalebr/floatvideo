@@ -261,17 +261,20 @@ export default function AnalyticsSettings({ widget }: Props) {
                 .
               </li>
               <li>
-                <strong>No GA4</strong> (não no GTM): Administrador →
-                Definições personalizadas → Criar dimensão personalizada, escopo{" "}
-                <em>Evento</em>, para os parâmetros{" "}
+                Este último é no painel do GA4, não no GTM (vale igual para
+                quem usa gtag): Administrador → Definições personalizadas →
+                Criar dimensão personalizada, escopo <em>Evento</em>, para os
+                parâmetros{" "}
                 <code className="rounded bg-neutral-100 px-1">video</code> e{" "}
                 <code className="rounded bg-neutral-100 px-1">cta_type</code>.
               </li>
             </ol>
             <p className="mt-2 text-xs text-neutral-500">
-              Esse último passo é o mais esquecido: sem ele o parâmetro chega no
-              GA4, mas não aparece em nenhum relatório. E o GA4 não preenche o
-              que passou — vale fazer antes de começar a campanha.
+              Pular esse último passo não quebra nada: os eventos continuam
+              chegando, sendo contados e servindo como conversão. O que ele
+              muda é poder abrir um relatório e ver <em>qual vídeo</em> gerou
+              os cliques, em vez de só o total. Mas o GA4 não preenche o que
+              passou — feito depois, vale só dali para frente.
             </p>
           </div>
           <p className="text-xs text-neutral-400">
