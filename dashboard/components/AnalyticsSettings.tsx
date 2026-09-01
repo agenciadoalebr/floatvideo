@@ -206,18 +206,6 @@ export default function AnalyticsSettings({ widget }: Props) {
               como nome do evento — assim ele repassa o nome que chegou.
             </li>
             <li>
-              Para os detalhes, crie variáveis de camada de dados apontando
-              para{" "}
-              <code className="rounded bg-neutral-100 px-1">
-                floatvideo.video
-              </code>{" "}
-              e{" "}
-              <code className="rounded bg-neutral-100 px-1">
-                floatvideo.cta_type
-              </code>
-              , e adicione como parâmetros da tag.
-            </li>
-            <li>
               Para marcar conversão no Google Ads, use o{" "}
               <code className="rounded bg-neutral-100 px-1">
                 floatvideo_cta_click
@@ -225,6 +213,67 @@ export default function AnalyticsSettings({ widget }: Props) {
               .
             </li>
           </ol>
+
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs font-medium text-neutral-700">
+              Opcional: saber de qual vídeo veio cada clique
+            </p>
+            <p className="mt-1 text-xs text-neutral-600">
+              Com os passos acima você já mede <em>quantos</em> cliques houve.
+              Os detalhes (qual vídeo, qual tipo de botão) vêm dentro do evento,
+              mas o GTM só os enxerga se você apontar um dedo para cada campo —
+              é o que ele chama de variável de camada de dados.
+            </p>
+            <ol className="mt-2 list-decimal space-y-2 pl-4 text-xs text-neutral-600">
+              <li>
+                <strong>Variáveis</strong> → em &quot;Variáveis definidas pelo
+                usuário&quot;, <strong>Novo</strong> → tipo{" "}
+                <strong>Variável de camada de dados</strong>.
+              </li>
+              <li>
+                Em &quot;Nome da variável da camada de dados&quot;, escreva
+                exatamente{" "}
+                <code className="rounded bg-neutral-100 px-1">
+                  floatvideo.video
+                </code>{" "}
+                — com o ponto, que é como o GTM entra dentro do objeto. Dê o
+                nome <strong>FV - vídeo</strong> à variável e salve.
+              </li>
+              <li>
+                Repita com{" "}
+                <code className="rounded bg-neutral-100 px-1">
+                  floatvideo.cta_type
+                </code>
+                , chamando de <strong>FV - tipo de CTA</strong>.
+              </li>
+              <li>
+                Na tag do GA4 → <strong>Parâmetros do evento</strong>, adicione
+                duas linhas: <code className="rounded bg-neutral-100 px-1">video</code>{" "}
+                com o valor{" "}
+                <code className="rounded bg-neutral-100 px-1">
+                  {"{{FV - vídeo}}"}
+                </code>
+                , e{" "}
+                <code className="rounded bg-neutral-100 px-1">cta_type</code> com{" "}
+                <code className="rounded bg-neutral-100 px-1">
+                  {"{{FV - tipo de CTA}}"}
+                </code>
+                .
+              </li>
+              <li>
+                <strong>No GA4</strong> (não no GTM): Administrador →
+                Definições personalizadas → Criar dimensão personalizada, escopo{" "}
+                <em>Evento</em>, para os parâmetros{" "}
+                <code className="rounded bg-neutral-100 px-1">video</code> e{" "}
+                <code className="rounded bg-neutral-100 px-1">cta_type</code>.
+              </li>
+            </ol>
+            <p className="mt-2 text-xs text-neutral-500">
+              Esse último passo é o mais esquecido: sem ele o parâmetro chega no
+              GA4, mas não aparece em nenhum relatório. E o GA4 não preenche o
+              que passou — vale fazer antes de começar a campanha.
+            </p>
+          </div>
           <p className="text-xs text-neutral-400">
             Para conferir se está chegando: abra o Preview do GTM, ou digite{" "}
             <code className="rounded bg-neutral-100 px-1">dataLayer</code> no
