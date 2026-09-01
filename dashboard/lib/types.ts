@@ -97,6 +97,18 @@ export type CtaType =
   /** Legado: projetos antigos podem ter isso gravado. */
   | "link";
 
+/** Plataforma de e-commerce do site, usada só pelo botão Comprar. */
+export type BuyPlatform =
+  | "auto"
+  | "vtex"
+  | "loja_integrada"
+  | "nuvemshop"
+  | "woocommerce"
+  | "shopify"
+  | "wix"
+  | "tray"
+  | "custom";
+
 export type WidgetCta = {
   id: string;
   widget_id: string;
@@ -104,4 +116,7 @@ export type WidgetCta = {
   label: string;
   target_url: string | null;
   form_fields: { name: string; label: string; type: string; required: boolean }[] | null;
+  buy_platform: BuyPlatform | null;
+  /** Seletor CSS próprio, para lojas fora das plataformas conhecidas. */
+  buy_selector: string | null;
 };

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Widget, WidgetCta, CtaType } from "@/lib/types";
+import type { Widget, WidgetCta, CtaType, BuyPlatform } from "@/lib/types";
+import { PLATAFORMAS } from "@/lib/ecommerce";
 import { formatarTelefone, telefoneParaWhatsApp } from "@/lib/domain";
 
 type Props = {
@@ -12,14 +13,23 @@ type Props = {
 };
 
 /** Tipos que levam a algum lugar e portanto precisam de destino. */
-const PRECISA_DESTINO: CtaType[] = ["whatsapp", "whatsapp_form", "link", "buy"];
+const PRECISA_DESTINO: CtaType[] = ["whatsapp", "whatsapp_form", "link"];
+
+/** Texto sugerido para cada tipo de botao. */
+const ROTULO_PADRAO: Partial<Record<CtaType, string>> = {
+  whatsapp: "Fale no WhatsApp",
+  whatsapp_form: "Fale no WhatsApp",
+  form: "Fale com a gente",
+  buy: "Comprar agora",
+};
 
 const AJUDA: Record<CtaType, string> = {
   whatsapp: "Um botão que abre a conversa no WhatsApp direto.",
   whatsapp_form:
     "Pede nome e telefone e só então manda pro WhatsApp — o contato fica registrado mesmo se a pessoa desistir no meio.",
   form: "Formulário completo. O lead fica no painel; não abre o WhatsApp.",
-  buy: "Em breve.",
+  buy:
+    "Fecha o vídeo e leva a pessoa até o botão de compra da própria página, com um destaque piscando nele.",
   none: "O vídeo aparece sem nenhum botão.",
   link: "Link livre (formato antigo).",
 };
@@ -37,6 +47,10 @@ export default function CtaPanel({ widget, cta }: Props) {
     const salvo = cta?.target_url ?? "";
     return salvo.includes("wa.me/") ? formatarTelefone(salvo) : salvo;
   });
+  const [plataforma, setPlataforma] = useState<BuyPlatform>(
+    cta?.buy_platform ?? "auto"
+  );
+  const [seletor, setSeletor] = useState(cta?.buy_selector ?? "");
   const [email, setEmail] = useState(widget?.notify_email ?? "");
   const [webhook, setWebhook] = useState(widget?.notify_webhook_url ?? "");
   const [salvando, setSalvando] = useState(false);
@@ -44,7 +58,19 @@ export default function CtaPanel({ widget, cta }: Props) {
   const [erro, setErro] = useState("");
 
   const ehWhatsApp = tipo === "whatsapp" || tipo === "whatsapp_form";
+  const ehComprar = tipo === "buy";
   const ehFormulario = tipo === "form" || tipo === "whatsapp_form";
+
+  // Trocar de tipo troca tambem o texto do botao, desde que ele ainda
+  // seja um dos nossos padroes: "Fale no WhatsApp" num botao Comprar era
+  // o erro mais facil de cometer aqui.
+  function trocarTipo(novo: CtaType) {
+    setTipo(novo);
+    const padrao = ROTULO_PADRAO[novo];
+    const eraPadrao =
+      !rotulo.trim() || Object.values(ROTULO_PADRAO).includes(rotulo.trim());
+    if (padrao && eraPadrao) setRotulo(padrao);
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
@@ -55,6 +81,11 @@ export default function CtaPanel({ widget, cta }: Props) {
 
     if (PRECISA_DESTINO.includes(tipo) && !destino.trim()) {
       setErro(ehWhatsApp ? "Informe o número do WhatsApp." : "Informe o destino.");
+      return;
+    }
+
+    if (ehComprar && plataforma === "custom" && !seletor.trim()) {
+      setErro("Informe o seletor CSS do botão de compra.");
       return;
     }
 
@@ -83,11 +114,17 @@ export default function CtaPanel({ widget, cta }: Props) {
         widget_id: widget.id,
         type: tipo,
         label: rotulo,
-        target_url: PRECISA_DESTINO.includes(tipo)
-          ? ehWhatsApp
-            ? "https://wa.me/" + telefoneParaWhatsApp(destino)
-            : destino
-          : null,
+        // No Comprar o destino é opcional: só entra em cena quando o
+        // botão de compra não é encontrado na página.
+        target_url: ehComprar
+          ? destino.trim() || null
+          : PRECISA_DESTINO.includes(tipo)
+            ? ehWhatsApp
+              ? "https://wa.me/" + telefoneParaWhatsApp(destino)
+              : destino
+            : null,
+        buy_platform: ehComprar ? plataforma : null,
+        buy_selector: ehComprar && seletor.trim() ? seletor.trim() : null,
       };
       const { error: erroCta } = cta
         ? await supabase.from("widget_ctas").update(payload).eq("id", cta.id)
@@ -130,7 +167,7 @@ export default function CtaPanel({ widget, cta }: Props) {
           </label>
           <select
             value={tipo}
-            onChange={(e) => setTipo(e.target.value as CtaType)}
+            onChange={(e) => trocarTipo(e.target.value as CtaType)}
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
           >
             <option value="whatsapp">Clique de WhatsApp</option>
@@ -140,15 +177,13 @@ export default function CtaPanel({ widget, cta }: Props) {
             <option value="form">
               Formulário completo (nome, telefone, e-mail, assunto, mensagem)
             </option>
-            <option value="buy" disabled>
-              Botão Comprar — em breve
-            </option>
+            <option value="buy">Botão Comprar (e-commerce)</option>
             <option value="none">Sem botão de ação</option>
           </select>
           <p className="mt-1 text-xs text-neutral-500">{AJUDA[tipo]}</p>
         </div>
 
-        {tipo !== "none" && tipo !== "buy" && (
+        {tipo !== "none" && (
           <label className="block">
             <span className="text-xs text-neutral-600">Texto do botão</span>
             <input
@@ -158,6 +193,66 @@ export default function CtaPanel({ widget, cta }: Props) {
               className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
             />
           </label>
+        )}
+
+        {ehComprar && (
+          <>
+            <label className="block">
+              <span className="text-xs text-neutral-600">
+                Plataforma da loja
+              </span>
+              <select
+                value={plataforma}
+                onChange={(e) => setPlataforma(e.target.value as BuyPlatform)}
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              >
+                {PLATAFORMAS.map((p) => (
+                  <option key={p.valor} value={p.valor}>
+                    {p.nome}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-neutral-500">
+                {PLATAFORMAS.find((p) => p.valor === plataforma)?.ajuda}
+              </p>
+            </label>
+
+            {plataforma === "custom" && (
+              <label className="block">
+                <span className="text-xs text-neutral-600">
+                  Seletor CSS do botão de compra
+                </span>
+                <input
+                  value={seletor}
+                  onChange={(e) => setSeletor(e.target.value)}
+                  placeholder="#comprar, .botao-comprar"
+                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-brand-blue"
+                />
+                <p className="mt-1 text-xs text-neutral-500">
+                  Na loja, clique com o botão direito no botão de compra →
+                  Inspecionar. Vale o id (<code>#comprar</code>) ou a classe
+                  (<code>.botao-comprar</code>) que aparecer nele.
+                </p>
+              </label>
+            )}
+
+            <label className="block">
+              <span className="text-xs text-neutral-600">
+                Link de reserva (opcional)
+              </span>
+              <input
+                type="url"
+                value={destino}
+                onChange={(e) => setDestino(e.target.value)}
+                placeholder="https://loja.com.br/produto"
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                Usado só se o botão de compra não for encontrado na página —
+                em vez de não acontecer nada, abre este endereço.
+              </p>
+            </label>
+          </>
         )}
 
         {PRECISA_DESTINO.includes(tipo) && (

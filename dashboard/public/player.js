@@ -106,7 +106,7 @@
 
       wireCloseButton(el, backdrop, config, embedKey);
       wireExpand(el, backdrop, config);
-      wireCTA(el, config, root);
+      wireCTA(el, backdrop, config, root);
       wireMuteToggle(el);
       wirePlayToggle(el);
       wireRestartButton(el);
@@ -150,6 +150,12 @@
       "fvw-pos-" + layout.position,
     ].join(" ");
     wrapper.style.setProperty("--fvw-border-color", config.border_color || "#000");
+    // Usada pelo botao Comprar, que segue a cor da marca (e nao o verde
+    // do WhatsApp): sobre cor clara o texto branco sumia.
+    wrapper.style.setProperty(
+      "--fvw-cta-fg",
+      corDeTextoPara(config.border_color || "#000")
+    );
     wrapper.style.setProperty("--fvw-offset-x", layout.offsetX + "px");
     wrapper.style.setProperty("--fvw-offset-y", layout.offsetY + "px");
     applyFocalPoint(wrapper, config.video);
@@ -223,6 +229,15 @@
     if (CAMPOS[cta.type]) {
       return (
         '<div class="fvw-cta"><button type="button" class="fvw-cta-btn">' +
+        escapeHtml(cta.label) + "</button></div>"
+      );
+    }
+
+    // Comprar tambem e botao, e nao link: o destino nao e outra pagina, e
+    // o proprio botao de compra que ja existe nesta.
+    if (cta.type === "buy") {
+      return (
+        '<div class="fvw-cta"><button type="button" class="fvw-cta-btn fvw-cta-comprar">' +
         escapeHtml(cta.label) + "</button></div>"
       );
     }
@@ -601,7 +616,7 @@
     }
   }
 
-  function wireCTA(el, config, root) {
+  function wireCTA(el, backdrop, config, root) {
     if (!config.cta || config.cta.type === "none") return;
 
     // Formulario: o botao do balao apenas abre o modal.
@@ -672,6 +687,11 @@
       return;
     }
 
+    if (config.cta.type === "buy") {
+      wireComprar(el, backdrop, config, root);
+      return;
+    }
+
     var link = el.querySelector("a.fvw-cta-btn");
     if (link) {
       link.addEventListener("click", function (e) {
@@ -690,6 +710,243 @@
           Destino: link.href,
         });
       });
+    }
+  }
+
+  // ---------- Botao Comprar ----------
+
+  // Seletores do botao de compra das plataformas mais usadas no Brasil. A
+  // ordem dentro de cada lista importa: vence o primeiro que existir e
+  // estiver visivel na pagina. Sao varios por plataforma de proposito —
+  // tema, versao e tipo de pagina mudam a marcacao, e um seletor unico
+  // quebraria em metade das lojas.
+  var SELETORES_COMPRA = {
+    vtex: [
+      'button[class*="vtex-add-to-cart-button"]',
+      '[class*="vtex-add-to-cart-button"] button',
+      '[class*="vtex-add-to-cart-button"]',
+      ".buy-button",
+      "#buy-button",
+      ".vtex-button.buy-button",
+    ],
+    loja_integrada: [
+      "#comprar",
+      "button#comprar",
+      ".botao-comprar",
+      "button.comprar",
+      "a.comprar",
+      ".comprar-produto",
+    ],
+    nuvemshop: [
+      ".js-addtocart",
+      '[name="add-to-cart"]',
+      '.js-prod-submit-form [type="submit"]',
+      '.js-product-form [type="submit"]',
+      'form[action*="/cart/add"] [type="submit"]',
+    ],
+    woocommerce: [
+      "button.single_add_to_cart_button",
+      'form.cart button[type="submit"]',
+      "a.ajax_add_to_cart",
+      ".add_to_cart_button",
+    ],
+    shopify: [
+      'form[action*="/cart/add"] button[type="submit"]',
+      'button[name="add"]',
+      ".product-form__submit",
+      "#AddToCart",
+      ".shopify-payment-button__button",
+    ],
+    wix: [
+      'button[data-hook="add-to-cart"]',
+      '[data-hook="add-to-cart"]',
+      '[data-hook="product-page-add-to-cart"]',
+      '[data-testid="add-to-cart"]',
+    ],
+    tray: [
+      "#smart_button",
+      "#botaoComprar",
+      "#comprar",
+      ".botao-comprar",
+      'button[name="comprar"]',
+      ".comprar",
+    ],
+  };
+
+  // Ultimo recurso quando nenhum seletor casa: procurar pelo texto. Pega
+  // loja feita a mao e tema tao customizado que nenhuma classe da
+  // plataforma sobreviveu.
+  var TEXTO_COMPRA = /(comprar|adicionar ao carrinho|add to cart|eu quero)/i;
+
+  function wireComprar(el, backdrop, config, root) {
+    var botao = el.querySelector("button.fvw-cta-comprar");
+    if (!botao) return;
+
+    botao.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var alvo = acharBotaoComprar(config.cta);
+
+      trackEvent(config, "cta_click", {
+        cta_type: "buy",
+        cta_label: config.cta.label || "",
+        // Da pra descobrir, sem pedir print pro cliente, se o seletor
+        // configurado esta achando o botao naquela loja.
+        botao_encontrado: !!alvo,
+      });
+      submitLead(config, {
+        "Ação": "Clique em Comprar",
+        Destino: alvo
+          ? "botão de compra da página"
+          : config.cta.target_url || "não encontrado",
+      });
+
+      // O video sai da frente antes do scroll: ele e fixo na tela e
+      // taparia justamente o botao pra onde estamos levando a pessoa.
+      esconderBalao(el, backdrop, config);
+
+      if (alvo) {
+        levarAte(alvo, root, config.border_color || '#111');
+        return;
+      }
+      // Sem botao na pagina vale a URL de reserva (a pagina do produto,
+      // por exemplo). Sem ela tambem, so resta ter fechado o video.
+      if (config.cta.target_url) {
+        window.open(config.cta.target_url, "_blank", "noopener");
+      }
+    });
+  }
+
+  function acharBotaoComprar(cta) {
+    var lista = [];
+    if (cta.buy_selector) lista.push(cta.buy_selector);
+
+    var plataforma = cta.buy_platform;
+    if (plataforma && SELETORES_COMPRA[plataforma]) {
+      lista = lista.concat(SELETORES_COMPRA[plataforma]);
+    }
+    // "Detectar sozinho" (ou plataforma nao informada) varre todas as
+    // listas. E um querySelectorAll por seletor, uma unica vez, no
+    // clique — nada disso roda no carregamento da pagina.
+    if (!plataforma || plataforma === "auto" || plataforma === "custom") {
+      for (var chave in SELETORES_COMPRA) {
+        if (Object.prototype.hasOwnProperty.call(SELETORES_COMPRA, chave)) {
+          lista = lista.concat(SELETORES_COMPRA[chave]);
+        }
+      }
+    }
+
+    for (var i = 0; i < lista.length; i++) {
+      var achados;
+      try {
+        achados = document.querySelectorAll(lista[i]);
+      } catch (err) {
+        // Seletor invalido digitado no painel nao pode derrubar o clique.
+        continue;
+      }
+      for (var j = 0; j < achados.length; j++) {
+        if (estaVisivel(achados[j])) return achados[j];
+      }
+    }
+
+    return acharPorTexto();
+  }
+
+  function acharPorTexto() {
+    var candidatos = document.querySelectorAll(
+      'button, a, input[type="submit"], [role="button"]'
+    );
+    for (var i = 0; i < candidatos.length; i++) {
+      var alvo = candidatos[i];
+      // Nao pode achar o nosso proprio botao: ele tambem diz "Comprar".
+      if (alvo.closest && alvo.closest(".fvw-host")) continue;
+      var texto = (alvo.value || alvo.textContent || "").trim();
+      // Texto longo e paragrafo com a palavra dentro, nao botao de compra.
+      if (!texto || texto.length > 40) continue;
+      if (TEXTO_COMPRA.test(texto) && estaVisivel(alvo)) return alvo;
+    }
+    return null;
+  }
+
+  // Botao escondido (aba fechada, modal, variacao indisponivel) nao
+  // serve: rolar ate ele deixaria a pessoa olhando pra lugar nenhum.
+  function estaVisivel(alvo) {
+    if (!alvo || !alvo.getBoundingClientRect) return false;
+    var r = alvo.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+
+  function levarAte(alvo, root, cor) {
+    try {
+      alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (err) {
+      alvo.scrollIntoView();
+    }
+    // Rede de seguranca: ha site que desliga a rolagem suave (um
+    // "scroll-behavior" proprio, um plugin de scroll customizado) e a
+    // chamada acima simplesmente nao faz nada. Se um segundo depois o
+    // botao continuar fora da tela, leva na marra.
+    setTimeout(function () {
+      var r = alvo.getBoundingClientRect();
+      var dentro = r.top >= 0 && r.bottom <= window.innerHeight;
+      if (!dentro) alvo.scrollIntoView({ block: "center" });
+    }, 1000);
+    // Foco pra quem navega por teclado seguir dali — sem mexer no scroll
+    // de novo, que ja esta indo pro lugar certo.
+    try {
+      alvo.focus({ preventScroll: true });
+    } catch (err) {}
+    destacar(alvo, root, cor);
+  }
+
+  // Anel piscando por cima do botao de compra. E um elemento nosso, no
+  // shadow root, posicionado sobre o do site: nao alteramos nem uma linha
+  // do estilo da loja, e por isso nao ha nada pra restaurar depois.
+  function destacar(alvo, root, cor) {
+    if (!root.appendChild) return;
+    var anel = document.createElement("div");
+    anel.className = "fvw-realce";
+    // O anel e irmao do balao, nao filho: a variavel de cor da marca vive
+    // no wrapper e nao chegaria ate aqui sozinha.
+    anel.style.setProperty("--fvw-border-color", cor || "#111");
+    try {
+      anel.style.borderRadius = getComputedStyle(alvo).borderRadius || "8px";
+    } catch (err) {}
+    root.appendChild(anel);
+
+    var fim = Date.now() + 2600;
+    // O rAF para de rodar em aba de fundo; sem este timeout o anel
+    // ficaria na tela ate a pessoa voltar pra aba.
+    setTimeout(function () {
+      if (anel.parentNode) anel.parentNode.removeChild(anel);
+    }, 3200);
+    (function seguir() {
+      var r = alvo.getBoundingClientRect();
+      anel.style.top = r.top - 4 + "px";
+      anel.style.left = r.left - 4 + "px";
+      anel.style.width = r.width + 8 + "px";
+      anel.style.height = r.height + 8 + "px";
+      // Acompanha o scroll suave quadro a quadro; parado, marcaria a
+      // posicao antiga do botao.
+      if (Date.now() < fim) {
+        requestAnimationFrame(seguir);
+      } else if (anel.parentNode) {
+        anel.parentNode.removeChild(anel);
+      }
+    })();
+  }
+
+  // Tira o balao da tela e cala o video. Diferente do X, nao grava
+  // supressao: quem clicou em comprar pode ver o video de novo na
+  // proxima visita.
+  function esconderBalao(el, backdrop, config) {
+    if (el.classList.contains("fvw-expanded")) collapse(el, backdrop, config);
+    el.classList.remove("fvw-visible");
+    backdrop.classList.remove("fvw-visible");
+    var video = el.querySelector("video");
+    if (video) {
+      video.pause();
+    } else if (el._ytPlayer && typeof el._ytPlayer.pauseVideo === "function") {
+      el._ytPlayer.pauseVideo();
     }
   }
 

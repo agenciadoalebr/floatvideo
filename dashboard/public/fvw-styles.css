@@ -571,3 +571,27 @@ textarea.fvw-input {
   color: #1a1a1a;
   padding: 24px 8px;
 }
+
+/* Botao Comprar. Sai do verde do WhatsApp e assume a cor da marca — o
+   texto se ajusta por contraste (ver corDeTextoPara no player.js). */
+.fvw-cta-comprar {
+  background: var(--fvw-border-color, #111);
+  color: var(--fvw-cta-fg, #fff);
+}
+
+/* Anel que pisca sobre o botao de compra do site depois que o video sai
+   da frente. Fica no nosso shadow root e apenas pousa por cima: nada do
+   CSS da loja e tocado. Sem eventos de mouse, pra nao roubar o clique
+   justamente do botao que estamos apontando. */
+.fvw-realce {
+  position: fixed;
+  z-index: 2147482998;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px var(--fvw-border-color, #111), 0 0 0 9px rgba(0, 0, 0, 0.12);
+  animation: fvw-pulsa 0.9s ease-in-out 3;
+}
+
+@keyframes fvw-pulsa {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
