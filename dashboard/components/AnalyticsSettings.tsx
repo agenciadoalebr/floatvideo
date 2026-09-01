@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Widget } from "@/lib/types";
+import Copiavel from "@/components/Copiavel";
 
 type Props = {
   widget: Widget | null;
@@ -193,16 +194,14 @@ export default function AnalyticsSettings({ widget }: Props) {
             <li>
               <strong>Crie o acionador.</strong> No menu à esquerda, clique em{" "}
               <em>Acionadores</em> → <em>Novo</em>. Dê o nome{" "}
-              <strong>Float Video Event</strong> no topo da tela. Clique na
+              <Copiavel texto="Float Video Event" /> no topo da tela. Clique na
               caixa <em>Configuração do acionador</em>, escolha{" "}
               <em>Evento personalizado</em> (fica no fim da lista, em
               &quot;Outros&quot;).
               <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
                 <li>
                   Em <em>Nome do evento</em>, escreva{" "}
-                  <code className="rounded bg-neutral-100 px-1">
-                    floatvideo_.*
-                  </code>
+                  <Copiavel texto="floatvideo_.*" />
                 </li>
                 <li>
                   Marque a caixinha{" "}
@@ -222,13 +221,13 @@ export default function AnalyticsSettings({ widget }: Props) {
               menu à esquerda, vá em <em>Variáveis</em> → em &quot;Variáveis
               integradas&quot;, clique em <em>Configurar</em> e marque{" "}
               <strong>Event</strong>. Sem isso o{" "}
-              <code className="rounded bg-neutral-100 px-1">{"{{Event}}"}</code>{" "}
-              do passo seguinte não existe na sua conta.
+              <Copiavel texto="{{Event}}" /> do passo seguinte não existe na
+              sua conta.
             </li>
 
             <li>
               <strong>Crie a tag.</strong> Menu <em>Tags</em> → <em>Novo</em>.
-              Dê o nome <strong>GA4 - Float Video</strong>. Em{" "}
+              Dê o nome <Copiavel texto="GA4 - Float Video" />. Em{" "}
               <em>Configuração da tag</em>, escolha{" "}
               <em>Google Analytics: evento do GA4</em>.
               <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
@@ -240,10 +239,7 @@ export default function AnalyticsSettings({ widget }: Props) {
                 </li>
                 <li>
                   Em <em>Nome do evento</em>, escreva{" "}
-                  <code className="rounded bg-neutral-100 px-1">
-                    {"{{Event}}"}
-                  </code>{" "}
-                  — assim a tag repassa ao GA4 o mesmo nome que chegou, e você
+                  <Copiavel texto="{{Event}}" /> — assim a tag repassa ao GA4 o mesmo nome que chegou, e você
                   não precisa de uma tag por evento
                 </li>
                 <li>
@@ -258,8 +254,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               <strong>Teste antes de publicar.</strong> Clique em{" "}
               <em>Visualizar</em> (canto superior direito), informe o endereço
               do site e abra. Na janela que abrir, acrescente{" "}
-              <code className="rounded bg-neutral-100 px-1">?fvw_reset</code> no
-              fim da URL, espere o balão aparecer, clique nele e clique no botão
+              <Copiavel texto="?fvw_reset" /> no fim da URL, espere o balão aparecer, clique nele e clique no botão
               de ação. Os eventos{" "}
               <code className="rounded bg-neutral-100 px-1">floatvideo_...</code>{" "}
               vão aparecendo na coluna da esquerda do painel de depuração, e ao
@@ -276,10 +271,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             <li>
               <strong>Marque a conversão.</strong> No GA4: Administrador →{" "}
               <em>Eventos</em> → encontre{" "}
-              <code className="rounded bg-neutral-100 px-1">
-                floatvideo_cta_click
-              </code>{" "}
-              e ligue a chave <em>Marcar como evento principal</em>. Ele só
+              <Copiavel texto="floatvideo_cta_click" /> e ligue a chave <em>Marcar como evento principal</em>. Ele só
               aparece nessa lista depois de acontecer pelo menos uma vez — se
               ainda não estiver lá, faça o teste do passo 4 e volte mais tarde.
               No Google Ads, importe esse evento como conversão.
@@ -305,41 +297,27 @@ export default function AnalyticsSettings({ widget }: Props) {
               </li>
               <li>
                 Em &quot;Nome da variável da camada de dados&quot;, escreva
-                exatamente{" "}
-                <code className="rounded bg-neutral-100 px-1">
-                  floatvideo.video
-                </code>{" "}
-                — com o ponto, que é como o GTM entra dentro do objeto. Dê o
-                nome <strong>FV - vídeo</strong> à variável e salve.
+                exatamente <Copiavel texto="floatvideo.video" /> — com o
+                ponto, que é como o GTM entra dentro do objeto. Dê o nome{" "}
+                <Copiavel texto="FV - vídeo" /> à variável e salve.
               </li>
               <li>
-                Repita com{" "}
-                <code className="rounded bg-neutral-100 px-1">
-                  floatvideo.cta_type
-                </code>
-                , chamando de <strong>FV - tipo de CTA</strong>.
+                Repita com <Copiavel texto="floatvideo.cta_type" />,
+                chamando de <Copiavel texto="FV - tipo de CTA" />.
               </li>
               <li>
                 Na tag do GA4 → <strong>Parâmetros do evento</strong>, adicione
-                duas linhas: <code className="rounded bg-neutral-100 px-1">video</code>{" "}
-                com o valor{" "}
-                <code className="rounded bg-neutral-100 px-1">
-                  {"{{FV - vídeo}}"}
-                </code>
-                , e{" "}
-                <code className="rounded bg-neutral-100 px-1">cta_type</code> com{" "}
-                <code className="rounded bg-neutral-100 px-1">
-                  {"{{FV - tipo de CTA}}"}
-                </code>
-                .
+                duas linhas: <Copiavel texto="video" /> com o valor{" "}
+                <Copiavel texto="{{FV - vídeo}}" />, e{" "}
+                <Copiavel texto="cta_type" /> com{" "}
+                <Copiavel texto="{{FV - tipo de CTA}}" />.
               </li>
               <li>
                 Este último é no painel do GA4, não no GTM (vale igual para
                 quem usa gtag): Administrador → Definições personalizadas →
                 Criar dimensão personalizada, escopo <em>Evento</em>, para os
-                parâmetros{" "}
-                <code className="rounded bg-neutral-100 px-1">video</code> e{" "}
-                <code className="rounded bg-neutral-100 px-1">cta_type</code>.
+                parâmetros <Copiavel texto="video" /> e{" "}
+                <Copiavel texto="cta_type" />.
               </li>
             </ol>
             <p className="mt-2 text-xs text-neutral-500">
@@ -362,9 +340,14 @@ export default function AnalyticsSettings({ widget }: Props) {
               toda página onde o balão aparece, então é o evento mais frequente
               de longe. Para deixá-la de fora, troque o nome do evento no
               acionador por{" "}
-              <code className="block break-all rounded bg-neutral-100 px-1 py-0.5">
-                floatvideo_(expand|play|progress_3s|progress_25|progress_50|progress_75|complete|cta_click|close)
-              </code>
+              <Copiavel
+                bloco
+                texto="floatvideo_(expand|play|progress_3s|progress_25|progress_50|progress_75|complete|cta_click|close)"
+              />
+              <span className="mt-1 block">
+                Ou, mais curto e valendo também para eventos futuros:
+              </span>
+              <Copiavel bloco texto="^floatvideo_(?!impression)" />
             </p>
             <p className="mt-2 text-xs text-neutral-500">
               Lembre que essa lista é fixa: evento novo que criarmos aqui não
@@ -389,9 +372,7 @@ export default function AnalyticsSettings({ widget }: Props) {
         <ul className="divide-y divide-neutral-100 text-xs">
           {EVENTOS.map((e) => (
             <li key={e.nome} className="py-2">
-              <code className="rounded bg-neutral-100 px-1 text-neutral-800">
-                {e.nome}
-              </code>
+              <Copiavel texto={e.nome} />
               <p className="mt-1 text-neutral-600">{e.quando}</p>
             </li>
           ))}
