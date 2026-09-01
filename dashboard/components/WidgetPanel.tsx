@@ -30,7 +30,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   // videoFocoId — apenas qual vídeo está sendo enquadrado no momento.
   //            Trocar aqui não muda o que vai ao ar; serve pra ajustar o
   //            recorte de cada vídeo sem mexer na configuração do site.
-  const [videoId, setVideoId] = useState(widget?.video_id ?? readyVideos(videos)[0]?.id ?? "");
+  const videoId = widget?.video_id ?? readyVideos(videos)[0]?.id ?? "";
   const [videoFocoId, setVideoFocoId] = useState(
     widget?.video_id ?? readyVideos(videos)[0]?.id ?? ""
   );
@@ -72,25 +72,13 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const [mobileOffsetX, setMobileOffsetX] = useState(widget?.mobile_offset_x ?? 12);
   const [mobileOffsetY, setMobileOffsetY] = useState(widget?.mobile_offset_y ?? 12);
 
-  // Troca imediata quando o card do vídeo pede: o refresh do servidor
-  // confirma depois (e a key remonta o painel), mas o seletor já mostra
-  // o vídeo certo no instante do clique.
-  useEffect(() => {
-    function handle(e: Event) {
-      const id = (e as CustomEvent<string>).detail;
-      if (id) setVideoId(id);
-    }
-    window.addEventListener("fvw-set-widget-video", handle);
-    return () => window.removeEventListener("fvw-set-widget-video", handle);
-  }, []);
-
   // A lista de vídeos pode mudar (upload novo, exclusão) depois que este
-  // componente já montou — sem isso, o formulário ficava "preso" num
-  // vídeo que não existe mais e o salvamento quebrava com erro de FK.
+  // componente já montou — sem isso o enquadramento ficaria preso num
+  // vídeo que não existe mais.
   useEffect(() => {
-    const stillExists = readyVideos(videos).some((v) => v.id === videoId);
-    if (!stillExists) {
-      setVideoId(readyVideos(videos)[0]?.id ?? "");
+    const existe = readyVideos(videos).some((v) => v.id === videoFocoId);
+    if (!existe) {
+      setVideoFocoId(readyVideos(videos)[0]?.id ?? "");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videos]);
@@ -100,8 +88,12 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
     setError("");
     setSalvo(false);
 
-    if (!videoId) {
-      setError("Selecione um vídeo antes de salvar.");
+    // O vídeo padrão não é escolhido aqui — esta coluna é só do site.
+    // Ao criar o widget pela primeira vez, assume o primeiro vídeo
+    // pronto; depois disso quem troca é o botão na aba Vídeos.
+    const videoPadrao = widget?.video_id ?? readyVideos(videos)[0]?.id ?? null;
+    if (!videoPadrao) {
+      setError("Adicione um vídeo antes de salvar.");
       return;
     }
 
@@ -110,7 +102,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
 
     const widgetPayload = {
       project_id: projectId,
-      video_id: videoId || null,
+      video_id: videoPadrao,
       shape,
       size,
       position,
@@ -185,27 +177,6 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
             Vale para <strong>todos os vídeos</strong> deste site.
           </p>
         </div>
-
-        <Bloco titulo="Vídeo padrão">
-        <div>
-          <select
-            value={videoId}
-            onChange={(e) => setVideoId(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          >
-            {readyVideos(videos).map((v) => (
-              <option key={v.id} value={v.id}>
-                {videoLabel(v)}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-neutral-500">
-            Aparece nas páginas que não tiverem regra de outro vídeo. Para
-            definir onde cada um entra, use &quot;Onde aparece?&quot; na aba
-            Vídeos.
-          </p>
-        </div>
-        </Bloco>
 
         <Bloco titulo="Aparência">
         <div className="grid grid-cols-2 gap-3">
@@ -441,7 +412,6 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
             {readyVideos(videos).map((v) => (
               <option key={v.id} value={v.id}>
                 {videoLabel(v)}
-                {v.id === videoId ? " — padrão" : ""}
               </option>
             ))}
           </select>

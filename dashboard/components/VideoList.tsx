@@ -67,7 +67,7 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
   }
 
   async function handleDelete(video: Video) {
-    if (!confirm("Excluir este vídeo? Se ele estiver em uso num widget, o widget ficará sem vídeo até você escolher outro.")) {
+    if (!confirm("Excluir este vídeo? As regras de página dele também serão removidas.")) {
       return;
     }
 
@@ -155,9 +155,6 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
             <div className="flex items-center justify-between">
               <span className="text-xs text-neutral-500">
                 {video.source_type === "youtube" ? "YouTube" : "Upload"}
-                {widget?.video_id === video.id && (
-                  <span className="ml-1 text-emerald-600">· em uso</span>
-                )}
               </span>
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[video.status]}`}
@@ -235,7 +232,6 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
                 widgetId={widget?.id ?? null}
                 videoId={videoAberto.id}
                 rules={pageRules}
-                ehPadrao={widget?.video_id === videoAberto.id}
               />
             </div>
           </div>

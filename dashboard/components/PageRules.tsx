@@ -11,8 +11,6 @@ type Props = {
   videoId: string;
   /** Todas as regras do widget; aqui só entram as deste vídeo. */
   rules: PageRule[];
-  /** Se este é o vídeo padrão do widget (o que vale sem regra). */
-  ehPadrao: boolean;
 };
 
 /**
@@ -24,7 +22,7 @@ type Props = {
  * type="button" e o Enter precisa ser contido — senão qualquer um deles
  * dispararia o submit do formulário inteiro.
  */
-export default function PageRules({ widgetId, videoId, rules, ehPadrao }: Props) {
+export default function PageRules({ widgetId, videoId, rules }: Props) {
   const router = useRouter();
   const [matchType, setMatchType] = useState<"contains" | "exact">("contains");
   const [pattern, setPattern] = useState("");
@@ -72,14 +70,10 @@ export default function PageRules({ widgetId, videoId, rules, ehPadrao }: Props)
       <p className="text-xs font-medium text-neutral-700">
         Onde este vídeo aparece
       </p>
-      <p className="mt-0.5 text-xs text-neutral-500">
-        {ehPadrao
-          ? minhas.length === 0
-            ? "Este é o vídeo padrão: sem regra, aparece em todas as páginas do site."
-            : "Com regra, o vídeo padrão fica restrito a ela — nas demais páginas o widget não aparece."
-          : minhas.length === 0
-            ? "Sem regra, este vídeo não aparece em página nenhuma — o padrão é usado."
-            : "Este vídeo aparece só nas páginas abaixo."}
+      <p className="mt-1 text-xs text-neutral-500">
+        {minhas.length === 0
+          ? "Sem regra, este vídeo entra nas páginas que não têm regra de nenhum outro vídeo. Havendo mais de um assim, aparece o mais recente."
+          : "Este vídeo aparece só nas páginas abaixo."}
       </p>
 
       {minhas.length > 0 && (
