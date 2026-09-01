@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
+import { gerarEsalvarMiniatura, formatarDuracao } from "@/lib/miniatura";
 import PageRules from "@/components/PageRules";
 
 const statusLabel: Record<Video["status"], string> = {
@@ -29,6 +30,7 @@ type Props = {
 export default function VideoList({ videos, projectId, widget, pageRules }: Props) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [gerandoId, setGerandoId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   // Qual card está com as regras de página abertas. Um por vez: dois
   // cards abertos lado a lado deixariam a lista alta e confusa.
@@ -63,6 +65,28 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
       .from("videos")
       .update({ name: next || null })
       .eq("id", video.id);
+    router.refresh();
+  }
+
+  // Vídeos enviados antes de a miniatura existir continuam sem imagem —
+  // aqui ela é extraída do próprio arquivo já hospedado, sem reenvio.
+  async function gerarMiniatura(video: Video) {
+    if (!video.mp4_url) return;
+    setGerandoId(video.id);
+    const supabase = createClient();
+    const url = await gerarEsalvarMiniatura(
+      supabase,
+      video.id,
+      video.mp4_url,
+      video.original_file_key as string
+    );
+    setGerandoId(null);
+    if (!url) {
+      alert(
+        "Não foi possível gerar a miniatura deste vídeo. Tente de novo ou reenvie o arquivo."
+      );
+      return;
+    }
     router.refresh();
   }
 
@@ -104,7 +128,7 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
           key={video.id}
           className="overflow-hidden rounded-lg border border-neutral-200 bg-white"
         >
-          <div className="aspect-video bg-neutral-100">
+          <div className="relative aspect-video bg-neutral-100">
             {video.thumbnail_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -115,6 +139,24 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
             ) : video.mp4_url ? (
               <video src={video.mp4_url} className="h-full w-full object-cover" muted />
             ) : null}
+
+            {formatarDuracao(video.duration_seconds) && (
+              <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                {formatarDuracao(video.duration_seconds)}
+              </span>
+            )}
+
+            {/* Só para os que ficaram sem imagem: o envio novo já gera. */}
+            {!video.thumbnail_url && video.mp4_url && video.original_file_key && (
+              <button
+                type="button"
+                onClick={() => gerarMiniatura(video)}
+                disabled={gerandoId === video.id}
+                className="absolute bottom-1 left-1 rounded bg-black/70 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-black disabled:opacity-60"
+              >
+                {gerandoId === video.id ? "Gerando..." : "Gerar miniatura"}
+              </button>
+            )}
           </div>
           <div className="space-y-1 p-2">
             {renamingId === video.id ? (

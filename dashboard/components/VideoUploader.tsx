@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { gerarEsalvarMiniatura } from "@/lib/miniatura";
 
 // Versão fixa do core do ffmpeg.wasm, carregada direto do CDN em tempo de
 // execução (não faz parte do bundle do site) — mantém o pacote do
@@ -166,21 +167,32 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
 
       setProgressLabel("Registrando vídeo...");
 
-      const { error: insertError } = await supabase.from("videos").insert({
-        project_id: projectId,
-        name: nameRef.current.trim() || null,
-        source_type: "upload",
-        original_file_key: path,
-        mp4_url: publicUrl.publicUrl,
-        status: "ready",
-      });
+      const { data: criado, error: insertError } = await supabase
+        .from("videos")
+        .insert({
+          project_id: projectId,
+          name: nameRef.current.trim() || null,
+          source_type: "upload",
+          original_file_key: path,
+          mp4_url: publicUrl.publicUrl,
+          status: "ready",
+        })
+        .select("id")
+        .single();
 
-      setUploading(false);
-
-      if (insertError) {
-        setError(insertError.message);
+      if (insertError || !criado) {
+        setUploading(false);
+        setError(insertError?.message ?? "Erro ao registrar o vídeo.");
         return;
       }
+
+      // Miniatura a partir do arquivo que está aqui na máquina, não do
+      // que acabou de subir: é instantâneo e não gasta banda baixando de
+      // volta o que acabamos de enviar.
+      setProgressLabel("Gerando miniatura...");
+      await gerarEsalvarMiniatura(supabase, criado.id, fileToUpload, path);
+
+      setUploading(false);
 
       setName("");
       nameRef.current = "";
