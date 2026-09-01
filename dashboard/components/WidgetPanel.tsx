@@ -59,6 +59,10 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const [offsetY, setOffsetY] = useState(widget?.offset_y ?? 24);
   const [autoplay, setAutoplay] = useState(widget?.autoplay ?? true);
   const [delaySeconds, setDelaySeconds] = useState(widget?.delay_seconds ?? 3);
+  const [gatilho, setGatilho] = useState<Widget["trigger_mode"]>(
+    widget?.trigger_mode ?? "time"
+  );
+  const [scrollPct, setScrollPct] = useState(widget?.trigger_scroll ?? 50);
   const [reappearHours, setReappearHours] = useState(widget?.reappear_hours ?? 1);
   const [isActive, setIsActive] = useState(widget?.is_active ?? true);
 
@@ -117,6 +121,8 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
       autoplay,
       muted_start: true,
       delay_seconds: delaySeconds,
+      trigger_mode: gatilho,
+      trigger_scroll: scrollPct,
       reappear_hours: reappearHours,
       is_active: isActive,
     };
@@ -264,16 +270,65 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
         <Bloco titulo="Comportamento">
         <div>
           <label className="block text-xs font-medium text-neutral-600">
-            Aparece depois de (segundos)
+            O balão aparece
           </label>
-          <input
-            type="number"
-            min={0}
-            value={delaySeconds}
-            onChange={(e) => setDelaySeconds(Number(e.target.value))}
+          <select
+            value={gatilho}
+            onChange={(e) =>
+              setGatilho(e.target.value as Widget["trigger_mode"])
+            }
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          />
+          >
+            <option value="time">Depois de alguns segundos</option>
+            <option value="scroll">Quando a pessoa rolar a página</option>
+            <option value="exit">Quando a pessoa for embora (saída)</option>
+            <option value="any">O que acontecer primeiro</option>
+          </select>
+          <p className="mt-1 text-xs text-neutral-500">
+            {gatilho === "exit"
+              ? "O balão espera o ponteiro subir para fechar a aba — a última chance antes de a pessoa sair. No celular não existe ponteiro, então lá vale o tempo abaixo."
+              : gatilho === "scroll"
+                ? "Aparece para quem desceu na página, ou seja, para quem demonstrou interesse."
+                : gatilho === "any"
+                  ? "Tempo, rolagem e saída ao mesmo tempo: vale o primeiro que acontecer."
+                  : "O comportamento de sempre."}
+          </p>
         </div>
+
+        {gatilho !== "scroll" && (
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">
+              Segundos de espera
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={delaySeconds}
+              onChange={(e) => setDelaySeconds(Number(e.target.value))}
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </div>
+        )}
+
+        {(gatilho === "scroll" || gatilho === "any") && (
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">
+              Rolar quanto da página (%)
+            </label>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={scrollPct}
+              onChange={(e) => setScrollPct(Number(e.target.value))}
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              Em página que cabe inteira na tela, sem rolagem possível, o
+              balão aparece de imediato.
+            </p>
+          </div>
+        )}
 
         <div>
           <label className="block text-xs font-medium text-neutral-600">

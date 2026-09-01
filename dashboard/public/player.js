@@ -95,14 +95,16 @@
       el.style.transform = "translateY(16px) scale(0.9)";
       root.appendChild(el);
 
-      var delay = (config.delay_seconds || 0) * 1000;
-      setTimeout(function () {
+      agendarAparicao(config, function (gatilho) {
         el.classList.add("fvw-visible");
         el.style.opacity = "";
         el.style.pointerEvents = "";
         el.style.transform = "";
-        trackEvent(config, "impression");
-      }, delay);
+        // Qual gatilho trouxe o balao vai junto do evento: e o que
+        // permite comparar "apareceu na saida" com "apareceu no tempo"
+        // sem criar um evento novo pra cada modo.
+        trackEvent(config, "impression", { gatilho: gatilho });
+      });
 
       wireCloseButton(el, backdrop, config, embedKey);
       wireExpand(el, backdrop, config);
@@ -690,6 +692,70 @@
   // (config antiga), cai na chave antiga, que valia pro site inteiro.
   function chaveSupressao(embedKey, videoId) {
     return "fvw_closed_" + embedKey + (videoId ? "_" + videoId : "");
+  }
+
+  // Decide QUANDO o balão entra na tela. Chama mostrar() uma única vez,
+  // com o nome do gatilho que ganhou a corrida.
+  //
+  //   time   — depois de N segundos (o de sempre)
+  //   scroll — quando a pessoa passa de X% da página
+  //   exit   — quando o ponteiro sobe pra fechar a aba
+  //   any    — o que vier primeiro
+  function agendarAparicao(config, mostrar) {
+    var modo = config.trigger_mode || "time";
+    var delay = (config.delay_seconds || 0) * 1000;
+    var alvoScroll = config.trigger_scroll || 50;
+    var pronto = false;
+
+    function aparecer(gatilho) {
+      if (pronto) return;
+      pronto = true;
+      window.removeEventListener("scroll", aoRolar);
+      document.removeEventListener("mouseout", aoSair);
+      mostrar(gatilho);
+    }
+
+    function aoRolar() {
+      var doc = document.documentElement;
+      var rolavel = doc.scrollHeight - window.innerHeight;
+      // Página que cabe na tela não tem como ser rolada: esperar por
+      // rolagem ali seria esperar pra sempre.
+      if (rolavel <= 0) {
+        aparecer("scroll");
+        return;
+      }
+      if ((window.scrollY / rolavel) * 100 >= alvoScroll) aparecer("scroll");
+    }
+
+    function aoSair(e) {
+      // Só conta quando o ponteiro sai pela BORDA DE CIMA da janela, que
+      // é pra onde ele vai quando a pessoa busca a aba ou a barra de
+      // endereço. Sair pelos lados é troca de janela, não desistência.
+      if (e.clientY > 0) return;
+      if (e.relatedTarget || e.toElement) return;
+      aparecer("exit");
+    }
+
+    // Toque não tem ponteiro, então "intenção de saída" simplesmente não
+    // existe no celular: sem uma saída de emergência, o balão nunca
+    // apareceria pra metade das visitas. O tempo assume o lugar.
+    var semPonteiro =
+      window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+
+    if (modo === "time" || modo === "any" || (modo === "exit" && semPonteiro)) {
+      setTimeout(function () {
+        aparecer("time");
+      }, delay);
+    }
+
+    if (modo === "scroll" || modo === "any") {
+      window.addEventListener("scroll", aoRolar, { passive: true });
+      aoRolar();
+    }
+
+    if ((modo === "exit" || modo === "any") && !semPonteiro) {
+      document.addEventListener("mouseout", aoSair);
+    }
   }
 
   // Guarda no navegador de quem fechou o balão, pra não insistir toda

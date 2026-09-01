@@ -48,6 +48,10 @@ export type Widget = {
   autoplay: boolean;
   muted_start: boolean;
   delay_seconds: number;
+  /** O que faz o balão aparecer: tempo, rolagem, intenção de saída ou o que vier primeiro. */
+  trigger_mode: "time" | "scroll" | "exit" | "any";
+  /** Porcentagem da página rolada que dispara o gatilho de rolagem. */
+  trigger_scroll: number;
   /** Depois de fechado, quantas horas até o vídeo voltar a aparecer. */
   reappear_hours: number;
   /** Por onde os eventos saem da página do cliente. */
