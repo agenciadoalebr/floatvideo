@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { enviarArquivo } from "@/lib/upload";
 
 /**
  * Miniatura e duração de um vídeo, extraídas no próprio navegador.
@@ -93,30 +94,21 @@ export async function gerarEsalvarMiniatura(
 ): Promise<string | null> {
   try {
     const { blob, duracao } = await extrairMiniatura(fonte);
-    // Mesmo caminho do vídeo com outra extensão: apagar o vídeo já leva a
+    // Mesmo caminho do vídeo com outra extensão: apagar o vídeo leva a
     // miniatura junto, sem precisar de uma segunda referência.
     const caminho = caminhoBase.replace(/\.[a-z0-9]+$/i, "") + ".jpg";
 
-    const { error } = await supabase.storage
-      .from("videos")
-      .upload(caminho, blob, {
-        cacheControl: "31536000",
-        upsert: true,
-        contentType: "image/jpeg",
-      });
-    if (error) throw error;
-
-    const { data } = supabase.storage.from("videos").getPublicUrl(caminho);
+    const { publicUrl } = await enviarArquivo(blob, caminho, "miniatura");
 
     await supabase
       .from("videos")
       .update({
-        thumbnail_url: data.publicUrl,
+        thumbnail_url: publicUrl,
         duration_seconds: duracao || null,
       })
       .eq("id", videoId);
 
-    return data.publicUrl;
+    return publicUrl;
   } catch (err) {
     console.warn("[miniatura] não foi possível gerar:", err);
     return null;
@@ -140,23 +132,18 @@ export async function gerarEsalvarPrevia(
     const caminho =
       caminhoBase.replace(/\.[a-z0-9]+$/i, "") + "-previa.mp4";
 
-    const { error } = await supabase.storage
-      .from("videos")
-      .upload(caminho, blob, {
-        cacheControl: "31536000",
-        upsert: true,
-        contentType: "video/mp4",
-      });
-    if (error) throw error;
-
-    const { data } = supabase.storage.from("videos").getPublicUrl(caminho);
+    const { publicUrl } = await enviarArquivo(
+      new File([blob], "previa.mp4", { type: "video/mp4" }),
+      caminho,
+      "previa"
+    );
 
     await supabase
       .from("videos")
-      .update({ preview_url: data.publicUrl })
+      .update({ preview_url: publicUrl })
       .eq("id", videoId);
 
-    return data.publicUrl;
+    return publicUrl;
   } catch (err) {
     console.warn("[prévia] não foi possível gerar:", err);
     return null;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { apagarArquivos } from "@/lib/upload";
 import type { Video, Widget, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
 import {
@@ -130,7 +131,22 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
     const supabase = createClient();
 
     if (video.source_type === "upload" && video.original_file_key) {
-      await supabase.storage.from("videos").remove([video.original_file_key]);
+      const semExtensao = video.original_file_key.replace(/\.[a-z0-9]+$/i, "");
+      // Vídeos antigos ainda moram no Storage do Supabase; os novos, no
+      // R2. Limpar os dois é mais simples do que descobrir qual é qual —
+      // apagar o que não existe não custa nada nos dois lados.
+      await supabase.storage
+        .from("videos")
+        .remove([
+          video.original_file_key,
+          `${semExtensao}.jpg`,
+          `${semExtensao}-previa.mp4`,
+        ]);
+      await apagarArquivos([
+        video.original_file_key,
+        `${semExtensao}.jpg`,
+        `${semExtensao}-previa.mp4`,
+      ]);
     }
 
     await supabase.from("videos").delete().eq("id", video.id);

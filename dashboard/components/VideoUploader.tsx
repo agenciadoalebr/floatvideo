@@ -7,6 +7,7 @@ import { gerarEsalvarMiniatura, gerarEsalvarPrevia } from "@/lib/miniatura";
 // Uma instância só de ffmpeg no painel inteiro: dois módulos com o
 // próprio carregador baixariam o wasm duas vezes.
 import { loadFFmpeg } from "@/lib/ffmpeg";
+import { enviarArquivo } from "@/lib/upload";
 
 // Duas guardas de bom senso na compressão: vídeo pequeno não compensa
 // (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
@@ -131,17 +132,21 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
       const ext = fileToUpload.name.split(".").pop() || "mp4";
       const path = `${user.id}/${projectId}/${Date.now()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("videos")
-        .upload(path, fileToUpload, { cacheControl: "31536000", upsert: false });
-
-      if (uploadError) {
-        setError(uploadError.message);
+      // O arquivo vai direto do navegador pro R2, com uma autorização
+      // temporária gerada pelo nosso servidor. Ele não passa pela Vercel:
+      // não esbarra no limite de tamanho de requisição nem gasta banda
+      // nossa no caminho.
+      let publicUrl: string;
+      try {
+        const enviado = await enviarArquivo(fileToUpload, path, "video");
+        publicUrl = enviado.publicUrl;
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Falha ao enviar o vídeo."
+        );
         setUploading(false);
         return;
       }
-
-      const { data: publicUrl } = supabase.storage.from("videos").getPublicUrl(path);
 
       setProgressLabel("Registrando vídeo...");
 
@@ -152,7 +157,7 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
           name: nameRef.current.trim() || null,
           source_type: "upload",
           original_file_key: path,
-          mp4_url: publicUrl.publicUrl,
+          mp4_url: publicUrl,
           status: "ready",
         })
         .select("id")
