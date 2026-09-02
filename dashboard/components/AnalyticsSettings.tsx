@@ -169,11 +169,12 @@ export default function AnalyticsSettings({
         </Secao>
 
       <div className="space-y-4">
+        {gtmDisponivel && <GtmConnect projectId={projectId} />}
+
         <Secao
           titulo="Como ligar no Google Tag Manager"
-          descricao="Um gatilho só dá conta de todos os eventos, inclusive os que criarmos no futuro."
+          descricao="Passo a passo manual, para quem prefere fazer à mão ou não usa a conexão automática."
         >
-          {gtmDisponivel && <GtmConnect projectId={projectId} />}
           <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-600">
               <strong>Precisa mesmo fazer isso?</strong> Com o script
