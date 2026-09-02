@@ -71,9 +71,11 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
+  const titular = (nome ?? "").trim() || (user.email ?? "Cliente FloatVideo");
+
   try {
     const clienteId = await garantirCliente({
-      nome: (nome ?? "").trim() || (user.email ?? "Cliente FloatVideo"),
+      nome: titular,
       cpfCnpj: documento,
       email: user.email ?? "",
     });
@@ -99,6 +101,10 @@ export async function POST(request: Request) {
         // vira ativa quando o primeiro pagamento for confirmado.
         status: planoEscolhido.trial_dias > 0 ? "trialing" : "overdue",
         asaas_customer_id: clienteId,
+        // Guardado para a administração achar a conta pelo documento sem
+        // ter de abrir o Asaas.
+        titular,
+        cpf_cnpj: documento,
         asaas_subscription_id: assinatura.id,
         trial_ends_at:
           planoEscolhido.trial_dias > 0 ? fimDoTeste.toISOString() : null,
