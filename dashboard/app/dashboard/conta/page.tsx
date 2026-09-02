@@ -28,6 +28,10 @@ export default async function ContaPage() {
     | { name: string; plan: string; created_at: string }
     | undefined;
 
+  // Quem foi convidado para a conta de outra pessoa não vê o plano: ele
+  // não é dela, e não há nada ali que essa pessoa decida.
+  const ehDono = membership?.role === "owner";
+
   const { count: sites } = await supabase
     .from("projects")
     .select("id", { count: "exact", head: true });
@@ -46,6 +50,7 @@ export default async function ContaPage() {
 
       <PasswordForm />
 
+      {ehDono && (
       <div
         id="plano"
         className="max-w-md space-y-3 rounded-lg border border-neutral-200 bg-white p-5"
@@ -92,6 +97,7 @@ export default async function ContaPage() {
           .
         </p>
       </div>
+      )}
     </div>
   );
 }

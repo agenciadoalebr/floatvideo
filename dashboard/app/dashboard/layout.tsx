@@ -14,6 +14,7 @@ export default async function DashboardLayout({
 
   let canManageUsers = false;
   let ehAdminDaPlataforma = false;
+  let ehDonoDaConta = false;
   if (user) {
     const { data: membership } = await supabase
       .from("organization_members")
@@ -22,6 +23,7 @@ export default async function DashboardLayout({
       .limit(1)
       .maybeSingle();
     canManageUsers = !!membership && ["owner", "admin"].includes(membership.role);
+    ehDonoDaConta = membership?.role === "owner";
 
     const { data: admin } = await supabase.rpc("e_admin_da_plataforma");
     ehAdminDaPlataforma = !!admin;
@@ -64,6 +66,7 @@ export default async function DashboardLayout({
             email={user?.email ?? ""}
             ehAdminDaPlataforma={ehAdminDaPlataforma}
             podeGerenciarEquipe={canManageUsers}
+            ehDonoDaConta={ehDonoDaConta}
           />
         </div>
       </header>

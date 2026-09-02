@@ -14,11 +14,15 @@ export default function AccountMenu({
   email,
   ehAdminDaPlataforma,
   podeGerenciarEquipe,
+  ehDonoDaConta,
 }: {
   email: string;
   ehAdminDaPlataforma: boolean;
   /** Dono ou administrador da própria conta: convida a equipe dele. */
   podeGerenciarEquipe: boolean;
+  /** Quem foi convidado para a conta de outra pessoa não vê o plano:
+      ele não é de quem entrou, e não há o que essa pessoa decida ali. */
+  ehDonoDaConta: boolean;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -95,13 +99,15 @@ export default function AccountMenu({
           >
             Alterar senha
           </Link>
-          <Link
-            href="/dashboard/conta#plano"
-            onClick={() => setAberto(false)}
-            className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
-          >
-            Meu plano
-          </Link>
+          {ehDonoDaConta && (
+            <Link
+              href="/dashboard/conta#plano"
+              onClick={() => setAberto(false)}
+              className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+            >
+              Meu plano
+            </Link>
+          )}
           {podeGerenciarEquipe && (
             <Link
               href="/dashboard/team"

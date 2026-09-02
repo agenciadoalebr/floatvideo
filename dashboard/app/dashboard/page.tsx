@@ -11,6 +11,26 @@ export default async function DashboardPage() {
     .order("created_at", { ascending: false })
     .returns<Project[]>();
 
+  // Quantos sites esta conta pode ter. Nulo = sem limite (a conta da
+  // administração). O banco é quem garante; aqui a tela só evita
+  // oferecer um formulário que vai recusar.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: membership } = await supabase
+    .from("organization_members")
+    .select("organizations(max_projects)")
+    .eq("user_id", user?.id ?? "")
+    .limit(1)
+    .maybeSingle();
+
+  const limite =
+    (membership?.organizations as { max_projects: number | null } | undefined)
+      ?.max_projects ?? null;
+  const usados = projects?.length ?? 0;
+  const podeCriar = limite === null || usados < limite;
+
   return (
     <div className="space-y-8">
       <div>
@@ -20,7 +40,21 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <NewProjectForm />
+      {podeCriar ? (
+        <NewProjectForm />
+      ) : (
+        <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-600">
+          Seu plano cobre {limite} {limite === 1 ? "site" : "sites"}. Para
+          cadastrar outro, fale com a gente pelo e-mail{" "}
+          <a
+            href="mailto:contato@floatvideo.com.br"
+            className="font-medium text-brand-blue hover:underline"
+          >
+            contato@floatvideo.com.br
+          </a>
+          .
+        </p>
+      )}
 
       <div className="space-y-3">
         {!projects || projects.length === 0 ? (
