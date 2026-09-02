@@ -20,14 +20,18 @@ export default async function DashboardPage() {
 
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("organizations(max_projects)")
+    .select("organizations(max_projects, plans(max_projects))")
     .eq("user_id", user?.id ?? "")
     .limit(1)
     .maybeSingle();
 
-  const limite =
-    (membership?.organizations as { max_projects: number | null } | undefined)
-      ?.max_projects ?? null;
+  const org = membership?.organizations as
+    | { max_projects: number | null; plans: { max_projects: number | null } | null }
+    | undefined;
+
+  // A exceção negociada na conta vence o limite do plano — a mesma regra
+  // que o banco aplica ao recusar o cadastro.
+  const limite = org?.max_projects ?? org?.plans?.max_projects ?? null;
   const usados = projects?.length ?? 0;
   const podeCriar = limite === null || usados < limite;
 

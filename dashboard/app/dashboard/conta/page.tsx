@@ -2,13 +2,6 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PasswordForm from "@/components/PasswordForm";
 
-const PLANOS: Record<string, { nome: string; descricao: string }> = {
-  free: {
-    nome: "Beta",
-    descricao: "Acesso completo enquanto o FloatVideo está em testes.",
-  },
-};
-
 export default async function ContaPage() {
   const supabase = await createClient();
   const {
@@ -19,13 +12,26 @@ export default async function ContaPage() {
 
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("role, organizations(name, plan, created_at)")
+    .select(
+      "role, organizations(name, plan, created_at, max_projects, plans(nome, preco_centavos, max_projects, descricao))"
+    )
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
   const org = membership?.organizations as
-    | { name: string; plan: string; created_at: string }
+    | {
+        name: string;
+        plan: string;
+        created_at: string;
+        max_projects: number | null;
+        plans: {
+          nome: string;
+          preco_centavos: number;
+          max_projects: number | null;
+          descricao: string | null;
+        } | null;
+      }
     | undefined;
 
   // Quem foi convidado para a conta de outra pessoa não vê o plano: ele
@@ -36,10 +42,8 @@ export default async function ContaPage() {
     .from("projects")
     .select("id", { count: "exact", head: true });
 
-  const plano = PLANOS[org?.plan ?? "free"] ?? {
-    nome: org?.plan ?? "—",
-    descricao: "",
-  };
+  const plano = org?.plans;
+  const limiteSites = org?.max_projects ?? plano?.max_projects ?? null;
 
   return (
     <div className="space-y-6">
@@ -63,8 +67,18 @@ export default async function ContaPage() {
         </div>
 
         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
-          <p className="text-lg font-semibold text-brand-ink">{plano.nome}</p>
-          {plano.descricao && (
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-lg font-semibold text-brand-ink">
+              {plano?.nome ?? "—"}
+            </p>
+            {plano && plano.preco_centavos > 0 && (
+              <p className="text-sm text-neutral-600">
+                R$ {(plano.preco_centavos / 100).toFixed(0).replace(".", ",")}
+                <span className="text-xs text-neutral-400">/mês</span>
+              </p>
+            )}
+          </div>
+          {plano?.descricao && (
             <p className="mt-1 text-xs text-neutral-600">{plano.descricao}</p>
           )}
         </div>
@@ -74,6 +88,10 @@ export default async function ContaPage() {
             <dt className="text-neutral-500">Sites</dt>
             <dd className="mt-0.5 text-base font-semibold text-brand-ink">
               {sites ?? 0}
+              <span className="text-sm font-normal text-neutral-400">
+                {" "}
+                / {limiteSites ?? "∞"}
+              </span>
             </dd>
           </div>
           <div className="rounded-md border border-neutral-200 p-3">

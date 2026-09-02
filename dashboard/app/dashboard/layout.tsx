@@ -54,6 +54,12 @@ export default async function DashboardLayout({
                   Usuários
                 </Link>
                 <Link
+                  href="/dashboard/contas"
+                  className="text-sm text-neutral-500 hover:text-brand-blue"
+                >
+                  Contas
+                </Link>
+                <Link
                   href="/dashboard/convites"
                   className="text-sm text-neutral-500 hover:text-brand-blue"
                 >

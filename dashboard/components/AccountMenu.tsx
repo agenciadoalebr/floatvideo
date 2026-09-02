@@ -119,6 +119,15 @@ export default function AccountMenu({
           )}
           {ehAdminDaPlataforma && (
             <Link
+              href="/dashboard/contas"
+              onClick={() => setAberto(false)}
+              className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+            >
+              Contas
+            </Link>
+          )}
+          {ehAdminDaPlataforma && (
+            <Link
               href="/dashboard/convites"
               onClick={() => setAberto(false)}
               className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
