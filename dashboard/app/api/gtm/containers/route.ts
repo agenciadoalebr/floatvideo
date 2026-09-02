@@ -35,7 +35,7 @@ export async function GET() {
   }
 
   try {
-    return NextResponse.json({ containers: await listarContainers(token) });
+    return NextResponse.json(await listarContainers(token));
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Falha ao listar." },

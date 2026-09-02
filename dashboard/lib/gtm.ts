@@ -127,17 +127,35 @@ export type Container = {
   conta: string;
 };
 
-/** Contêineres da web aos quais a pessoa tem acesso. */
-export async function listarContainers(token: string): Promise<Container[]> {
+/**
+ * Contêineres da web aos quais a pessoa tem acesso.
+ *
+ * Conta de agência tem muitas contas de GTM, e cada uma custa uma
+ * chamada. Como a função de servidor tem tempo limitado, paramos antes de
+ * estourar e devolvemos o que já temos, avisando que a lista veio pela
+ * metade — melhor uma lista parcial e visível do que um erro de tempo
+ * esgotado, que deixa a tela girando.
+ */
+export async function listarContainers(
+  token: string
+): Promise<{ containers: Container[]; parcial: boolean }> {
+  const comecou = Date.now();
+  const LIMITE_MS = 18000;
   const contas = await chamar<{
     account?: { accountId: string; name: string; path: string }[];
   }>(token, "/accounts");
 
   const resultado: Container[] = [];
+  let parcial = false;
 
   const listaDeContas = contas.account ?? [];
 
   for (const conta of listaDeContas) {
+    if (Date.now() - comecou > LIMITE_MS) {
+      parcial = true;
+      break;
+    }
+
     // Uma pausa curta entre contas espalha as chamadas dentro da janela
     // do Google em vez de mandar tudo de uma vez.
     if (resultado.length > 0) await espera(250);
@@ -167,7 +185,7 @@ export async function listarContainers(token: string): Promise<Container[]> {
     }
   }
 
-  return resultado;
+  return { containers: resultado, parcial };
 }
 
 type Parametro = {

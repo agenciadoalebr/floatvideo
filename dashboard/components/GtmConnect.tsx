@@ -10,6 +10,23 @@ type Container = {
   conta: string;
 };
 
+/**
+ * Lê a resposta com cuidado: quando a função estoura o tempo, o que volta
+ * é uma página de erro, não JSON — e um JSON.parse quebrando aqui deixava
+ * a tela presa em "carregando" para sempre.
+ */
+async function lerResposta(resposta: Response) {
+  const tipo = resposta.headers.get("content-type") ?? "";
+  if (!tipo.includes("json")) {
+    throw new Error(
+      resposta.status === 504
+        ? "A busca demorou demais e foi interrompida. Tente de novo."
+        : `O servidor respondeu ${resposta.status}. Tente de novo.`
+    );
+  }
+  return resposta.json();
+}
+
 type Resultado = {
   workspace: string;
   variaveis: string[];
@@ -36,6 +53,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
+  const [parcial, setParcial] = useState(false);
 
   const carregarContainers = useCallback(async () => {
     setErro("");
@@ -54,21 +72,32 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     } catch {}
 
     setCarregando(true);
-    const resposta = await fetch("/api/gtm/containers");
-    const dados = await resposta.json();
-    setCarregando(false);
-
-    if (!resposta.ok) {
-      setErro(dados.error ?? "Não foi possível listar seus contêineres.");
-      return;
-    }
-
-    const lista = (dados.containers ?? []) as Container[];
-    setContainers(lista);
-    if (lista.length === 1) setEscolhido(lista[0].path);
     try {
-      sessionStorage.setItem("fvw_gtm_containers", JSON.stringify(lista));
-    } catch {}
+      const resposta = await fetch("/api/gtm/containers", {
+        // Rede travada não pode virar tela girando: aos 40s desiste.
+        signal: AbortSignal.timeout(40000),
+      });
+      const dados = await lerResposta(resposta);
+
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível listar seus contêineres.");
+        return;
+      }
+
+      const lista = (dados.containers ?? []) as Container[];
+      setContainers(lista);
+      setParcial(Boolean(dados.parcial));
+      if (lista.length === 1) setEscolhido(lista[0].path);
+      try {
+        sessionStorage.setItem("fvw_gtm_containers", JSON.stringify(lista));
+      } catch {}
+    } catch (e) {
+      setErro(
+        e instanceof Error ? e.message : "Não foi possível listar seus contêineres."
+      );
+    } finally {
+      setCarregando(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -82,19 +111,27 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   async function instalar() {
     setErro("");
     setCarregando(true);
-    const resposta = await fetch("/api/gtm/containers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ containerPath: escolhido, measurementId: medida }),
-    });
-    const dados = await resposta.json();
-    setCarregando(false);
+    try {
+      const resposta = await fetch("/api/gtm/containers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ containerPath: escolhido, measurementId: medida }),
+        signal: AbortSignal.timeout(40000),
+      });
+      const dados = await lerResposta(resposta);
 
-    if (!resposta.ok) {
-      setErro(dados.error ?? "Não foi possível criar a configuração.");
-      return;
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível criar a configuração.");
+        return;
+      }
+      setResultado(dados);
+    } catch (e) {
+      setErro(
+        e instanceof Error ? e.message : "Não foi possível criar a configuração."
+      );
+    } finally {
+      setCarregando(false);
     }
-    setResultado(dados);
   }
 
   if (resultado) {
@@ -152,6 +189,14 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
             <p className="text-xs text-neutral-500">Buscando seus contêineres...</p>
           )}
 
+          {parcial && (
+            <p className="text-xs text-amber-700">
+              Sua conta tem muitos contêineres e a busca foi interrompida para
+              não travar. Se o que você procura não estiver na lista, recarregue
+              e tente de novo.
+            </p>
+          )}
+
           {containers && containers.length === 0 && (
             <p className="text-xs text-neutral-600">
               Nenhum contêiner de site encontrado nesta conta do Google.
@@ -205,7 +250,25 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
         </div>
       )}
 
-      {erro && <p className="mt-2 text-xs text-red-600">{erro}</p>}
+      {erro && (
+        <div className="mt-2">
+          <p className="text-xs text-red-600">{erro}</p>
+          {conectado && (
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.removeItem("fvw_gtm_containers");
+                } catch {}
+                carregarContainers();
+              }}
+              className="mt-1 text-xs font-medium text-brand-blue hover:underline"
+            >
+              Tentar de novo
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
