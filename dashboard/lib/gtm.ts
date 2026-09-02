@@ -25,12 +25,21 @@ const ESCOPOS_BASE = [
  * Permissão que não se usa não se pede: cada escopo a mais aparece na
  * tela de consentimento do cliente e precisa ser justificado na
  * verificação do Google.
+ *
+ * São dois escopos, não um: publicar no GTM é criar uma versão a partir
+ * da área de trabalho (edit.containerversions) e depois publicá-la
+ * (publish). Pedindo só o segundo, a criação da versão falha antes com
+ * "permissão insuficiente" — foi exatamente o que aconteceu no primeiro
+ * teste.
  */
-const ESCOPO_PUBLICAR = "https://www.googleapis.com/auth/tagmanager.publish";
+const ESCOPOS_PUBLICACAO = [
+  "https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+  "https://www.googleapis.com/auth/tagmanager.publish",
+];
 
 export function escopos(comPublicacao: boolean) {
   return (
-    comPublicacao ? [...ESCOPOS_BASE, ESCOPO_PUBLICAR] : ESCOPOS_BASE
+    comPublicacao ? [...ESCOPOS_BASE, ...ESCOPOS_PUBLICACAO] : ESCOPOS_BASE
   ).join(" ");
 }
 
@@ -241,15 +250,26 @@ export type ResultadoInstalacao = {
  * tela — que é uma decisão diferente de "montar a configuração".
  */
 export async function publicarWorkspace(token: string, workspacePath: string) {
-  const versao = await chamar<{
-    containerVersion?: { path: string; name: string };
-  }>(token, `/${workspacePath}:create_version`, {
-    method: "POST",
-    body: JSON.stringify({
-      name: "FloatVideo — instalação do widget",
-      notes: "Tag do FloatVideo criada pelo painel do FloatVideo.",
-    }),
-  });
+  let versao: { containerVersion?: { path: string; name: string } };
+
+  try {
+    versao = await chamar<{
+      containerVersion?: { path: string; name: string };
+    }>(token, `/${workspacePath}:create_version`, {
+      method: "POST",
+      body: JSON.stringify({
+        name: "FloatVideo — instalação do widget",
+        notes: "Tag do FloatVideo criada pelo painel do FloatVideo.",
+      }),
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("403")) {
+      throw new Error(
+        "faltou a permissão de publicar nesta autorização. Clique em “Desconectar do Google”, conecte de novo marcando “publicar automaticamente”, e aceite as permissões que o Google pedir."
+      );
+    }
+    throw err;
+  }
 
   if (!versao.containerVersion?.path) {
     throw new Error(
@@ -267,7 +287,7 @@ export async function publicarWorkspace(token: string, workspacePath: string) {
     // que o Google respondeu.
     if (err instanceof Error && err.message.includes("403")) {
       throw new Error(
-        "faltou a permissão de publicar nesta autorização. Clique em “Desconectar do Google”, conecte de novo e marque “publicar automaticamente” antes de conectar."
+        "faltou a permissão de publicar nesta autorização. Clique em “Desconectar do Google”, conecte de novo marcando “publicar automaticamente”, e aceite as permissões que o Google pedir."
       );
     }
     throw err;
