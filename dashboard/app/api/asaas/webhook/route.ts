@@ -16,8 +16,15 @@ export async function POST(request: Request) {
   const esperado = process.env.ASAAS_WEBHOOK_TOKEN;
 
   if (!esperado) {
+    // Diz qual variável falta: "não configurado" sozinho manda a pessoa
+    // procurar em três lugares diferentes.
     return NextResponse.json(
-      { error: "Webhook não configurado." },
+      {
+        error:
+          "ASAAS_WEBHOOK_TOKEN ausente no servidor. Confira o nome da variável na Vercel, se ela está marcada para Production, e refaça o deploy depois de salvar.",
+        temApiKey: Boolean(process.env.ASAAS_API_KEY),
+        ambiente: process.env.ASAAS_AMBIENTE ?? "(não definido)",
+      },
       { status: 503 }
     );
   }
