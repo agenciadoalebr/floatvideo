@@ -1,15 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import BotaoGoogle from "@/components/BotaoGoogle";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    searchParams.get("erro") === "google"
+      ? "A entrada pelo Google foi cancelada. Tente de novo ou use e-mail e senha."
+      : ""
+  );
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -66,6 +80,14 @@ export default function LoginPage() {
           </button>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </form>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-neutral-200" />
+          <span className="text-xs text-neutral-400">ou</span>
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
+
+        <BotaoGoogle />
 
         <div className="flex justify-between text-xs text-neutral-400">
           <Link href="/forgot-password" className="hover:text-neutral-600">

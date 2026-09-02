@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import BotaoGoogle from "@/components/BotaoGoogle";
 
 export default function SignupPage() {
   return (
@@ -159,6 +160,16 @@ function SignupForm() {
           </button>
           {error && <p className="text-sm text-red-600">{error}</p>}
         </form>
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-neutral-200" />
+          <span className="text-xs text-neutral-400">ou</span>
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
+
+        {/* O código digitado vai junto: quem já preencheu o campo não
+            precisa digitar de novo depois de voltar do Google. */}
+        <BotaoGoogle texto="Criar conta com o Google" codigo={codigo} />
 
         <p className="text-center text-xs text-neutral-400">
           Foi convidado por e-mail para uma conta que já existe? Deixe o código

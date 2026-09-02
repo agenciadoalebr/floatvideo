@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AccountMenu from "@/components/AccountMenu";
 
@@ -22,6 +23,12 @@ export default async function DashboardLayout({
       .eq("user_id", user.id)
       .limit(1)
       .maybeSingle();
+    // Autenticado sem organização é quem entrou pelo Google sem
+    // convite: não há painel para essa pessoa até o código ser usado.
+    if (!membership) {
+      redirect("/completar-cadastro");
+    }
+
     canManageUsers = !!membership && ["owner", "admin"].includes(membership.role);
     ehDonoDaConta = membership?.role === "owner";
 
