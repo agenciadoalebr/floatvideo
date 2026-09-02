@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Conta = { path: string; nome: string };
 type Container = { path: string; name: string; publicId: string };
@@ -49,6 +49,8 @@ async function lerResposta(resposta: Response) {
  * quem revisa e publica é o dono do site.
  */
 export default function GtmConnect({ projectId }: { projectId: string }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const params = useSearchParams();
   const conectado = params.get("gtm") === "conectado";
   const erroNoRetorno = params.get("gtm") === "erro";
@@ -122,6 +124,24 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     if (conectado && !contas) carregarContas();
   }, [conectado, contas, carregarContas]);
 
+  /**
+   * Encerra a conexão deste navegador. Como não guardamos token em banco,
+   * desconectar é apagar o cookie de curta duração — e voltar a tela ao
+   * estado inicial para a pessoa poder entrar com outra conta.
+   */
+  async function desconectar() {
+    setErro("");
+    await fetch("/api/gtm/desconectar", { method: "POST" }).catch(() => {});
+    setContas(null);
+    setConta("");
+    setContainers(null);
+    setEscolhido("");
+    setResultado(null);
+    // Tira o "?gtm=conectado" da URL, senão a tela voltaria a achar que
+    // ainda há conexão ao recarregar.
+    router.replace(pathname + "?secao=analytics");
+  }
+
   async function instalar() {
     setErro("");
     setCarregando(true);
@@ -176,6 +196,13 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           área de trabalho <em>{resultado.workspace}</em> e clique em Enviar →
           Publicar. Não publicamos nada por conta própria.
         </p>
+        <button
+          type="button"
+          onClick={desconectar}
+          className="mt-3 text-xs font-medium text-emerald-800 underline"
+        >
+          Desconectar do Google
+        </button>
       </div>
     );
   }
@@ -207,6 +234,34 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
 
       {conectado && (
         <div className="mt-3 space-y-3">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-3 py-2">
+            <span className="text-xs text-neutral-600">
+              Conta do Google conectada
+            </span>
+            <button
+              type="button"
+              onClick={desconectar}
+              className="text-xs font-medium text-neutral-500 underline hover:text-brand-blue"
+            >
+              Desconectar
+            </button>
+          </div>
+
+          <p className="text-xs text-neutral-500">
+            Desconectar encerra a conexão aqui e permite entrar com outra
+            conta. Para tirar a permissão do FloatVideo por completo, o
+            caminho é a{" "}
+            <a
+              href="https://myaccount.google.com/permissions"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-brand-blue"
+            >
+              sua conta do Google
+            </a>
+            .
+          </p>
+
           {carregando && !contas && (
             <p className="text-xs text-neutral-500">Buscando suas contas...</p>
           )}

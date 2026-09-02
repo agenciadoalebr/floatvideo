@@ -21,6 +21,9 @@ export async function GET(request: Request) {
       url.origin
     );
     destino.searchParams.set("gtm", erro ? "erro" : "conectado");
+    // Volta direto na seção de onde a pessoa saiu. Sem isto ela caía na
+    // primeira seção do projeto e tinha que procurar o caminho de novo.
+    destino.searchParams.set("secao", "analytics");
     if (erro) destino.searchParams.set("motivo", erro);
     return NextResponse.redirect(destino);
   }

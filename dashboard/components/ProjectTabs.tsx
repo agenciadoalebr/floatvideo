@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { useSearchParams } from "next/navigation";
 
 export type Tab = {
   id: string;
@@ -25,7 +26,14 @@ export type Tab = {
  * ficam lá, e só a troca de seção roda no navegador.
  */
 export default function ProjectTabs({ tabs }: { tabs: Tab[] }) {
-  const [active, setActive] = useState(tabs[0]?.id);
+  // "?secao=" permite voltar direto a uma seção — é o que traz a pessoa
+  // de volta ao Analytics depois de autorizar no Google, em vez de
+  // largá-la na primeira seção do projeto.
+  const params = useSearchParams();
+  const pedida = params.get("secao");
+  const [active, setActive] = useState(
+    pedida && tabs.some((t) => t.id === pedida) ? pedida : tabs[0]?.id
+  );
 
   // Botoes de outras partes da tela ("Editar widget", "Ver metricas" no
   // card do video) pedem a troca de secao por evento de janela, em vez de
