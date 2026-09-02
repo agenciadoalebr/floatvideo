@@ -3,38 +3,16 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { gerarEsalvarMiniatura } from "@/lib/miniatura";
+import { gerarEsalvarMiniatura, gerarEsalvarPrevia } from "@/lib/miniatura";
+// Uma instância só de ffmpeg no painel inteiro: dois módulos com o
+// próprio carregador baixariam o wasm duas vezes.
+import { loadFFmpeg } from "@/lib/ffmpeg";
 
-// Versão fixa do core do ffmpeg.wasm, carregada direto do CDN em tempo de
-// execução (não faz parte do bundle do site) — mantém o pacote do
-// dashboard leve e usa a build single-thread, que não exige os headers
-// COOP/COEP que a versão multi-thread precisaria no servidor.
-const FFMPEG_CORE_VERSION = "0.12.10";
-const FFMPEG_CORE_BASE_URL = `https://unpkg.com/@ffmpeg/core@${FFMPEG_CORE_VERSION}/dist/umd`;
-
-// Não vale a pena comprimir vídeo pequeno (o ganho é mínimo e só atrasa o
-// upload), nem tentar em arquivos enormes (o navegador pode travar
-// processando algo tão grande em memória) — nesses casos sobe original.
+// Duas guardas de bom senso na compressão: vídeo pequeno não compensa
+// (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
+// navegador — nos dois casos sobe o original.
 const MIN_SIZE_TO_COMPRESS = 15 * 1024 * 1024; // 15MB
 const MAX_SIZE_TO_COMPRESS = 150 * 1024 * 1024; // 150MB
-
-let ffmpegLoadPromise: Promise<import("@ffmpeg/ffmpeg").FFmpeg> | null = null;
-
-async function loadFFmpeg() {
-  if (!ffmpegLoadPromise) {
-    ffmpegLoadPromise = (async () => {
-      const { FFmpeg } = await import("@ffmpeg/ffmpeg");
-      const { toBlobURL } = await import("@ffmpeg/util");
-      const ffmpeg = new FFmpeg();
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.js`, "text/javascript"),
-        wasmURL: await toBlobURL(`${FFMPEG_CORE_BASE_URL}/ffmpeg-core.wasm`, "application/wasm"),
-      });
-      return ffmpeg;
-    })();
-  }
-  return ffmpegLoadPromise;
-}
 
 async function compressVideo(file: File, onProgress: (pct: number) => void): Promise<File> {
   const [ffmpeg, { fetchFile }] = await Promise.all([loadFFmpeg(), import("@ffmpeg/util")]);
@@ -191,6 +169,12 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
       // volta o que acabamos de enviar.
       setProgressLabel("Gerando miniatura...");
       await gerarEsalvarMiniatura(supabase, criado.id, fileToUpload, path);
+
+      // A prévia é o que roda no balão recolhido. Sai daqui, do arquivo
+      // que já está na máquina, e não de um servidor: o navegador já tem
+      // tudo o que precisa.
+      setProgressLabel("Preparando a prévia do balão...");
+      await gerarEsalvarPrevia(supabase, criado.id, fileToUpload, path);
 
       setUploading(false);
 

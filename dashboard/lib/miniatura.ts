@@ -123,6 +123,46 @@ export async function gerarEsalvarMiniatura(
   }
 }
 
+/**
+ * Gera a prévia leve, sobe e grava no vídeo. Como a miniatura, é
+ * acabamento: falhando, o widget usa o arquivo cheio como sempre usou.
+ */
+export async function gerarEsalvarPrevia(
+  supabase: SupabaseClient,
+  videoId: string,
+  fonte: File | Blob,
+  caminhoBase: string
+): Promise<string | null> {
+  try {
+    const { gerarPreviaLeve } = await import("@/lib/ffmpeg");
+    const blob = await gerarPreviaLeve(fonte);
+
+    const caminho =
+      caminhoBase.replace(/\.[a-z0-9]+$/i, "") + "-previa.mp4";
+
+    const { error } = await supabase.storage
+      .from("videos")
+      .upload(caminho, blob, {
+        cacheControl: "31536000",
+        upsert: true,
+        contentType: "video/mp4",
+      });
+    if (error) throw error;
+
+    const { data } = supabase.storage.from("videos").getPublicUrl(caminho);
+
+    await supabase
+      .from("videos")
+      .update({ preview_url: data.publicUrl })
+      .eq("id", videoId);
+
+    return data.publicUrl;
+  } catch (err) {
+    console.warn("[prévia] não foi possível gerar:", err);
+    return null;
+  }
+}
+
 /** 95 → "1:35". Usado nos cards da lista de vídeos. */
 export function formatarDuracao(segundos: number | null) {
   if (!segundos || segundos < 1) return null;

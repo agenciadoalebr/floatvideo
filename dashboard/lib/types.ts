@@ -17,6 +17,8 @@ export type Video = {
   youtube_id: string | null;
   original_file_key: string | null;
   mp4_url: string | null;
+  /** Versão curta e leve, usada no balão recolhido. */
+  preview_url: string | null;
   webm_url: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;

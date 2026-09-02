@@ -478,6 +478,9 @@
     backdrop.style.visibility = "";
     setMuted(el, false);
     setLoop(el, false);
+    // Troca a previa pelo arquivo cheio: agora ha alguem assistindo de
+    // verdade, e e a hora de gastar a banda.
+    trocarPelaVersaoCheia(el);
     // Comeca do inicio: no balao o video roda em loop o tempo todo, entao
     // ao expandir ele estaria num ponto qualquer do meio. Quem clica pra
     // assistir espera ver desde o comeco.
@@ -486,6 +489,16 @@
     // Ao expandir o video ja vem tocando do balao, entao o evento de
     // "comecou a tocar" pode nao disparar de novo: confere na hora.
     if (estaTocando(el)) maybeTrackPlay(el, config);
+  }
+
+  function trocarPelaVersaoCheia(el) {
+    if (!el._previa || el._trocado) return;
+    var video = el.querySelector(".fvw-video");
+    if (!video || !el._cheio) return;
+    el._trocado = true;
+    video.src = el._cheio;
+    video.load();
+    video.play().catch(function () {});
   }
 
   function collapse(el, backdrop, config) {
@@ -1195,6 +1208,11 @@
   function mountNativeVideo(el, config) {
     var slot = el.querySelector(".fvw-media-slot");
     var video = document.createElement("video");
+    // Enquanto recolhido, toca a previa: alguns segundos, resolucao de
+    // balao, sem audio. O arquivo cheio so desce quando alguem abre — sem
+    // isso, mais de 90% da banda ia pra quem nunca abriu o video.
+    el._previa = config.video.preview_url || null;
+    el._cheio = config.video.mp4_url || config.video.webm_url || null;
     video.className = "fvw-video";
     video.playsInline = true;
     video.muted = config.muted_start !== false;
@@ -1204,17 +1222,21 @@
     video.loop = true;
     video.poster = config.video.thumbnail_url || "";
 
-    if (config.video.webm_url) {
-      var srcWebm = document.createElement("source");
-      srcWebm.src = config.video.webm_url;
-      srcWebm.type = "video/webm";
-      video.appendChild(srcWebm);
-    }
-    if (config.video.mp4_url) {
-      var srcMp4 = document.createElement("source");
-      srcMp4.src = config.video.mp4_url;
-      srcMp4.type = "video/mp4";
-      video.appendChild(srcMp4);
+    if (el._previa) {
+      video.src = el._previa;
+    } else {
+      if (config.video.webm_url) {
+        var srcWebm = document.createElement("source");
+        srcWebm.src = config.video.webm_url;
+        srcWebm.type = "video/webm";
+        video.appendChild(srcWebm);
+      }
+      if (config.video.mp4_url) {
+        var srcMp4 = document.createElement("source");
+        srcMp4.src = config.video.mp4_url;
+        srcMp4.type = "video/mp4";
+        video.appendChild(srcMp4);
+      }
     }
 
     video.addEventListener("playing", function () {

@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Video, Widget, PageRule } from "@/lib/types";
 import { videoLabel } from "@/lib/video";
-import { gerarEsalvarMiniatura, formatarDuracao } from "@/lib/miniatura";
+import {
+  gerarEsalvarMiniatura,
+  gerarEsalvarPrevia,
+  formatarDuracao,
+} from "@/lib/miniatura";
 import PageRules from "@/components/PageRules";
 
 const statusLabel: Record<Video["status"], string> = {
@@ -31,6 +35,7 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [gerandoId, setGerandoId] = useState<string | null>(null);
+  const [previaId, setPreviaId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   // Qual card está com as regras de página abertas. Um por vez: dois
   // cards abertos lado a lado deixariam a lista alta e confusa.
@@ -88,6 +93,32 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
       return;
     }
     router.refresh();
+  }
+
+  // Vídeos enviados antes de a prévia existir continuam servindo o
+  // arquivo cheio para todo visitante. Aqui ela é gerada a partir do que
+  // já está hospedado — o download acontece uma vez, nesta aba.
+  async function gerarPrevia(video: Video) {
+    if (!video.mp4_url || !video.original_file_key) return;
+    setPreviaId(video.id);
+    try {
+      const resposta = await fetch(video.mp4_url);
+      const arquivo = await resposta.blob();
+      const supabase = createClient();
+      const url = await gerarEsalvarPrevia(
+        supabase,
+        video.id,
+        arquivo,
+        video.original_file_key
+      );
+      if (!url) {
+        alert("Não foi possível gerar a prévia deste vídeo.");
+        return;
+      }
+      router.refresh();
+    } finally {
+      setPreviaId(null);
+    }
   }
 
   async function handleDelete(video: Video) {
@@ -205,6 +236,20 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
               <span className="text-xs text-neutral-500">
                 {video.source_type === "youtube" ? "YouTube" : "Upload"}
               </span>
+              {video.source_type === "upload" &&
+                video.mp4_url &&
+                video.original_file_key &&
+                !video.preview_url && (
+                  <button
+                    type="button"
+                    onClick={() => gerarPrevia(video)}
+                    disabled={previaId === video.id}
+                    title="Cria uma versão curta e leve para o balão, que economiza banda"
+                    className="text-[10px] font-medium text-brand-blue underline disabled:opacity-60"
+                  >
+                    {previaId === video.id ? "Preparando..." : "Gerar prévia leve"}
+                  </button>
+                )}
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[video.status]}`}
               >
