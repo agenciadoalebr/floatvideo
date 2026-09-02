@@ -81,23 +81,6 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     return dados;
   }, []);
 
-  const carregarContas = useCallback(async () => {
-    setErro("");
-    setCarregando(true);
-    try {
-      const dados = await buscar("/api/gtm/containers");
-      const lista = (dados.contas ?? []) as Conta[];
-      setContas(lista);
-      if (lista.length === 1) setConta(lista[0].path);
-    } catch (e) {
-      setErro(
-        e instanceof Error ? e.message : "Não foi possível listar suas contas."
-      );
-    } finally {
-      setCarregando(false);
-    }
-  }, [buscar]);
-
   const carregarContainers = useCallback(
     async (contaPath: string) => {
       setErro("");
@@ -123,6 +106,31 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     },
     [buscar]
   );
+
+  const carregarContas = useCallback(async () => {
+    setErro("");
+    setCarregando(true);
+    try {
+      const dados = await buscar("/api/gtm/containers");
+      const lista = (dados.contas ?? []) as Conta[];
+      setContas(lista);
+
+      // Conta única já vem escolhida — e os contêineres dela precisam vir
+      // junto. Antes a busca dependia do evento de troca do campo, que
+      // nunca acontecia: a pessoa via a conta selecionada e nenhum
+      // contêiner, e só destravava mudando o valor e voltando.
+      if (lista.length === 1) {
+        setConta(lista[0].path);
+        await carregarContainers(lista[0].path);
+      }
+    } catch (e) {
+      setErro(
+        e instanceof Error ? e.message : "Não foi possível listar suas contas."
+      );
+    } finally {
+      setCarregando(false);
+    }
+  }, [buscar, carregarContainers]);
 
   useEffect(() => {
     // Buscar ao voltar do Google é o ponto do efeito: não há clique
