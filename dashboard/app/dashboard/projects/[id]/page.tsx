@@ -207,18 +207,20 @@ export default async function ProjectPage({
             id: "instalacao",
             label: "Instalação",
             grupo: "Publicação",
-            content: <EmbedCodeBox embedKey={project.embed_key} />,
+            content: (
+              <EmbedCodeBox
+                embedKey={project.embed_key}
+                projectId={project.id}
+                gtmDisponivel={gtmConfigurado()}
+              />
+            ),
           },
           {
             id: "analytics",
             label: "Analytics do site",
             grupo: "Publicação",
             content: (
-              <AnalyticsSettings
-                widget={widget}
-                projectId={project.id}
-                gtmDisponivel={gtmConfigurado()}
-              />
+              <AnalyticsSettings widget={widget} />
             ),
           },
           {

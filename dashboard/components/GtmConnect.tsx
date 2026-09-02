@@ -8,11 +8,8 @@ type Container = { path: string; name: string; publicId: string };
 
 type Resultado = {
   workspace: string;
-  variaveis: string[];
-  acionador: string;
-  tag: string | null;
-  /** O que já existia e foi aproveitado em vez de duplicado. */
-  reaproveitados?: string[];
+  tag: string;
+  jaExistia: boolean;
   /** Nome da versão publicada, quando a publicação foi pedida. */
   publicado?: string;
   aviso?: string;
@@ -36,8 +33,14 @@ async function lerResposta(resposta: Response) {
 }
 
 /**
- * Conecta a conta do Google e cria a configuração no Tag Manager do
- * cliente — o que antes era um tutorial de seis passos.
+ * Instala o widget pelo Google Tag Manager, sem ninguém precisar tocar
+ * no código do site.
+ *
+ * Faz uma coisa só: cria a tag que carrega o vídeo, disparando em todas
+ * as páginas. Medir eventos no GA4 é assunto de quem trabalha com
+ * marketing e já sabe o que fazer com eles — isso fica no passo a passo
+ * manual, na seção Analytics do site. Aqui o alvo é o dono de um site que
+ * não mexe com código e só quer o vídeo no ar.
  *
  * A escolha é em duas etapas (conta, depois contêiner) por causa da cota
  * do Google: 30 consultas por minuto. Listar os contêineres de todas as
@@ -61,7 +64,6 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   const [conta, setConta] = useState("");
   const [containers, setContainers] = useState<Container[] | null>(null);
   const [escolhido, setEscolhido] = useState("");
-  const [medida, setMedida] = useState("");
   // Publicar coloca no ar na hora, no site do cliente. Fica desligado por
   // padrão: quem aperta esse botão deve saber que está apertando.
   const [publicar, setPublicar] = useState(params.get("publicar") === "1");
@@ -144,7 +146,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     setResultado(null);
     // Tira o "?gtm=conectado" da URL, senão a tela voltaria a achar que
     // ainda há conexão ao recarregar.
-    router.replace(pathname + "?secao=analytics");
+    router.replace(pathname + "?secao=instalacao");
   }
 
   async function instalar() {
@@ -156,7 +158,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           containerPath: escolhido,
-          measurementId: medida,
+          projectId,
           publicar,
         }),
         signal: AbortSignal.timeout(30000),
@@ -180,34 +182,29 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
     return (
       <div className="rounded-md border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm font-medium text-emerald-900">
-          Configuração criada no seu Tag Manager
+          {resultado.jaExistia
+            ? "O vídeo já estava instalado neste contêiner"
+            : "Vídeo instalado no seu Tag Manager"}
         </p>
         <ul className="mt-2 space-y-1 text-xs text-emerald-900">
+          <li>Tag: {resultado.tag}</li>
+          <li>Dispara em: todas as páginas</li>
           <li>Área de trabalho: {resultado.workspace}</li>
-          <li>Variáveis: {resultado.variaveis.join(", ")}</li>
-          <li>Acionador: {resultado.acionador}</li>
-          {resultado.tag && <li>Tag: {resultado.tag}</li>}
         </ul>
-        {resultado.reaproveitados && resultado.reaproveitados.length > 0 && (
-          <p className="mt-2 text-xs text-emerald-800">
-            Já existia e foi aproveitado, sem duplicar:{" "}
-            {resultado.reaproveitados.join(", ")}.
-          </p>
-        )}
         {resultado.aviso && (
           <p className="mt-2 text-xs text-emerald-800">{resultado.aviso}</p>
         )}
         {resultado.publicado ? (
           <p className="mt-3 text-xs text-emerald-800">
-            <strong>Publicado.</strong> A versão &ldquo;{resultado.publicado}
-            &rdquo; está no ar. Se algo sair diferente do esperado, o Tag
-            Manager permite voltar à versão anterior a qualquer momento.
+            <strong>Publicado.</strong> O vídeo já está no ar. Se algo sair
+            diferente do esperado, o Tag Manager permite voltar à versão
+            anterior a qualquer momento.
           </p>
         ) : (
           <p className="mt-3 text-xs text-emerald-800">
-            <strong>Falta você publicar.</strong> Abra o Tag Manager, revise a
-            área de trabalho <em>{resultado.workspace}</em> e clique em Enviar →
-            Publicar.
+            <strong>Falta publicar.</strong> O vídeo só aparece no site
+            depois disso: abra o Tag Manager, revise a área de trabalho{" "}
+            <em>{resultado.workspace}</em> e clique em Enviar → Publicar.
           </p>
         )}
         <button
@@ -224,11 +221,11 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   return (
     <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
       <p className="text-sm font-medium text-neutral-700">
-        Configurar automaticamente
+        Instalar pelo Google Tag Manager
       </p>
       <p className="mt-1 text-xs text-neutral-600">
-        Conecte sua conta do Google e criamos o acionador, as variáveis e a tag
-        do GA4 no seu contêiner — em vez de você seguir o passo a passo abaixo.
+        Se o seu site usa o Google Tag Manager, conecte a conta e nós criamos a
+        tag do vídeo para você — sem mexer no código do site.
       </p>
 
       {erroNoRetorno && !erro && (
@@ -249,7 +246,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
             <span>
               Publicar automaticamente ao terminar
               <span className="mt-0.5 block text-neutral-500">
-                Coloca a configuração no ar na hora. Sem marcar, criamos tudo
+                Coloca o vídeo no ar na hora. Sem marcar, deixamos tudo pronto
                 numa área de trabalho e você publica quando quiser. A permissão
                 de publicar só é pedida ao Google se você marcar aqui.
               </span>
@@ -358,29 +355,13 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
                 </select>
               </label>
 
-              <label className="block">
-                <span className="text-xs text-neutral-600">
-                  ID de métrica do GA4 (opcional)
-                </span>
-                <input
-                  value={medida}
-                  onChange={(e) => setMedida(e.target.value.trim())}
-                  placeholder="G-XXXXXXXXXX"
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-brand-blue"
-                />
-                <span className="mt-1 block text-xs text-neutral-500">
-                  Com ele criamos também a tag do GA4. Sem ele, criamos só o
-                  acionador e as variáveis, e você liga na tag que já tiver.
-                </span>
-              </label>
-
               <button
                 type="button"
                 onClick={instalar}
                 disabled={!escolhido || carregando}
                 className="btn-brand rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
               >
-                {carregando ? "Criando..." : "Criar configuração"}
+                {carregando ? "Instalando..." : "Instalar o vídeo"}
               </button>
             </>
           )}

@@ -153,9 +153,10 @@ export default function PrivacidadePage() {
         <p>
           Se o cliente escolher conectar a conta do Google, pedimos permissão
           para <strong>listar os contêineres</strong> e{" "}
-          <strong>criar a configuração</strong> do FloatVideo dentro do
-          contêiner escolhido. O que criamos fica numa área de trabalho
-          separada.
+          <strong>criar uma tag</strong> dentro do contêiner escolhido. Essa tag
+          contém o mesmo código de instalação que ele colaria no site — nada
+          além disso é criado ou alterado, e o que criamos fica numa área de
+          trabalho separada.
         </p>
         <p>
           A permissão de <strong>publicar</strong> só é pedida se o cliente

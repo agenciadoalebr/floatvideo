@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import GtmConnect from "@/components/GtmConnect";
 
-export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
+export default function EmbedCodeBox({
+  embedKey,
+  projectId,
+  gtmDisponivel,
+}: {
+  embedKey: string;
+  projectId: string;
+  /** Sem as credenciais do Google configuradas, o atalho nem aparece. */
+  gtmDisponivel: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const [origem, setOrigem] = useState("");
 
@@ -28,9 +38,15 @@ export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
 
   return (
     <div className="max-w-3xl space-y-4">
+      {/* O atalho vem antes do código: quem pode instalar em dois cliques
+          não deveria precisar ler um passo a passo pra descobrir isso. */}
+      {gtmDisponivel && <GtmConnect projectId={projectId} />}
+
       <div className="rounded-lg border border-neutral-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-neutral-700">
-          Cole este código no seu site
+          {gtmDisponivel
+            ? "Ou cole este código no seu site"
+            : "Cole este código no seu site"}
         </h3>
         <p className="mt-1 text-xs text-neutral-500">
           Antes do fechamento do <code>&lt;/body&gt;</code>. Funciona em

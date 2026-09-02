@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   listarContas,
   listarContainersDaConta,
-  instalarNoContainer,
+  instalarWidgetNoContainer,
   publicarWorkspace,
 } from "@/lib/gtm";
 
@@ -63,9 +63,14 @@ export async function GET(request: Request) {
   }
 }
 
-/** Cria variáveis, acionador e tag no contêiner escolhido. */
+/** Instala a tag do widget no contêiner escolhido. */
 export async function POST(request: Request) {
-  if (!(await exigirLogin())) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
@@ -77,19 +82,34 @@ export async function POST(request: Request) {
     );
   }
 
-  const { containerPath, measurementId, publicar } = await request.json();
+  const { containerPath, projectId, publicar } = await request.json();
 
   if (typeof containerPath !== "string" || !containerPath.startsWith("accounts/")) {
     return NextResponse.json({ error: "Contêiner inválido." }, { status: 400 });
   }
 
+  // A chave vem do banco, não do navegador: assim ninguém instala no
+  // próprio Tag Manager o widget de outra conta. A RLS já garante que a
+  // consulta só encontra projeto de quem está logado.
+  const { data: projeto } = await supabase
+    .from("projects")
+    .select("embed_key")
+    .eq("id", projectId)
+    .maybeSingle();
+
+  if (!projeto?.embed_key) {
+    return NextResponse.json({ error: "Site não encontrado." }, { status: 404 });
+  }
+
+  const origem =
+    process.env.NEXT_PUBLIC_WIDGET_ORIGIN ?? new URL(request.url).origin;
+
   try {
-    const resultado = await instalarNoContainer(
+    const resultado = await instalarWidgetNoContainer(
       token,
       containerPath,
-      typeof measurementId === "string" && measurementId.trim()
-        ? measurementId.trim()
-        : undefined
+      projeto.embed_key,
+      origem
     );
 
     if (publicar) {

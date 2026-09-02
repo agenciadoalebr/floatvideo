@@ -197,25 +197,36 @@ export async function listarContainersDaConta(
     }));
 }
 
-type Parametro = {
-  type: string;
-  key: string;
-  value?: string;
-  list?: unknown[];
-  map?: Parametro[];
-};
-
-function variavelDeCamadaDeDados(nome: string, caminho: string) {
-  return {
-    name: nome,
-    type: "v",
-    parameter: [
-      { type: "integer", key: "dataLayerVersion", value: "2" },
-      { type: "boolean", key: "setDefaultValue", value: "false" },
-      { type: "template", key: "name", value: caminho },
-    ] as Parametro[],
-  };
+/**
+ * Acha uma entidade pelo nome, ignorando maiúsculas e espaços à toa.
+ */
+function acharPorNome<T extends { name?: string }>(
+  lista: T[] | undefined,
+  nome: string
+): T | undefined {
+  const alvo = nome.trim().toLowerCase();
+  return (lista ?? []).find((i) => (i.name ?? "").trim().toLowerCase() === alvo);
 }
+
+/**
+ * Acionador interno "All Pages" do GTM. O id é o mesmo em todo contêiner
+ * — é o que a exportação do contêiner da Agência do Alê mostrou na tag
+ * do widget, e é o que evita criar um acionador nosso para algo que já
+ * existe em qualquer conta.
+ */
+const TODAS_AS_PAGINAS = "2147479553";
+
+export const NOME_TAG_WIDGET = "FloatVideo — vídeo flutuante";
+
+export type ResultadoInstalacao = {
+  workspace: string;
+  workspacePath: string;
+  tag: string;
+  jaExistia: boolean;
+  /** Nome da versão publicada, quando a publicação foi pedida. */
+  publicado?: string;
+  aviso?: string;
+};
 
 /**
  * Cria uma versão a partir da área de trabalho e publica.
@@ -230,9 +241,8 @@ export async function publicarWorkspace(token: string, workspacePath: string) {
   }>(token, `/${workspacePath}:create_version`, {
     method: "POST",
     body: JSON.stringify({
-      name: "FloatVideo — configuração automática",
-      notes:
-        "Acionador, variáveis e tag do FloatVideo, criados pelo painel do FloatVideo.",
+      name: "FloatVideo — instalação do widget",
+      notes: "Tag do FloatVideo criada pelo painel do FloatVideo.",
     }),
   });
 
@@ -249,60 +259,33 @@ export async function publicarWorkspace(token: string, workspacePath: string) {
   return versao.containerVersion.name;
 }
 
-export type ResultadoInstalacao = {
-  workspace: string;
-  /** Caminho da área de trabalho, usado para publicar em seguida. */
-  workspacePath: string;
-  /** Nome da versão publicada, quando a publicação foi pedida. */
-  publicado?: string;
-  variaveis: string[];
-  acionador: string;
-  tag: string | null;
-  reaproveitados: string[];
-  aviso?: string;
-};
-
-/** Acha uma entidade pelo nome, ignorando maiúsculas e espaços à toa. */
-function acharPorNome<T extends { name?: string }>(
-  lista: T[] | undefined,
-  nome: string
-): T | undefined {
-  const alvo = nome.trim().toLowerCase();
-  return (lista ?? []).find((i) => (i.name ?? "").trim().toLowerCase() === alvo);
-}
-
 /**
- * Cria, no contêiner escolhido, tudo o que o tutorial manual pedia: as
- * duas variáveis de camada de dados, o acionador dos nossos eventos e a
- * tag do GA4 que os repassa.
+ * Instala o widget no contêiner: uma tag de HTML personalizado com o
+ * mesmo código que a pessoa colaria no site, disparando em todas as
+ * páginas.
  *
- * Tudo é feito de forma repetível. Uma área de trabalho nova no GTM nasce
- * como cópia do contêiner atual, então ela já traz o que o cliente
- * configurou antes — e o Google recusa nome repetido. Por isso, antes de
- * criar qualquer coisa, procuramos pelo nome: o que já existe é
- * reaproveitado, não duplicado. Assim clicar duas vezes, ou configurar
- * depois de ter feito à mão, não quebra nada.
+ * É só isso de propósito. Medição de eventos no GA4 é assunto de quem
+ * trabalha com marketing e já sabe o que fazer com os eventos — está no
+ * passo a passo manual do painel. Aqui o objetivo é o dono de um site,
+ * sem conhecimento técnico, colocar o vídeo no ar sem tocar no tema.
  *
- * A impressão fica de fora do acionador: ela dispara em toda página onde
- * o balão aparece, e encheria o relatório do cliente.
+ * A operação é repetível: se a tag já existir, ela é aproveitada em vez
+ * de duplicada — e não é sobrescrita, porque o cliente pode ter ajustado
+ * onde ela dispara.
  */
-export async function instalarNoContainer(
+export async function instalarWidgetNoContainer(
   token: string,
   contaPath: string,
-  measurementId?: string
+  embedKey: string,
+  origem: string
 ): Promise<ResultadoInstalacao> {
-  const reaproveitados: string[] = [];
-
-  // 1. Área de trabalho: reaproveita a nossa, se já existir.
   const workspaces = await chamar<{
     workspace?: { path: string; name: string }[];
   }>(token, `/${contaPath}/workspaces`);
 
   let workspace = acharPorNome(workspaces.workspace, NOME_WORKSPACE);
 
-  if (workspace) {
-    reaproveitados.push(`área de trabalho ${workspace.name}`);
-  } else {
+  if (!workspace) {
     workspace = await chamar<{ path: string; name: string }>(
       token,
       `/${contaPath}/workspaces`,
@@ -311,7 +294,7 @@ export async function instalarNoContainer(
         body: JSON.stringify({
           name: NOME_WORKSPACE,
           description:
-            "Configuração criada pelo FloatVideo. Revise e publique quando quiser.",
+            "Instalação do FloatVideo. Revise e publique quando quiser.",
         }),
       }
     );
@@ -319,172 +302,43 @@ export async function instalarNoContainer(
 
   const base = `/${workspace.path}`;
 
-  // A variável interna "Event" precisa estar ligada para o {{Event}} da
-  // tag existir. Ligar de novo o que já está ligado não é erro.
-  await chamar(token, `${base}/built_in_variables?type=event`, {
-    method: "POST",
-  }).catch(() => {});
+  const tags = await chamar<{ tag?: { name: string }[] }>(token, `${base}/tags`);
+  const existente = acharPorNome(tags.tag, NOME_TAG_WIDGET);
 
-  // 2. Variáveis de camada de dados.
-  const variaveisExistentes = await chamar<{
-    variable?: { name: string; variableId: string }[];
-  }>(token, `${base}/variables`);
-
-  async function garantirVariavel(nome: string, caminho: string) {
-    const existente = acharPorNome(variaveisExistentes.variable, nome);
-    if (existente) {
-      reaproveitados.push(nome);
-      return existente;
-    }
-    return chamar<{ name: string; variableId: string }>(
-      token,
-      `${base}/variables`,
-      {
-        method: "POST",
-        body: JSON.stringify(variavelDeCamadaDeDados(nome, caminho)),
-      }
-    );
-  }
-
-  const video = await garantirVariavel("FV - vídeo", "floatvideo.video");
-  const ctaType = await garantirVariavel(
-    "FV - tipo de CTA",
-    "floatvideo.cta_type"
-  );
-
-  // 3. Acionador.
-  const gatilhosExistentes = await chamar<{
-    trigger?: { name: string; triggerId: string }[];
-  }>(token, `${base}/triggers`);
-
-  const NOME_ACIONADOR = "Float Video - eventos";
-  let acionador = acharPorNome(gatilhosExistentes.trigger, NOME_ACIONADOR);
-
-  if (acionador) {
-    reaproveitados.push(NOME_ACIONADOR);
-  } else {
-    acionador = await chamar<{ name: string; triggerId: string }>(
-      token,
-      `${base}/triggers`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          name: NOME_ACIONADOR,
-          type: "customEvent",
-          customEventFilter: [
-            {
-              type: "matchRegex",
-              parameter: [
-                { type: "template", key: "arg0", value: "{{_event}}" },
-                {
-                  type: "template",
-                  key: "arg1",
-                  value: "^floatvideo_(?!impression)",
-                },
-              ],
-            },
-          ],
-        }),
-      }
-    );
-  }
-
-  // Sem o ID de métrica não dá para criar a tag: ela não saberia para
-  // qual propriedade mandar. O acionador e as variáveis ficam prontos, e
-  // o cliente conecta na tag do GA4 que ele já tiver.
-  if (!measurementId) {
+  if (existente) {
     return {
       workspace: workspace.name,
       workspacePath: workspace.path,
-      variaveis: [video.name, ctaType.name],
-      acionador: acionador.name,
-      tag: null,
-      reaproveitados,
+      tag: existente.name,
+      jaExistia: true,
       aviso:
-        "Sem o ID de métrica do GA4, a tag não foi criada. Ligue o acionador “Float Video - eventos” na sua tag do GA4.",
+        "A tag já existia neste contêiner e foi mantida como está — não sobrescrevemos o que você possa ter ajustado.",
     };
   }
 
-  // 4. Tag do GA4.
-  const tagsExistentes = await chamar<{ tag?: { name: string }[] }>(
-    token,
-    `${base}/tags`
-  );
-
-  const NOME_TAG = "GA4 - Float Video";
-  const tagExistente = acharPorNome(tagsExistentes.tag, NOME_TAG);
-
-  if (tagExistente) {
-    reaproveitados.push(NOME_TAG);
-    return {
-      workspace: workspace.name,
-      workspacePath: workspace.path,
-      variaveis: [video.name, ctaType.name],
-      acionador: acionador.name,
-      tag: tagExistente.name,
-      reaproveitados,
-      aviso:
-        "A tag já existia e foi mantida como está — não sobrescrevemos configuração que você pode ter ajustado.",
-    };
-  }
+  const html =
+    `<script>window.FVW_EMBED_KEY = ${JSON.stringify(embedKey)};</script>
+` +
+    `<script async src="${origem}/embed.js"></script>`;
 
   const tag = await chamar<{ name: string }>(token, `${base}/tags`, {
     method: "POST",
     body: JSON.stringify({
-      name: NOME_TAG,
-      type: "gaawe",
-      // Espelha a tag que já funciona no contêiner da Agência do Alê: os
-      // campos vieram da exportação real do GTM, não de suposição.
-      tagFiringOption: "oncePerEvent",
+      name: NOME_TAG_WIDGET,
+      type: "html",
       parameter: [
-        // {{Event}} repassa ao GA4 o mesmo nome que chegou, então uma tag
-        // dá conta de todos os eventos — hoje e os futuros.
-        { type: "template", key: "eventName", value: "{{Event}}" },
-        { type: "boolean", key: "sendEcommerceData", value: "false" },
-        {
-          type: "template",
-          key: "measurementIdOverride",
-          value: measurementId,
-        },
-        {
-          type: "list",
-          key: "eventSettingsTable",
-          list: [
-            {
-              type: "map",
-              map: [
-                { type: "template", key: "parameter", value: "video" },
-                {
-                  type: "template",
-                  key: "parameterValue",
-                  value: `{{${video.name}}}`,
-                },
-              ],
-            },
-            {
-              type: "map",
-              map: [
-                { type: "template", key: "parameter", value: "cta_type" },
-                {
-                  type: "template",
-                  key: "parameterValue",
-                  value: `{{${ctaType.name}}}`,
-                },
-              ],
-            },
-          ],
-        },
+        { type: "template", key: "html", value: html },
+        { type: "boolean", key: "supportDocumentWrite", value: "false" },
       ],
-      firingTriggerId: [acionador.triggerId],
+      firingTriggerId: [TODAS_AS_PAGINAS],
+      tagFiringOption: "oncePerEvent",
     }),
   });
 
   return {
     workspace: workspace.name,
-      workspacePath: workspace.path,
-    variaveis: [video.name, ctaType.name],
-    acionador: acionador.name,
+    workspacePath: workspace.path,
     tag: tag.name,
-    reaproveitados,
+    jaExistia: false,
   };
 }
