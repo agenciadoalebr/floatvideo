@@ -39,6 +39,20 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
 
   const carregarContainers = useCallback(async () => {
     setErro("");
+
+    // A cota do Google é de 30 consultas por minuto, e listar de novo a
+    // cada recarga da página queimava esse limite à toa. Dentro da mesma
+    // sessão do navegador, a lista é reaproveitada.
+    try {
+      const guardado = sessionStorage.getItem("fvw_gtm_containers");
+      if (guardado) {
+        const lista = JSON.parse(guardado) as Container[];
+        setContainers(lista);
+        if (lista.length === 1) setEscolhido(lista[0].path);
+        return;
+      }
+    } catch {}
+
     setCarregando(true);
     const resposta = await fetch("/api/gtm/containers");
     const dados = await resposta.json();
@@ -48,8 +62,13 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
       setErro(dados.error ?? "Não foi possível listar seus contêineres.");
       return;
     }
-    setContainers(dados.containers ?? []);
-    if (dados.containers?.length === 1) setEscolhido(dados.containers[0].path);
+
+    const lista = (dados.containers ?? []) as Container[];
+    setContainers(lista);
+    if (lista.length === 1) setEscolhido(lista[0].path);
+    try {
+      sessionStorage.setItem("fvw_gtm_containers", JSON.stringify(lista));
+    } catch {}
   }, []);
 
   useEffect(() => {

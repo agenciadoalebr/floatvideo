@@ -72,10 +72,20 @@ export async function trocarCodigoPorToken(codigo: string, origem: string) {
   return dados.access_token;
 }
 
+const espera = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * A API do Tag Manager permite 30 consultas por minuto por usuário — um
+ * teto baixo para quem tem conta de agência, onde listar os contêineres
+ * já custa uma chamada por conta de cliente. Quando ele estoura, o
+ * Google responde 429; aqui a gente espera e tenta de novo, em vez de
+ * devolver um erro que a pessoa não tem como resolver.
+ */
 async function chamar<T>(
   token: string,
   caminho: string,
-  init?: RequestInit
+  init?: RequestInit,
+  tentativa = 0
 ): Promise<T> {
   const resposta = await fetch(`${API}${caminho}`, {
     ...init,
@@ -86,8 +96,22 @@ async function chamar<T>(
     },
   });
 
+  if (resposta.status === 429 && tentativa < 2) {
+    // Espera curta de propósito: a janela do Google é de um minuto, mas
+    // uma função de servidor não pode ficar parada tanto tempo. Aqui a
+    // gente cobre o pico de um clique repetido; o limite de verdade é
+    // explicado à pessoa na mensagem abaixo.
+    await espera([2000, 5000][tentativa]);
+    return chamar<T>(token, caminho, init, tentativa + 1);
+  }
+
   if (!resposta.ok) {
     const corpo = await resposta.text();
+    if (resposta.status === 429) {
+      throw new Error(
+        "O Google limita 30 consultas por minuto nesta API e o limite foi atingido. Espere um minuto e tente de novo."
+      );
+    }
     throw new Error(`Tag Manager respondeu ${resposta.status}: ${corpo}`);
   }
 
@@ -111,7 +135,13 @@ export async function listarContainers(token: string): Promise<Container[]> {
 
   const resultado: Container[] = [];
 
-  for (const conta of contas.account ?? []) {
+  const listaDeContas = contas.account ?? [];
+
+  for (const conta of listaDeContas) {
+    // Uma pausa curta entre contas espalha as chamadas dentro da janela
+    // do Google em vez de mandar tudo de uma vez.
+    if (resultado.length > 0) await espera(250);
+
     const lista = await chamar<{
       container?: {
         accountId: string;

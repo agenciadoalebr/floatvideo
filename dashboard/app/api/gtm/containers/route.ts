@@ -3,6 +3,10 @@ import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { listarContainers, instalarNoContainer } from "@/lib/gtm";
 
+// Listar contêineres de uma conta de agência custa uma chamada por
+// cliente, e ainda pode haver espera por causa da cota do Google.
+export const maxDuration = 30;
+
 async function tokenDaSessao() {
   const jar = await cookies();
   return jar.get("fvw_gtm_token")?.value ?? null;
