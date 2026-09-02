@@ -171,6 +171,27 @@ export default function PrivacidadePage() {
           e não pedimos acesso de longa duração — se for preciso configurar de
           novo, é preciso autorizar de novo.
         </p>
+        <p>
+          O uso que o FloatVideo faz das informações recebidas das APIs do
+          Google obedece à{" "}
+          <a
+            href="https://developers.google.com/terms/api-services-user-data-policy"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Política de Dados do Usuário dos Serviços de API do Google
+          </a>
+          , incluindo os requisitos de Uso Limitado. Em particular: não
+          vendemos esses dados, não os usamos para publicidade, e nenhuma
+          pessoa da nossa equipe os lê — salvo com autorização expressa do
+          cliente para resolver um problema que ele nos relatou, ou quando a
+          lei exigir.
+        </p>
+        <p>
+          Para entrar no painel, pedimos apenas <strong>nome e e-mail</strong>{" "}
+          da conta do Google. Servem para identificar quem entrou e para
+          reconhecer convites — não são usados para mais nada.
+        </p>
       </section>
 
       <section>
