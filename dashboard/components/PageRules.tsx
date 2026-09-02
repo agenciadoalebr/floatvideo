@@ -25,7 +25,7 @@ type Props = {
  */
 export default function PageRules({ widgetId, videoId, rules }: Props) {
   const router = useRouter();
-  const [matchType, setMatchType] = useState<"contains" | "exact" | "all">("all");
+  const [matchType, setMatchType] = useState<"contains" | "exact" | "all" | "not_contains">("all");
   const [pattern, setPattern] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -91,7 +91,11 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
                   "Todas as páginas do site"
                 ) : (
                   <>
-                    {r.match_type === "exact" ? "URL é exatamente" : "URL contém"}{" "}
+                    {r.match_type === "exact"
+                      ? "URL é exatamente"
+                      : r.match_type === "not_contains"
+                        ? "Não aparece se a URL contém"
+                        : "URL contém"}{" "}
                     <code className="rounded bg-neutral-100 px-1 text-neutral-800">
                       {r.pattern}
                     </code>
@@ -114,13 +118,14 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
         <select
           value={matchType}
           onChange={(e) =>
-            setMatchType(e.target.value as "contains" | "exact" | "all")
+            setMatchType(e.target.value as "contains" | "exact" | "all" | "not_contains")
           }
           className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs"
         >
           <option value="all">Todas as páginas do site</option>
           <option value="contains">URL contém</option>
           <option value="exact">URL é exatamente</option>
+          <option value="not_contains">URL não contém (exceção)</option>
         </select>
         {matchType === "all" ? (
           <span className="self-center text-xs text-neutral-400">
@@ -136,7 +141,13 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
                 adicionar();
               }
             }}
-            placeholder={matchType === "exact" ? "site.com.br/contato" : "/precos"}
+            placeholder={
+              matchType === "exact"
+                ? "site.com.br/contato"
+                : matchType === "not_contains"
+                  ? "/checkout"
+                  : "/precos"
+            }
             className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
           />
         )}
@@ -150,6 +161,14 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
         </button>
       </div>
       {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
+
+      {matchType === "not_contains" && (
+        <p className="mt-2 text-xs text-neutral-500">
+          Exceção: onde ela bater, este vídeo não aparece — mesmo que outra
+          regra dele sirva. Sozinha, vale como &quot;em todas as páginas,
+          menos essa&quot;.
+        </p>
+      )}
     </div>
   );
 }

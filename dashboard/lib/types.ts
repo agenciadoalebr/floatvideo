@@ -93,7 +93,7 @@ export type PageRule = {
   id: string;
   widget_id: string;
   video_id: string;
-  match_type: "contains" | "exact" | "all";
+  match_type: "contains" | "exact" | "all" | "not_contains";
   pattern: string;
   created_at: string;
 };
