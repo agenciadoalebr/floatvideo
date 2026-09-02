@@ -110,6 +110,9 @@
   object-fit: cover;
   display: block;
   border: 0;
+  /* Camada acima da miniatura (ver .fvw-poster). */
+  position: relative;
+  z-index: 1;
 }
 
 /* Enquadramento do video proprio dentro do recorte. Vale nos dois
@@ -160,6 +163,7 @@
   max-height: none !important;
   transform: translate(-50%, -50%) !important;
   border: 0 !important;
+  z-index: 1 !important;
   /* Ninguém deve conseguir clicar/tocar direto no iframe enquanto o
      balão está recolhido — quem responde ao toque é o .fvw-click-catcher
      por cima. Isso evita qualquer chance de o próprio player do YouTube
@@ -171,7 +175,8 @@
    é só pra disfarçar o letterbox na bolha pequena e não deve esticar a
    visualização quando a pessoa já abriu o vídeo em tamanho grande. */
 .fvw-wrapper.fvw-expanded .fvw-media-slot iframe {
-  position: static !important;
+  position: relative !important;
+  z-index: 1 !important;
   width: 100% !important;
   height: 100% !important;
   transform: none !important;
@@ -568,6 +573,22 @@ textarea.fvw-input {
   background: none;
   color: #1a1a1a;
   padding: 24px 8px;
+}
+
+/* Miniatura sob o video, enquanto ele carrega. Sai de cena com um fade
+   assim que ha imagem de verdade por cima — trocar seco chamava mais
+   atencao do que a espera em si. */
+.fvw-poster {
+  position: absolute;
+  inset: 0;
+  /* Atras do video, na frente do fundo do balao. Elemento posicionado
+     pinta por cima de conteudo estatico, e tanto o <video> quanto o
+     iframe expandido sao estaticos — sem uma camada declarada, a
+     miniatura taparia o video em vez de anteceder. */
+  z-index: 0;
+  background-size: cover;
+  background-position: var(--fvw-focal-x, 50%) var(--fvw-focal-y, 50%);
+  transition: opacity 0.4s ease;
 }
 
 /* Cartao do botao de acao: fundo claro, icone redondo na cor escolhida e

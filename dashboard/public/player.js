@@ -112,6 +112,8 @@
         // permite comparar "apareceu na saida" com "apareceu no tempo"
         // sem criar um evento novo pra cada modo.
         trackEvent(config, "impression", { gatilho: gatilho });
+      }, function () {
+        montarVideo(el, config);
       });
 
       wireCloseButton(el, backdrop, config, embedKey);
@@ -191,6 +193,11 @@
       // corta o botao de fechar). Os dois ja fazem stopPropagation no
       // clique, entao descer um nivel nao dispara o expandir do slot.
       '<div class="fvw-media-slot">' +
+      // Miniatura primeiro: ela e o que a pessoa ve enquanto o video
+      // carrega. Sem isso o balao entra na tela como um circulo chapado
+      // da cor da borda — preto num cliente, branco em outro — e so
+      // depois vira video.
+      posterMarkup(config.video) +
       '<div class="fvw-progress"><div class="fvw-progress-fill"></div></div>' +
       (config.cta ? buildCTAMarkup(config.cta) : "") +
       "</div>";
@@ -207,6 +214,23 @@
   // letterbox do proprio player. Deslocar o ponto focal ali exige levar
   // em conta essa ampliacao — mover 1% do video equivale a 3% da altura
   // do balao. Sem esse fator, o ajuste pareceria nao fazer quase nada.
+  function posterMarkup(video) {
+    if (!video || !video.thumbnail_url) return "";
+    return (
+      '<div class="fvw-poster" style="background-image:url(' +
+      escapeAttr(video.thumbnail_url).replace(/[()]/g, encodeURIComponent) +
+      ')"></div>'
+    );
+  }
+
+  // Some com a miniatura assim que ha imagem de verdade por cima. Fica um
+  // instante depois do "tocando" porque o primeiro quadro do YouTube
+  // demora a pintar mesmo depois de o player dizer que comecou.
+  function esconderPoster(el) {
+    var poster = el.querySelector(".fvw-poster");
+    if (poster) setTimeout(function () { poster.style.opacity = "0"; }, 300);
+  }
+
   function applyFocalPoint(wrapper, video) {
     var fx = video && video.focal_x != null ? Number(video.focal_x) : 50;
     var fy = video && video.focal_y != null ? Number(video.focal_y) : 50;
@@ -714,7 +738,11 @@
   //   scroll — quando a pessoa passa de X% da página
   //   exit   — quando o ponteiro sobe pra fechar a aba
   //   any    — o que vier primeiro
-  function agendarAparicao(config, mostrar) {
+  // Quanto tempo antes da aparicao o video comeca a carregar, quando da
+  // pra prever (gatilho de tempo).
+  var ANTECEDENCIA = 1500;
+
+  function agendarAparicao(config, mostrar, preparar) {
     var modo = config.trigger_mode || "time";
     var delay = (config.delay_seconds || 0) * 1000;
     var alvoScroll = config.trigger_scroll || 50;
@@ -756,6 +784,13 @@
       window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
 
     if (modo === "time" || modo === "any" || (modo === "exit" && semPonteiro)) {
+      // Prepara o video um pouco antes da hora marcada: com o tempo, da
+      // pra prever a entrada, entao o balao ja aparece com imagem em
+      // movimento em vez de esperar o carregamento na frente da pessoa.
+      // Continua fora do carregamento da pagina, que era o problema.
+      if (typeof preparar === "function" && delay > ANTECEDENCIA) {
+        setTimeout(preparar, delay - ANTECEDENCIA);
+      }
       setTimeout(function () {
         aparecer("time");
       }, delay);
@@ -1183,6 +1218,7 @@
     }
 
     video.addEventListener("playing", function () {
+      esconderPoster(el);
       maybeTrackPlay(el, config);
     });
     video.addEventListener("ended", function () {
@@ -1264,6 +1300,7 @@
           },
           onStateChange: function (e) {
             if (e.data === YT.PlayerState.PLAYING) {
+              esconderPoster(el);
               // O modulo de legenda so existe depois que o video comeca,
               // entao desligar no onReady sozinho nao basta.
               insistirEmDesligarLegendas(e.target);
