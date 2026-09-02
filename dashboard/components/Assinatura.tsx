@@ -57,6 +57,8 @@ export default function Assinatura({
     fatura: string | null;
     diasDeTeste: number;
   } | null>(null);
+  const [cancelando, setCancelando] = useState(false);
+  const [cancelada, setCancelada] = useState<string | null>(null);
 
   async function assinar(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +82,55 @@ export default function Assinatura({
     } finally {
       setEnviando(false);
     }
+  }
+
+  async function cancelar() {
+    if (
+      !confirm(
+        "Cancelar a assinatura? As próximas cobranças param, e você continua com acesso até o fim do período já pago."
+      )
+    ) {
+      return;
+    }
+
+    setErro("");
+    setCancelando(true);
+    try {
+      const resposta = await fetch("/api/assinatura/cancelar", {
+        method: "POST",
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível cancelar agora.");
+        return;
+      }
+      setCancelada(dados.acessoAte ?? null);
+      router.refresh();
+    } catch {
+      setErro("Não foi possível falar com o servidor. Tente de novo.");
+    } finally {
+      setCancelando(false);
+    }
+  }
+
+  if (cancelada !== null) {
+    return (
+      <div className="max-w-md rounded-lg border border-neutral-200 bg-white p-5">
+        <p className="text-sm font-semibold text-neutral-700">
+          Assinatura cancelada
+        </p>
+        <p className="mt-2 text-xs text-neutral-600">
+          Não haverá novas cobranças.{" "}
+          {data(cancelada)
+            ? `Seu acesso continua até ${data(cancelada)}, que é o fim do período já pago.`
+            : "Seu acesso continua até o fim do período já pago."}
+        </p>
+        <p className="mt-2 text-xs text-neutral-500">
+          Mudou de ideia? Basta assinar de novo por esta mesma tela — seus
+          vídeos, métricas e leads continuam aqui.
+        </p>
+      </div>
+    );
   }
 
   if (feito) {
@@ -204,16 +255,33 @@ export default function Assinatura({
       )}
 
       {emAndamento && (
-        <p className="text-xs text-neutral-500">
-          Para trocar de plano ou cancelar, fale com a gente em{" "}
-          <a
-            href="mailto:contato@floatvideo.com.br"
-            className="font-medium text-brand-blue hover:underline"
-          >
-            contato@floatvideo.com.br
-          </a>
-          .
-        </p>
+        <div className="space-y-3 border-t border-neutral-100 pt-3">
+          <p className="text-xs text-neutral-500">
+            Para trocar de plano, fale com a gente em{" "}
+            <a
+              href="mailto:contato@floatvideo.com.br"
+              className="font-medium text-brand-blue hover:underline"
+            >
+              contato@floatvideo.com.br
+            </a>
+            .
+          </p>
+          <div>
+            <button
+              type="button"
+              onClick={cancelar}
+              disabled={cancelando}
+              className="text-xs font-medium text-red-600 underline hover:text-red-700 disabled:opacity-50"
+            >
+              {cancelando ? "Cancelando..." : "Cancelar assinatura"}
+            </button>
+            <p className="mt-1 text-xs text-neutral-500">
+              Sem multa e sem fidelidade. O acesso continua até o fim do
+              período já pago.
+            </p>
+          </div>
+          {erro && <p className="text-xs text-red-600">{erro}</p>}
+        </div>
       )}
     </div>
   );
