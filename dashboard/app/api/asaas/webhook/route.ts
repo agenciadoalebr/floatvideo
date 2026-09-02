@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       externalReference?: string;
       dueDate?: string;
       value?: number;
+      invoiceUrl?: string;
     };
   };
 
@@ -71,6 +72,11 @@ export async function POST(request: Request) {
     case "PAYMENT_CONFIRMED":
     case "PAYMENT_RECEIVED": {
       atualizacao.status = "active";
+      // Pagou: a régua de cobrança zera. Sem isso, a conta voltaria a
+      // ser avisada (ou bloqueada) no dia seguinte pelo atraso antigo.
+      atualizacao.overdue_since = null;
+      atualizacao.invoice_url = null;
+      atualizacao.ultimo_aviso_em = null;
       // O acesso vale até o próximo vencimento, com folga de um dia para
       // a cobrança seguinte ser gerada e paga.
       if (pagamento.dueDate) {
@@ -83,6 +89,13 @@ export async function POST(request: Request) {
     }
     case "PAYMENT_OVERDUE":
       atualizacao.status = "overdue";
+      // A contagem da tolerância começa no vencimento informado pelo
+      // Asaas, não na hora em que o aviso chegou até nós.
+      atualizacao.overdue_since = pagamento.dueDate
+        ? new Date(pagamento.dueDate).toISOString()
+        : new Date().toISOString();
+      // O link da fatura vai nos e-mails de cobrança.
+      if (pagamento.invoiceUrl) atualizacao.invoice_url = pagamento.invoiceUrl;
       break;
     case "PAYMENT_REFUNDED":
     case "PAYMENT_DELETED":

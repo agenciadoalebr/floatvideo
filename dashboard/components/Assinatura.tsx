@@ -17,14 +17,27 @@ export type AssinaturaAtual = {
   status: string;
   trial_ends_at: string | null;
   current_period_end: string | null;
+  overdue_since: string | null;
+  invoice_url: string | null;
 } | null;
 
 const ROTULO: Record<string, { texto: string; cor: string }> = {
   trialing: { texto: "Em teste gratuito", cor: "bg-blue-100 text-blue-800" },
   active: { texto: "Assinatura em dia", cor: "bg-emerald-100 text-emerald-800" },
   overdue: { texto: "Pagamento pendente", cor: "bg-amber-100 text-amber-900" },
+  suspended: { texto: "Conta pausada", cor: "bg-red-100 text-red-800" },
   canceled: { texto: "Assinatura encerrada", cor: "bg-neutral-200 text-neutral-700" },
 };
+
+// Dias de tolerância antes de pausar. O corte de verdade é no banco; aqui
+// o número existe só para dizer à pessoa quanto tempo ainda resta.
+const TOLERANCIA = 5;
+
+function diasDesde(iso: string | null) {
+  if (!iso) return 0;
+  const passou = Date.now() - new Date(iso).getTime();
+  return Math.max(0, Math.floor(passou / 86400000));
+}
 
 function data(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString("pt-BR") : null;
@@ -189,10 +202,47 @@ export default function Assinatura({
           </p>
         )}
         {atual?.status === "overdue" && (
-          <p className="mt-2 text-xs text-amber-900">
-            Há uma cobrança em aberto. Assim que o pagamento for confirmado, a
-            conta volta ao normal — nada foi apagado.
-          </p>
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-amber-900">
+              Há uma cobrança em aberto. Você tem{" "}
+              <strong>
+                {Math.max(0, TOLERANCIA - diasDesde(atual.overdue_since))} dia(s)
+              </strong>{" "}
+              para pagar antes de o vídeo parar de aparecer no seu site. Assim
+              que o pagamento for confirmado, tudo volta sozinho — nada foi
+              apagado.
+            </p>
+            {atual.invoice_url && (
+              <a
+                href={atual.invoice_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-brand inline-block rounded-md px-4 py-2 text-sm font-medium"
+              >
+                Pagar agora
+              </a>
+            )}
+          </div>
+        )}
+        {atual?.status === "suspended" && (
+          <div className="mt-2 space-y-2">
+            <p className="text-xs text-red-800">
+              O vídeo parou de aparecer nos seus sites porque a cobrança está em
+              aberto há mais de {TOLERANCIA} dias. Seus vídeos, métricas e leads
+              continuam aqui: assim que o pagamento cair, tudo volta a funcionar
+              sem você precisar mexer em nada.
+            </p>
+            {atual.invoice_url && (
+              <a
+                href={atual.invoice_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-brand inline-block rounded-md px-4 py-2 text-sm font-medium"
+              >
+                Pagar e reativar
+              </a>
+            )}
+          </div>
         )}
       </div>
 

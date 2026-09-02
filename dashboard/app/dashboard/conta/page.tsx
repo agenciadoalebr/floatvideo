@@ -54,7 +54,9 @@ export default async function ContaPage() {
   const { data: assinatura } = ehDono
     ? await supabase
         .from("subscriptions")
-        .select("plan, status, trial_ends_at, current_period_end")
+        .select(
+          "plan, status, trial_ends_at, current_period_end, overdue_since, invoice_url"
+        )
         .eq("organization_id", membership?.organization_id ?? "")
         .maybeSingle()
     : { data: null };
