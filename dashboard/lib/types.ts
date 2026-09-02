@@ -33,7 +33,7 @@ export type Widget = {
   project_id: string;
   video_id: string | null;
   name: string;
-  shape: "round" | "rectangular";
+  shape: "round" | "rectangular" | "vertical";
   size: "sm" | "md" | "lg";
   position: "bottom-left" | "bottom-right";
   border_color: string;

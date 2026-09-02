@@ -197,6 +197,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
             >
               <option value="round">Redondo</option>
               <option value="rectangular">Retangular</option>
+              <option value="vertical">Vertical 9:16 (stories)</option>
             </select>
           </div>
           <div>

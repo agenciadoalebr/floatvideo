@@ -49,6 +49,7 @@
 /* Formato (bolha recolhida) */
 .fvw-shape-round { border-radius: 50%; }
 .fvw-shape-rectangular { border-radius: 16px; }
+.fvw-shape-vertical { border-radius: 18px; }
 
 /* Tamanho (bolha recolhida) — usa clamp() em vez de px fixo, pra ficar
    proporcional à tela em qualquer aparelho (celular pequeno, tablet,
@@ -60,6 +61,16 @@
 .fvw-shape-rectangular.fvw-size-md { width: clamp(150px, 40vw, 200px); height: clamp(195px, 52vw, 260px); }
 .fvw-shape-rectangular.fvw-size-lg { width: clamp(190px, 50vw, 260px); height: clamp(248px, 66vw, 340px); }
 
+/* Vertical: so a largura e definida, e o 9:16 sai do aspect-ratio — a
+   proporcao fica exata em qualquer tamanho, sem pares de clamp que
+   precisariam ser recalculados a cada ajuste. A altura declarada pelas
+   regras de tamanho precisa ser desfeita, e com especificidade maior
+   pra valer tambem dentro do media query de celular. */
+.fvw-wrapper.fvw-shape-vertical { height: auto; aspect-ratio: 9 / 16; }
+.fvw-shape-vertical.fvw-size-sm { width: clamp(96px, 26vw, 120px); }
+.fvw-shape-vertical.fvw-size-md { width: clamp(124px, 33vw, 158px); }
+.fvw-shape-vertical.fvw-size-lg { width: clamp(158px, 42vw, 200px); }
+
 /* Celular: a bolha recolhida usa uma faixa de vw maior (e um teto mais
    alto) que a versão desktop, pra ficar claramente visível numa tela
    pequena em vez de parecer um botãozinho perdido no canto. */
@@ -70,6 +81,9 @@
   .fvw-shape-rectangular.fvw-size-sm { width: clamp(130px, 38vw, 170px); height: clamp(170px, 48vw, 220px); }
   .fvw-shape-rectangular.fvw-size-md { width: clamp(160px, 46vw, 210px); height: clamp(210px, 58vw, 270px); }
   .fvw-shape-rectangular.fvw-size-lg { width: clamp(190px, 54vw, 250px); height: clamp(248px, 68vw, 320px); }
+  .fvw-shape-vertical.fvw-size-sm { width: clamp(104px, 30vw, 130px); }
+  .fvw-shape-vertical.fvw-size-md { width: clamp(130px, 37vw, 165px); }
+  .fvw-shape-vertical.fvw-size-lg { width: clamp(158px, 44vw, 196px); }
 }
 
 /* Posição — distância customizável definida pelo usuário no painel */
