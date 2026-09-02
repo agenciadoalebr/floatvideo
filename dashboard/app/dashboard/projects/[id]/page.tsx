@@ -12,6 +12,7 @@ import ProjectDomainField from "@/components/ProjectDomainField";
 import CtaPanel from "@/components/CtaPanel";
 import AnalyticsSettings from "@/components/AnalyticsSettings";
 import { gtmConfigurado } from "@/lib/gtm";
+import PrimeirosPassos from "@/components/PrimeirosPassos";
 import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
@@ -136,6 +137,14 @@ export default async function ProjectPage({
         </div>
         <ProjectDomainField projectId={project.id} domain={project.domain} />
       </div>
+
+      {/* Guia do primeiro acesso. Some sozinho quando o widget registra a
+          primeira exibição — ou seja, quando o site está de fato no ar. */}
+      <PrimeirosPassos
+        temVideo={readyVideos.length > 0}
+        temRegra={pageRules.length > 0}
+        jaApareceu={(eventCounts.impression ?? 0) > 0}
+      />
 
       <ProjectTabs
         tabs={[
