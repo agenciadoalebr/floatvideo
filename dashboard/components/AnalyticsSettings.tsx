@@ -70,7 +70,7 @@ const MODOS: { valor: Widget["analytics_mode"]; nome: string; ajuda: string }[] 
   ];
 
 /**
- * Integração com o Analytics do site do cliente. Fica numa aba própria, e
+ * Integração com o Analytics do site do cliente. Fica numa seção própria, e
  * não junto do comportamento do widget, porque quase nunca se mexe nisso
  * ao editar o widget — mas quando se mexe, é junto com quem cuida do GTM,
  * e essa pessoa precisa da lista de eventos na mesma tela.
@@ -466,7 +466,7 @@ export default function AnalyticsSettings({ widget }: Props) {
 }
 
 /**
- * Cada assunto desta aba num bloco que abre e fecha. São três tutoriais e
+ * Cada assunto desta seção num bloco que abre e fecha. São três tutoriais e
  * uma lista de dez eventos: com tudo aberto de uma vez a tela virava uma
  * parede de texto, e a única coisa que se configura aqui — o seletor de
  * envio — sumia no meio.

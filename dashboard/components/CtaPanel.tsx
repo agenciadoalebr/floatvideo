@@ -179,7 +179,7 @@ export default function CtaPanel({ widget, cta }: Props) {
   }
 
   return (
-    // Mesmo desenho da aba Widget: o que se edita fica à esquerda e a
+    // Mesmo desenho da seção Widget: o que se edita fica à esquerda e a
     // prévia acompanha à direita, parada na tela enquanto se rola.
     <form onSubmit={salvar} className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">

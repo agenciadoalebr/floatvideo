@@ -57,7 +57,7 @@ export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
           <li>Espere o tempo configurado em &quot;Aparece depois de&quot;.</li>
           <li>
             Se você fechou o balão em algum teste, aquele vídeo some{" "}
-            <strong>naquele navegador</strong> pelo tempo escolhido na aba
+            <strong>naquele navegador</strong> pelo tempo escolhido em
             Widget (1 hora, por padrão). Vale só para o vídeo fechado: os das
             outras páginas continuam aparecendo. Para trazer todos de volta na
             hora, abra a página com <code>?fvw_reset</code> no fim da URL —
@@ -77,7 +77,7 @@ export default function EmbedCodeBox({ embedKey }: { embedKey: string }) {
         <p className="mt-1">
           Não precisa mexer no site: o código acima já manda os eventos. O
           passo a passo do GTM, a lista completa de eventos e como marcar a
-          conversão no Google Ads estão na aba{" "}
+          conversão no Google Ads estão em{" "}
           <button
             type="button"
             onClick={() =>

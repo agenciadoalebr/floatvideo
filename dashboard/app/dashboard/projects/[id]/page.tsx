@@ -141,6 +141,7 @@ export default async function ProjectPage({
           {
             id: "videos",
             label: "Vídeos",
+            grupo: "Conteúdo",
             count: readyVideos.length,
             content:
               (videos ?? []).length > 0 ? (
@@ -152,7 +153,7 @@ export default async function ProjectPage({
                 />
               ) : (
                 <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
-                  Nenhum vídeo ainda. Use a aba <strong>Upload</strong> para
+                  Nenhum vídeo ainda. Vá em <strong>Upload</strong>, no menu ao lado, para
                   enviar um arquivo ou colar um link do YouTube.
                 </p>
               ),
@@ -160,6 +161,7 @@ export default async function ProjectPage({
           {
             id: "upload",
             label: "Upload",
+            grupo: "Conteúdo",
             content: (
               <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
                 <VideoUploader projectId={project.id} />
@@ -170,6 +172,7 @@ export default async function ProjectPage({
           {
             id: "widget",
             label: "Widget",
+            grupo: "Aparência",
             content: (
               <WidgetPanel
                 // A key remonta o painel quando o vídeo do widget muda no
@@ -187,21 +190,25 @@ export default async function ProjectPage({
           {
             id: "cta",
             label: "Botão de ação",
+            grupo: "Aparência",
             content: <CtaPanel widget={widget} cta={cta} />,
           },
           {
             id: "instalacao",
             label: "Instalação",
+            grupo: "Publicação",
             content: <EmbedCodeBox embedKey={project.embed_key} />,
           },
           {
             id: "analytics",
             label: "Analytics do site",
+            grupo: "Publicação",
             content: <AnalyticsSettings widget={widget} />,
           },
           {
             id: "leads",
             label: "Leads",
+            grupo: "Resultados",
             count: leads.length,
             content: widget ? (
               <LeadsPanel leads={leads} />
@@ -212,6 +219,7 @@ export default async function ProjectPage({
           {
             id: "metricas",
             label: "Métricas",
+            grupo: "Resultados",
             content: widget ? (
               <AnalyticsPanel
                 totals={eventCounts}

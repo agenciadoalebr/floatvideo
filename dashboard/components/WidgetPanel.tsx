@@ -95,7 +95,7 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
 
     // O vídeo padrão não é escolhido aqui — esta coluna é só do site.
     // Ao criar o widget pela primeira vez, assume o primeiro vídeo
-    // pronto; depois disso quem troca é o botão na aba Vídeos.
+    // pronto; depois disso quem troca é o botão na seção Vídeos.
     const videoPadrao = widget?.video_id ?? readyVideos(videos)[0]?.id ?? null;
     if (!videoPadrao) {
       setError("Adicione um vídeo antes de salvar.");

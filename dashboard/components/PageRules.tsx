@@ -14,7 +14,7 @@ type Props = {
 };
 
 /**
- * Onde este vídeo aparece. Mora no modal "Onde aparece?" da aba Vídeos
+ * Onde este vídeo aparece. Mora no modal "Onde aparece?" da seção Vídeos
  * porque a regra pertence ao vídeo, não ao widget — a aparência é global,
  * a página onde ele entra é de cada um.
  *
