@@ -40,26 +40,30 @@ export default async function DashboardLayout({
                 className="h-8 w-auto"
               />
             </Link>
-            {canManageUsers && (
-              <Link
-                href="/dashboard/team"
-                className="text-sm text-neutral-500 hover:text-brand-blue"
-              >
-                Usuários
-              </Link>
-            )}
+            {/* Links de administração da plataforma. Para o cliente, a
+                equipe dele fica no menu da conta: ali é o lugar do que é
+                "meu", e o cabeçalho continua sendo o dos vídeos. */}
             {ehAdminDaPlataforma && (
-              <Link
-                href="/dashboard/convites"
-                className="text-sm text-neutral-500 hover:text-brand-blue"
-              >
-                Convites
-              </Link>
+              <>
+                <Link
+                  href="/dashboard/team"
+                  className="text-sm text-neutral-500 hover:text-brand-blue"
+                >
+                  Usuários
+                </Link>
+                <Link
+                  href="/dashboard/convites"
+                  className="text-sm text-neutral-500 hover:text-brand-blue"
+                >
+                  Convites
+                </Link>
+              </>
             )}
           </div>
           <AccountMenu
             email={user?.email ?? ""}
             ehAdminDaPlataforma={ehAdminDaPlataforma}
+            podeGerenciarEquipe={canManageUsers}
           />
         </div>
       </header>

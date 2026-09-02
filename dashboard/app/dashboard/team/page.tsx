@@ -56,20 +56,33 @@ export default async function TeamPage() {
     .order("created_at", { ascending: false })
     .returns<Invite[]>();
 
+  const { data: ehAdminDaPlataforma } = await supabase.rpc("e_admin_da_plataforma");
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-neutral-900">Usuários</h1>
+        <h1 className="text-xl font-semibold text-neutral-900">
+          {ehAdminDaPlataforma ? "Usuários" : "Minha equipe"}
+        </h1>
         <p className="text-sm text-neutral-500">
-          Gerencie quem tem acesso ao painel da agência.
+          {ehAdminDaPlataforma
+            ? "Gerencie quem tem acesso ao painel."
+            : "Convide quem trabalha com você nesta conta."}
         </p>
       </div>
 
-      <InviteForm organizationId={myMembership.organization_id} />
+      <InviteForm
+        organizationId={myMembership.organization_id}
+        podeEscolherPapel={!!ehAdminDaPlataforma}
+      />
 
       <PendingInvites invites={invites ?? []} />
 
-      <MembersList members={members} currentUserId={user.id} />
+      <MembersList
+        members={members}
+        currentUserId={user.id}
+        podeMudarPapel={!!ehAdminDaPlataforma}
+      />
     </div>
   );
 }

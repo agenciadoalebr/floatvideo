@@ -13,9 +13,12 @@ import { createClient } from "@/lib/supabase/client";
 export default function AccountMenu({
   email,
   ehAdminDaPlataforma,
+  podeGerenciarEquipe,
 }: {
   email: string;
   ehAdminDaPlataforma: boolean;
+  /** Dono ou administrador da própria conta: convida a equipe dele. */
+  podeGerenciarEquipe: boolean;
 }) {
   const router = useRouter();
   const [aberto, setAberto] = useState(false);
@@ -99,6 +102,15 @@ export default function AccountMenu({
           >
             Meu plano
           </Link>
+          {podeGerenciarEquipe && (
+            <Link
+              href="/dashboard/team"
+              onClick={() => setAberto(false)}
+              className="block px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-50"
+            >
+              Minha equipe
+            </Link>
+          )}
           {ehAdminDaPlataforma && (
             <Link
               href="/dashboard/convites"

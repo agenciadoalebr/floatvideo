@@ -5,12 +5,21 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Member, OrgRole } from "@/lib/types";
 
+const PAPEIS: Record<string, string> = {
+  owner: "Dono",
+  admin: "Administrador",
+  editor: "Editor",
+};
+
 export default function MembersList({
   members,
   currentUserId,
+  podeMudarPapel = false,
 }: {
   members: Member[];
   currentUserId: string;
+  /** Trocar papel é da administração da plataforma. */
+  podeMudarPapel?: boolean;
 }) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -72,16 +81,25 @@ export default function MembersList({
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <select
-                  value={member.role}
-                  disabled={isLastOwner}
-                  onChange={(e) => handleRoleChange(member.user_id, e.target.value as OrgRole)}
-                  className="rounded-md border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
-                >
-                  <option value="editor">Editor</option>
-                  <option value="admin">Administrador</option>
-                  <option value="owner">Dono</option>
-                </select>
+                {podeMudarPapel ? (
+                  <select
+                    value={member.role}
+                    disabled={isLastOwner}
+                    onChange={(e) => handleRoleChange(member.user_id, e.target.value as OrgRole)}
+                    className="rounded-md border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="admin">Administrador</option>
+                    <option value="owner">Dono</option>
+                  </select>
+                ) : (
+                  // Sem seletor: na conta do cliente todo mundo entra como
+                  // editor, e promover alguem a dono nao e decisao que a
+                  // tela deva oferecer de graca.
+                  <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                    {PAPEIS[member.role] ?? member.role}
+                  </span>
+                )}
                 <button
                   onClick={() => handleDelete(member.user_id, member.email)}
                   disabled={isSelf || isLastOwner || deletingId === member.user_id}

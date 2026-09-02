@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { OrgRole } from "@/lib/types";
 
-export default function InviteForm({ organizationId }: { organizationId: string }) {
+export default function InviteForm({
+  organizationId,
+  podeEscolherPapel = false,
+}: {
+  organizationId: string;
+  /** Só a administração da plataforma escolhe o papel de quem entra. */
+  podeEscolherPapel?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<OrgRole>("editor");
   const [loading, setLoading] = useState(false);
@@ -55,6 +62,12 @@ export default function InviteForm({ organizationId }: { organizationId: string 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5">
       <h2 className="text-sm font-semibold text-neutral-700">Convidar alguém</h2>
+      {!podeEscolherPapel && (
+        <p className="mt-1 text-xs text-neutral-500">
+          Quem entrar por aqui vira <strong>editor</strong>: mexe nos vídeos e
+          nos widgets, mas não convida nem remove ninguém.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
           <label className="block text-xs font-medium text-neutral-600">E-mail</label>
@@ -67,18 +80,20 @@ export default function InviteForm({ organizationId }: { organizationId: string 
             className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
           />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-neutral-600">Papel</label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as OrgRole)}
-            className="mt-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          >
-            <option value="editor">Editor</option>
-            <option value="admin">Administrador</option>
-            <option value="owner">Dono</option>
-          </select>
-        </div>
+        {podeEscolherPapel && (
+          <div>
+            <label className="block text-xs font-medium text-neutral-600">Papel</label>
+            <select
+              value={role}
+              onChange={(e) => setRole(e.target.value as OrgRole)}
+              className="mt-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            >
+              <option value="editor">Editor</option>
+              <option value="admin">Administrador</option>
+              <option value="owner">Dono</option>
+            </select>
+          </div>
+        )}
         <button
           type="submit"
           disabled={loading}
