@@ -63,7 +63,12 @@ export function urlDeAutorizacao(
     // logada no navegador, e quem tem duas (a pessoal e a da empresa)
     // conecta a errada sem perceber — e depois não encontra os
     // contêineres, sem entender por quê.
-    prompt: "select_account",
+    //
+    // Pedindo publicação, força também a tela de consentimento: quem já
+    // autorizou antes sem essa permissão receberia de volta a
+    // autorização antiga, e a publicação falharia com "permissão
+    // insuficiente" depois de tudo pronto.
+    prompt: comPublicacao ? "consent select_account" : "select_account",
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
@@ -252,9 +257,21 @@ export async function publicarWorkspace(token: string, workspacePath: string) {
     );
   }
 
-  await chamar(token, `/${versao.containerVersion.path}:publish`, {
-    method: "POST",
-  });
+  try {
+    await chamar(token, `/${versao.containerVersion.path}:publish`, {
+      method: "POST",
+    });
+  } catch (err) {
+    // Erro de permissão aqui quase sempre é autorização antiga, sem o
+    // escopo de publicar. A mensagem precisa dizer o que fazer, não o
+    // que o Google respondeu.
+    if (err instanceof Error && err.message.includes("403")) {
+      throw new Error(
+        "faltou a permissão de publicar nesta autorização. Clique em “Desconectar do Google”, conecte de novo e marque “publicar automaticamente” antes de conectar."
+      );
+    }
+    throw err;
+  }
 
   return versao.containerVersion.name;
 }

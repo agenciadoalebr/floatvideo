@@ -203,8 +203,11 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
         ) : (
           <p className="mt-3 text-xs text-emerald-800">
             <strong>Falta publicar.</strong> O vídeo só aparece no site
-            depois disso: abra o Tag Manager, revise a área de trabalho{" "}
-            <em>{resultado.workspace}</em> e clique em Enviar → Publicar.
+            depois disso. No Tag Manager, troque a área de trabalho no
+            seletor do topo da coluna esquerda (costuma estar em
+            &ldquo;Default Workspace&rdquo;) para{" "}
+            <strong>{resultado.workspace}</strong>, confira a tag e clique em
+            Enviar → Publicar.
           </p>
         )}
         <button
