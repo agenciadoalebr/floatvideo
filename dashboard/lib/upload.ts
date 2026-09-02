@@ -23,6 +23,13 @@ export async function enviarArquivo(
     body: JSON.stringify({ chave, tipo, contentType, tamanho: arquivo.size }),
   });
 
+  // Sessão expirada não devolve JSON: o middleware manda pro login, e a
+  // resposta vira a página HTML inteira. Sem esta conferência, o erro que
+  // a pessoa via era um "unexpected token <" — que não diz nada.
+  if (autorizacao.redirected || !autorizacao.headers.get("content-type")?.includes("json")) {
+    throw new Error("Sua sessão expirou. Entre de novo e repita o envio.");
+  }
+
   const dados = await autorizacao.json();
   if (!autorizacao.ok) {
     throw new Error(dados.error ?? "Não foi possível autorizar o envio.");
