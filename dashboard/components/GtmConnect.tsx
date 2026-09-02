@@ -11,6 +11,8 @@ type Resultado = {
   variaveis: string[];
   acionador: string;
   tag: string | null;
+  /** O que já existia e foi aproveitado em vez de duplicado. */
+  reaproveitados?: string[];
   aviso?: string;
 };
 
@@ -160,6 +162,12 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           <li>Acionador: {resultado.acionador}</li>
           {resultado.tag && <li>Tag: {resultado.tag}</li>}
         </ul>
+        {resultado.reaproveitados && resultado.reaproveitados.length > 0 && (
+          <p className="mt-2 text-xs text-emerald-800">
+            Já existia e foi aproveitado, sem duplicar:{" "}
+            {resultado.reaproveitados.join(", ")}.
+          </p>
+        )}
         {resultado.aviso && (
           <p className="mt-2 text-xs text-emerald-800">{resultado.aviso}</p>
         )}
