@@ -38,6 +38,13 @@ export function criarClienteR2() {
       accessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
     },
+    // Sem isto, o SDK assina a URL com um checksum CRC32 calculado aqui,
+    // do lado do servidor — onde o arquivo nem existe. Ele acaba sendo o
+    // checksum de conteudo vazio, e o R2 recusa o envio do arquivo de
+    // verdade. Em URL assinada quem tem os bytes e o navegador, entao o
+    // checksum so entra quando a operacao exige.
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 }
 
