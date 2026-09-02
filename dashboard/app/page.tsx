@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import GoogleTagManager from "@/components/GoogleTagManager";
 
 export const metadata: Metadata = {
   title: "FloatVideo — vídeo flutuante que vende no seu site",
@@ -85,6 +86,7 @@ export default async function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <GoogleTagManager />
       <header className="sticky top-0 z-40 border-b border-neutral-200 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

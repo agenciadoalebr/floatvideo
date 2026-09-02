@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import GoogleTagManager from "@/components/GoogleTagManager";
 
 /**
  * Moldura das páginas legais. Existe para as duas dividirem cabeçalho,
@@ -17,6 +18,7 @@ export default function PaginaLegal({
 }) {
   return (
     <div className="min-h-screen bg-white">
+      <GoogleTagManager />
       <header className="border-b border-neutral-200">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link href="/">

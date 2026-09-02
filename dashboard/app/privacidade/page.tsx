@@ -168,7 +168,19 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>7. Por quanto tempo guardamos</h2>
+        <h2>7. Este site</h2>
+        <p>
+          As páginas públicas do floatvideo.com.br (esta inclusive) usam o
+          Google Tag Manager e ferramentas de medição de audiência, que podem
+          gravar cookies no seu navegador para entender como o site é
+          encontrado e navegado. Isso vale só para as páginas abertas ao
+          público: <strong>o painel do cliente não recebe nenhuma tag de
+          marketing</strong>, porque ali existem dados de conta e de leads.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Por quanto tempo guardamos</h2>
         <ul>
           <li>
             Dados da conta e conteúdos: enquanto a conta existir. Encerrada a
@@ -187,7 +199,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>8. Seus direitos</h2>
+        <h2>9. Seus direitos</h2>
         <p>
           A LGPD garante a você confirmar se tratamos seus dados, acessá-los,
           corrigi-los, pedir a eliminação, a portabilidade e informações sobre
@@ -207,7 +219,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>9. Segurança</h2>
+        <h2>10. Segurança</h2>
         <p>
           O acesso aos dados é restrito por regras no próprio banco, de modo que
           cada conta só enxerga o que é dela. As senhas são cifradas, o tráfego
@@ -222,7 +234,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>10. Mudanças nesta política</h2>
+        <h2>11. Mudanças nesta política</h2>
         <p>
           Se algo mudar de forma significativa, avisaremos por e-mail ou pelo
           painel antes de valer. A data no topo indica a última revisão.
