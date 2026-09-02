@@ -165,6 +165,18 @@ function SignupForm() {
           em branco — reconhecemos pelo seu e-mail.
         </p>
 
+        <p className="text-center text-xs text-neutral-400">
+          Ao criar a conta você concorda com os{" "}
+          <Link href="/termos" className="underline hover:text-neutral-600">
+            termos de uso
+          </Link>{" "}
+          e a{" "}
+          <Link href="/privacidade" className="underline hover:text-neutral-600">
+            política de privacidade
+          </Link>
+          .
+        </p>
+
         <div className="text-center text-xs text-neutral-400">
           <Link href="/login" className="hover:text-neutral-600">
             Já tenho conta — fazer login

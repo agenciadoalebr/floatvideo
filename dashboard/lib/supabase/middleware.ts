@@ -30,6 +30,10 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     // A raiz e a pagina de vendas: quem chega ali ainda nao tem conta.
     request.nextUrl.pathname === "/" ||
+    // Politica e termos precisam abrir sem login — inclusive pro Google,
+    // que exige a politica publica pra verificar o app.
+    request.nextUrl.pathname.startsWith("/privacidade") ||
+    request.nextUrl.pathname.startsWith("/termos") ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/setup") ||

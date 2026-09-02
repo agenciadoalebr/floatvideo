@@ -333,7 +333,13 @@ export default async function LandingPage() {
 
       <footer className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-4 py-8 text-xs text-neutral-500 sm:flex-row">
         <span>© {new Date().getFullYear()} FloatVideo — Agência do Alê</span>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4">
+          <Link href="/privacidade" className="hover:text-brand-blue">
+            Privacidade
+          </Link>
+          <Link href="/termos" className="hover:text-brand-blue">
+            Termos de uso
+          </Link>
           <Link href="/login" className="hover:text-brand-blue">
             Entrar no painel
           </Link>
