@@ -53,6 +53,10 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   }, []);
 
   useEffect(() => {
+    // Buscar ao voltar do Google é o ponto do efeito: não há clique
+    // nenhum depois do redirecionamento, e é aí que os contêineres
+    // precisam aparecer.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (conectado) carregarContainers();
   }, [conectado, carregarContainers]);
 
