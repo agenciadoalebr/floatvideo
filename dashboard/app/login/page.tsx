@@ -37,14 +37,14 @@ export default function LoginPage() {
         <div className="flex flex-col items-center space-y-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-floatvideo.webp" alt="FloatVideo" className="h-10 w-auto" />
-          <p className="text-sm text-neutral-500">Painel interno — Agência do Alê</p>
+          <p className="text-sm text-neutral-500">Entre na sua conta</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
             type="email"
             required
-            placeholder="voce@agenciadoale.com.br"
+            placeholder="seu@email.com.br"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
@@ -72,7 +72,7 @@ export default function LoginPage() {
             Esqueci minha senha
           </Link>
           <Link href="/signup" className="hover:text-neutral-600">
-            Tenho um convite
+            Tenho um código de convite
           </Link>
         </div>
       </div>

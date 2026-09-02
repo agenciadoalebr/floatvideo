@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import LogoutButton from "@/components/LogoutButton";
+import AccountMenu from "@/components/AccountMenu";
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +13,7 @@ export default async function DashboardLayout({
   } = await supabase.auth.getUser();
 
   let canManageUsers = false;
+  let ehAdminDaPlataforma = false;
   if (user) {
     const { data: membership } = await supabase
       .from("organization_members")
@@ -21,6 +22,9 @@ export default async function DashboardLayout({
       .limit(1)
       .maybeSingle();
     canManageUsers = !!membership && ["owner", "admin"].includes(membership.role);
+
+    const { data: admin } = await supabase.rpc("e_admin_da_plataforma");
+    ehAdminDaPlataforma = !!admin;
   }
 
   return (
@@ -44,11 +48,19 @@ export default async function DashboardLayout({
                 Usuários
               </Link>
             )}
+            {ehAdminDaPlataforma && (
+              <Link
+                href="/dashboard/convites"
+                className="text-sm text-neutral-500 hover:text-brand-blue"
+              >
+                Convites
+              </Link>
+            )}
           </div>
-          <div className="flex items-center gap-3 text-sm text-neutral-600">
-            <span>{user?.email}</span>
-            <LogoutButton />
-          </div>
+          <AccountMenu
+            email={user?.email ?? ""}
+            ehAdminDaPlataforma={ehAdminDaPlataforma}
+          />
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
