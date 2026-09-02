@@ -11,6 +11,7 @@ import ProjectTabs from "@/components/ProjectTabs";
 import ProjectDomainField from "@/components/ProjectDomainField";
 import CtaPanel from "@/components/CtaPanel";
 import AnalyticsSettings from "@/components/AnalyticsSettings";
+import { gtmConfigurado } from "@/lib/gtm";
 import EmbedCodeBox from "@/components/EmbedCodeBox";
 import type { Project, Video, Widget, WidgetCta, Lead, PageRule } from "@/lib/types";
 
@@ -203,7 +204,13 @@ export default async function ProjectPage({
             id: "analytics",
             label: "Analytics do site",
             grupo: "Publicação",
-            content: <AnalyticsSettings widget={widget} />,
+            content: (
+              <AnalyticsSettings
+                widget={widget}
+                projectId={project.id}
+                gtmDisponivel={gtmConfigurado()}
+              />
+            ),
           },
           {
             id: "leads",

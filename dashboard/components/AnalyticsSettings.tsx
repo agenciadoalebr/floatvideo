@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Widget } from "@/lib/types";
 import Copiavel from "@/components/Copiavel";
+import GtmConnect from "@/components/GtmConnect";
 
 type Props = {
   widget: Widget | null;
+  projectId: string;
+  /** Sem as credenciais do Google configuradas, o botão nem aparece. */
+  gtmDisponivel: boolean;
 };
 
 /** Cada evento que o widget manda pra fora, na ordem em que acontecem. */
@@ -75,7 +79,11 @@ const MODOS: { valor: Widget["analytics_mode"]; nome: string; ajuda: string }[] 
  * ao editar o widget — mas quando se mexe, é junto com quem cuida do GTM,
  * e essa pessoa precisa da lista de eventos na mesma tela.
  */
-export default function AnalyticsSettings({ widget }: Props) {
+export default function AnalyticsSettings({
+  widget,
+  projectId,
+  gtmDisponivel,
+}: Props) {
   const router = useRouter();
   const [modo, setModo] = useState<Widget["analytics_mode"]>(
     widget?.analytics_mode ?? "auto"
@@ -165,6 +173,7 @@ export default function AnalyticsSettings({ widget }: Props) {
           titulo="Como ligar no Google Tag Manager"
           descricao="Um gatilho só dá conta de todos os eventos, inclusive os que criarmos no futuro."
         >
+          {gtmDisponivel && <GtmConnect projectId={projectId} />}
           <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
             <p className="text-xs text-neutral-600">
               <strong>Precisa mesmo fazer isso?</strong> Com o script
