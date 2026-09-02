@@ -41,6 +41,11 @@ export function urlDeAutorizacao(origem: string, state: string) {
     scope: ESCOPOS,
     // Sem "access_type=offline" de propósito: ver o comentário do topo.
     include_granted_scopes: "true",
+    // Sempre perguntar qual conta. Sem isto o Google usa a que já está
+    // logada no navegador, e quem tem duas (a pessoal e a da empresa)
+    // conecta a errada sem perceber — e depois não encontra os
+    // contêineres, sem entender por quê.
+    prompt: "select_account",
     state,
   });
   return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
