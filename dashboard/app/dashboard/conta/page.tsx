@@ -1,6 +1,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PasswordForm from "@/components/PasswordForm";
+import Assinatura, {
+  type Plano,
+  type AssinaturaAtual,
+} from "@/components/Assinatura";
+import { asaasConfigurado } from "@/lib/asaas";
 
 export default async function ContaPage() {
   const supabase = await createClient();
@@ -13,7 +18,7 @@ export default async function ContaPage() {
   const { data: membership } = await supabase
     .from("organization_members")
     .select(
-      "role, organizations(name, plan, created_at, max_projects, plans(nome, preco_centavos, max_projects, descricao))"
+      "role, organization_id, organizations(name, plan, created_at, max_projects, plans(nome, preco_centavos, max_projects, descricao))"
     )
     .eq("user_id", user.id)
     .limit(1)
@@ -43,6 +48,24 @@ export default async function ContaPage() {
     .select("id", { count: "exact", head: true });
 
   const plano = org?.plans;
+
+  // Assinatura e planos só interessam a quem é dono da conta; quem foi
+  // convidado nem vê este bloco.
+  const { data: assinatura } = ehDono
+    ? await supabase
+        .from("subscriptions")
+        .select("plan, status, trial_ends_at, current_period_end")
+        .eq("organization_id", membership?.organization_id ?? "")
+        .maybeSingle()
+    : { data: null };
+
+  const { data: planosPublicos } = ehDono
+    ? await supabase
+        .from("plans")
+        .select("id, nome, preco_centavos, max_projects, descricao, trial_dias")
+        .eq("publico", true)
+        .order("ordem")
+    : { data: null };
   const limiteSites = org?.max_projects ?? plano?.max_projects ?? null;
 
   return (
@@ -53,6 +76,14 @@ export default async function ContaPage() {
       </div>
 
       <PasswordForm />
+
+      {ehDono && asaasConfigurado() && (
+        <Assinatura
+          planos={(planosPublicos ?? []) as Plano[]}
+          atual={(assinatura ?? null) as AssinaturaAtual}
+          nomeDaConta={org?.name ?? ""}
+        />
+      )}
 
       {ehDono && (
       <div

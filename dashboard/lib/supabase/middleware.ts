@@ -34,6 +34,10 @@ export async function updateSession(request: NextRequest) {
     // que exige a politica publica pra verificar o app.
     request.nextUrl.pathname.startsWith("/privacidade") ||
     request.nextUrl.pathname.startsWith("/termos") ||
+    // O Asaas chama este endereco de servidor pra servidor: nao ha sessao
+    // pra checar, e um redirecionamento pro login seria lido como falha
+    // de entrega. Quem autentica ali e o token no cabecalho.
+    request.nextUrl.pathname.startsWith("/api/asaas/webhook") ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/setup") ||
