@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { listarContainers, instalarNoContainer } from "@/lib/gtm";
+import {
+  listarContas,
+  listarContainersDaConta,
+  instalarNoContainer,
+} from "@/lib/gtm";
 
 // Listar contêineres de uma conta de agência custa uma chamada por
 // cliente, e ainda pode haver espera por causa da cota do Google.
@@ -20,8 +24,12 @@ async function exigirLogin() {
   return user;
 }
 
-/** Contêineres aos quais a pessoa deu acesso, para ela escolher um. */
-export async function GET() {
+/**
+ * Sem "conta" na consulta, devolve as contas. Com ela, os contêineres
+ * daquela conta. Uma chamada ao Google em cada caso — é o que mantém a
+ * conexão viável numa agência com dezenas de clientes.
+ */
+export async function GET(request: Request) {
   if (!(await exigirLogin())) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
@@ -34,8 +42,18 @@ export async function GET() {
     );
   }
 
+  const conta = new URL(request.url).searchParams.get("conta");
+
   try {
-    return NextResponse.json(await listarContainers(token));
+    if (!conta) {
+      return NextResponse.json({ contas: await listarContas(token) });
+    }
+    if (!conta.startsWith("accounts/")) {
+      return NextResponse.json({ error: "Conta inválida." }, { status: 400 });
+    }
+    return NextResponse.json({
+      containers: await listarContainersDaConta(token, conta),
+    });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Falha ao listar." },

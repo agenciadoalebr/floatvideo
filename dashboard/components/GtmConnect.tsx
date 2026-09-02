@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-type Container = {
-  path: string;
-  name: string;
-  publicId: string;
-  conta: string;
+type Conta = { path: string; nome: string };
+type Container = { path: string; name: string; publicId: string };
+
+type Resultado = {
+  workspace: string;
+  variaveis: string[];
+  acionador: string;
+  tag: string | null;
+  aviso?: string;
 };
 
 /**
@@ -27,17 +31,17 @@ async function lerResposta(resposta: Response) {
   return resposta.json();
 }
 
-type Resultado = {
-  workspace: string;
-  variaveis: string[];
-  acionador: string;
-  tag: string | null;
-  aviso?: string;
-};
-
 /**
  * Conecta a conta do Google e cria a configuração no Tag Manager do
  * cliente — o que antes era um tutorial de seis passos.
+ *
+ * A escolha é em duas etapas (conta, depois contêiner) por causa da cota
+ * do Google: 30 consultas por minuto. Listar os contêineres de todas as
+ * contas de uma vez custava uma chamada por conta, o que numa agência com
+ * dezenas de clientes estourava o limite sempre — e nenhuma retentativa
+ * resolve isso. Assim são duas chamadas, não importa o tamanho da
+ * agência. De quebra, quem atende vários clientes já sabe de qual deles
+ * está falando.
  *
  * Nada é publicado por nós: tudo nasce numa área de trabalho separada, e
  * quem revisa e publica é o dono do site.
@@ -47,66 +51,74 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   const conectado = params.get("gtm") === "conectado";
   const erroNoRetorno = params.get("gtm") === "erro";
 
+  const [contas, setContas] = useState<Conta[] | null>(null);
+  const [conta, setConta] = useState("");
   const [containers, setContainers] = useState<Container[] | null>(null);
   const [escolhido, setEscolhido] = useState("");
   const [medida, setMedida] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
-  const [parcial, setParcial] = useState(false);
 
-  const carregarContainers = useCallback(async () => {
+  const buscar = useCallback(async (url: string) => {
+    const resposta = await fetch(url, {
+      // Rede travada não pode virar tela girando.
+      signal: AbortSignal.timeout(30000),
+    });
+    const dados = await lerResposta(resposta);
+    if (!resposta.ok) throw new Error(dados.error ?? "Falha na consulta.");
+    return dados;
+  }, []);
+
+  const carregarContas = useCallback(async () => {
     setErro("");
-
-    // A cota do Google é de 30 consultas por minuto, e listar de novo a
-    // cada recarga da página queimava esse limite à toa. Dentro da mesma
-    // sessão do navegador, a lista é reaproveitada.
-    try {
-      const guardado = sessionStorage.getItem("fvw_gtm_containers");
-      if (guardado) {
-        const lista = JSON.parse(guardado) as Container[];
-        setContainers(lista);
-        if (lista.length === 1) setEscolhido(lista[0].path);
-        return;
-      }
-    } catch {}
-
     setCarregando(true);
     try {
-      const resposta = await fetch("/api/gtm/containers", {
-        // Rede travada não pode virar tela girando: aos 40s desiste.
-        signal: AbortSignal.timeout(40000),
-      });
-      const dados = await lerResposta(resposta);
-
-      if (!resposta.ok) {
-        setErro(dados.error ?? "Não foi possível listar seus contêineres.");
-        return;
-      }
-
-      const lista = (dados.containers ?? []) as Container[];
-      setContainers(lista);
-      setParcial(Boolean(dados.parcial));
-      if (lista.length === 1) setEscolhido(lista[0].path);
-      try {
-        sessionStorage.setItem("fvw_gtm_containers", JSON.stringify(lista));
-      } catch {}
+      const dados = await buscar("/api/gtm/containers");
+      const lista = (dados.contas ?? []) as Conta[];
+      setContas(lista);
+      if (lista.length === 1) setConta(lista[0].path);
     } catch (e) {
       setErro(
-        e instanceof Error ? e.message : "Não foi possível listar seus contêineres."
+        e instanceof Error ? e.message : "Não foi possível listar suas contas."
       );
     } finally {
       setCarregando(false);
     }
-  }, []);
+  }, [buscar]);
+
+  const carregarContainers = useCallback(
+    async (contaPath: string) => {
+      setErro("");
+      setContainers(null);
+      setEscolhido("");
+      setCarregando(true);
+      try {
+        const dados = await buscar(
+          `/api/gtm/containers?conta=${encodeURIComponent(contaPath)}`
+        );
+        const lista = (dados.containers ?? []) as Container[];
+        setContainers(lista);
+        if (lista.length === 1) setEscolhido(lista[0].path);
+      } catch (e) {
+        setErro(
+          e instanceof Error
+            ? e.message
+            : "Não foi possível listar os contêineres."
+        );
+      } finally {
+        setCarregando(false);
+      }
+    },
+    [buscar]
+  );
 
   useEffect(() => {
     // Buscar ao voltar do Google é o ponto do efeito: não há clique
-    // nenhum depois do redirecionamento, e é aí que os contêineres
-    // precisam aparecer.
+    // nenhum depois do redirecionamento.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (conectado) carregarContainers();
-  }, [conectado, carregarContainers]);
+    if (conectado && !contas) carregarContas();
+  }, [conectado, contas, carregarContas]);
 
   async function instalar() {
     setErro("");
@@ -115,11 +127,13 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
       const resposta = await fetch("/api/gtm/containers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ containerPath: escolhido, measurementId: medida }),
-        signal: AbortSignal.timeout(40000),
+        body: JSON.stringify({
+          containerPath: escolhido,
+          measurementId: medida,
+        }),
+        signal: AbortSignal.timeout(30000),
       });
       const dados = await lerResposta(resposta);
-
       if (!resposta.ok) {
         setErro(dados.error ?? "Não foi possível criar a configuração.");
         return;
@@ -185,21 +199,46 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
 
       {conectado && (
         <div className="mt-3 space-y-3">
-          {carregando && !containers && (
-            <p className="text-xs text-neutral-500">Buscando seus contêineres...</p>
+          {carregando && !contas && (
+            <p className="text-xs text-neutral-500">Buscando suas contas...</p>
           )}
 
-          {parcial && (
-            <p className="text-xs text-amber-700">
-              Sua conta tem muitos contêineres e a busca foi interrompida para
-              não travar. Se o que você procura não estiver na lista, recarregue
-              e tente de novo.
+          {contas && contas.length === 0 && (
+            <p className="text-xs text-neutral-600">
+              Nenhuma conta do Tag Manager nesta conta do Google.
+            </p>
+          )}
+
+          {contas && contas.length > 0 && (
+            <label className="block">
+              <span className="text-xs text-neutral-600">Conta</span>
+              <select
+                value={conta}
+                onChange={(e) => {
+                  setConta(e.target.value);
+                  if (e.target.value) carregarContainers(e.target.value);
+                }}
+                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              >
+                <option value="">Escolha a conta...</option>
+                {contas.map((c) => (
+                  <option key={c.path} value={c.path}>
+                    {c.nome}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          {carregando && contas && (
+            <p className="text-xs text-neutral-500">
+              Buscando os contêineres...
             </p>
           )}
 
           {containers && containers.length === 0 && (
             <p className="text-xs text-neutral-600">
-              Nenhum contêiner de site encontrado nesta conta do Google.
+              Esta conta não tem contêiner de site.
             </p>
           )}
 
@@ -215,7 +254,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
                   <option value="">Escolha...</option>
                   {containers.map((c) => (
                     <option key={c.path} value={c.path}>
-                      {c.conta} — {c.name} ({c.publicId})
+                      {c.name} ({c.publicId})
                     </option>
                   ))}
                 </select>
@@ -256,12 +295,9 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           {conectado && (
             <button
               type="button"
-              onClick={() => {
-                try {
-                  sessionStorage.removeItem("fvw_gtm_containers");
-                } catch {}
-                carregarContainers();
-              }}
+              onClick={() =>
+                conta ? carregarContainers(conta) : carregarContas()
+              }
               className="mt-1 text-xs font-medium text-brand-blue hover:underline"
             >
               Tentar de novo

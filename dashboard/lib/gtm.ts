@@ -127,65 +127,56 @@ export type Container = {
   conta: string;
 };
 
+export type Conta = {
+  path: string;
+  nome: string;
+};
+
 /**
- * Contêineres da web aos quais a pessoa tem acesso.
+ * Contas de GTM a que a pessoa tem acesso. Uma chamada só.
  *
- * Conta de agência tem muitas contas de GTM, e cada uma custa uma
- * chamada. Como a função de servidor tem tempo limitado, paramos antes de
- * estourar e devolvemos o que já temos, avisando que a lista veio pela
- * metade — melhor uma lista parcial e visível do que um erro de tempo
- * esgotado, que deixa a tela girando.
+ * A busca é em duas etapas de propósito. A versão anterior listava os
+ * contêineres de todas as contas de uma vez — o que numa agência com 30
+ * clientes vira 31 chamadas e estoura a cota de 30 por minuto do Google
+ * sempre, sem retentativa que resolva. Escolhendo a conta primeiro, são
+ * duas chamadas no total, não importa o tamanho da agência. E quem
+ * atende vários clientes já sabe de qual deles está falando.
  */
-export async function listarContainers(
-  token: string
-): Promise<{ containers: Container[]; parcial: boolean }> {
-  const comecou = Date.now();
-  const LIMITE_MS = 18000;
+export async function listarContas(token: string): Promise<Conta[]> {
   const contas = await chamar<{
-    account?: { accountId: string; name: string; path: string }[];
+    account?: { name: string; path: string }[];
   }>(token, "/accounts");
 
-  const resultado: Container[] = [];
-  let parcial = false;
+  return (contas.account ?? []).map((c) => ({ path: c.path, nome: c.name }));
+}
 
-  const listaDeContas = contas.account ?? [];
+/** Contêineres de site de uma conta. Também uma chamada só. */
+export async function listarContainersDaConta(
+  token: string,
+  contaPath: string
+): Promise<Container[]> {
+  const lista = await chamar<{
+    container?: {
+      accountId: string;
+      containerId: string;
+      path: string;
+      name: string;
+      publicId: string;
+      usageContext?: string[];
+    }[];
+  }>(token, `/${contaPath}/containers`);
 
-  for (const conta of listaDeContas) {
-    if (Date.now() - comecou > LIMITE_MS) {
-      parcial = true;
-      break;
-    }
-
-    // Uma pausa curta entre contas espalha as chamadas dentro da janela
-    // do Google em vez de mandar tudo de uma vez.
-    if (resultado.length > 0) await espera(250);
-
-    const lista = await chamar<{
-      container?: {
-        accountId: string;
-        containerId: string;
-        path: string;
-        name: string;
-        publicId: string;
-        usageContext?: string[];
-      }[];
-    }>(token, `/${conta.path}/containers`);
-
-    for (const c of lista.container ?? []) {
-      // Só contêiner de site: o widget não existe em app nem em AMP.
-      if (c.usageContext && !c.usageContext.includes("web")) continue;
-      resultado.push({
-        accountId: c.accountId,
-        containerId: c.containerId,
-        path: c.path,
-        name: c.name,
-        publicId: c.publicId,
-        conta: conta.name,
-      });
-    }
-  }
-
-  return { containers: resultado, parcial };
+  return (lista.container ?? [])
+    // Só contêiner de site: o widget não existe em app nem em AMP.
+    .filter((c) => !c.usageContext || c.usageContext.includes("web"))
+    .map((c) => ({
+      accountId: c.accountId,
+      containerId: c.containerId,
+      path: c.path,
+      name: c.name,
+      publicId: c.publicId,
+      conta: "",
+    }));
 }
 
 type Parametro = {
