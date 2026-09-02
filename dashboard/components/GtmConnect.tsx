@@ -13,6 +13,8 @@ type Resultado = {
   tag: string | null;
   /** O que já existia e foi aproveitado em vez de duplicado. */
   reaproveitados?: string[];
+  /** Nome da versão publicada, quando a publicação foi pedida. */
+  publicado?: string;
   aviso?: string;
 };
 
@@ -60,6 +62,9 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   const [containers, setContainers] = useState<Container[] | null>(null);
   const [escolhido, setEscolhido] = useState("");
   const [medida, setMedida] = useState("");
+  // Publicar coloca no ar na hora, no site do cliente. Fica desligado por
+  // padrão: quem aperta esse botão deve saber que está apertando.
+  const [publicar, setPublicar] = useState(params.get("publicar") === "1");
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
   const [resultado, setResultado] = useState<Resultado | null>(null);
@@ -152,6 +157,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
         body: JSON.stringify({
           containerPath: escolhido,
           measurementId: medida,
+          publicar,
         }),
         signal: AbortSignal.timeout(30000),
       });
@@ -191,11 +197,19 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
         {resultado.aviso && (
           <p className="mt-2 text-xs text-emerald-800">{resultado.aviso}</p>
         )}
-        <p className="mt-3 text-xs text-emerald-800">
-          <strong>Falta você publicar.</strong> Abra o Tag Manager, revise a
-          área de trabalho <em>{resultado.workspace}</em> e clique em Enviar →
-          Publicar. Não publicamos nada por conta própria.
-        </p>
+        {resultado.publicado ? (
+          <p className="mt-3 text-xs text-emerald-800">
+            <strong>Publicado.</strong> A versão &ldquo;{resultado.publicado}
+            &rdquo; está no ar. Se algo sair diferente do esperado, o Tag
+            Manager permite voltar à versão anterior a qualquer momento.
+          </p>
+        ) : (
+          <p className="mt-3 text-xs text-emerald-800">
+            <strong>Falta você publicar.</strong> Abra o Tag Manager, revise a
+            área de trabalho <em>{resultado.workspace}</em> e clique em Enviar →
+            Publicar.
+          </p>
+        )}
         <button
           type="button"
           onClick={desconectar}
@@ -224,12 +238,33 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
       )}
 
       {!conectado && (
-        <a
-          href={`/api/gtm/start?projectId=${projectId}`}
-          className="btn-brand mt-3 inline-block rounded-md px-4 py-2 text-sm font-medium"
-        >
-          Conectar ao Google Tag Manager
-        </a>
+        <div className="mt-3 space-y-3">
+          <label className="flex items-start gap-2 text-xs text-neutral-700">
+            <input
+              type="checkbox"
+              checked={publicar}
+              onChange={(e) => setPublicar(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              Publicar automaticamente ao terminar
+              <span className="mt-0.5 block text-neutral-500">
+                Coloca a configuração no ar na hora. Sem marcar, criamos tudo
+                numa área de trabalho e você publica quando quiser. A permissão
+                de publicar só é pedida ao Google se você marcar aqui.
+              </span>
+            </span>
+          </label>
+
+          <a
+            href={`/api/gtm/start?projectId=${projectId}${
+              publicar ? "&publicar=1" : ""
+            }`}
+            className="btn-brand inline-block rounded-md px-4 py-2 text-sm font-medium"
+          >
+            Conectar ao Google Tag Manager
+          </a>
+        </div>
       )}
 
       {conectado && (

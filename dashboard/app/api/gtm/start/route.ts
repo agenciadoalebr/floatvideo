@@ -23,13 +23,17 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const projectId = url.searchParams.get("projectId") ?? "";
+  // A permissão de publicar só é pedida se a pessoa marcou a opção: cada
+  // escopo a mais aparece na tela de consentimento e precisa ser
+  // justificado na verificação do Google.
+  const comPublicacao = url.searchParams.get("publicar") === "1";
 
   // Guarda contra pedido forjado: o "state" volta do Google e precisa
   // bater com o que ficou no cookie desta pessoa.
   const nonce = crypto.randomUUID();
-  const state = Buffer.from(JSON.stringify({ projectId, nonce })).toString(
-    "base64url"
-  );
+  const state = Buffer.from(
+    JSON.stringify({ projectId, nonce, publicar: comPublicacao })
+  ).toString("base64url");
 
   const jar = await cookies();
   jar.set("fvw_gtm_state", nonce, {
@@ -40,5 +44,7 @@ export async function GET(request: Request) {
     path: "/",
   });
 
-  return NextResponse.redirect(urlDeAutorizacao(url.origin, state));
+  return NextResponse.redirect(
+    urlDeAutorizacao(url.origin, state, comPublicacao)
+  );
 }

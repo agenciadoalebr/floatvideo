@@ -152,11 +152,16 @@ export default function PrivacidadePage() {
         <h2>6. Integração com o Google Tag Manager</h2>
         <p>
           Se o cliente escolher conectar a conta do Google, pedimos permissão
-          apenas para <strong>listar os contêineres</strong> e{" "}
+          para <strong>listar os contêineres</strong> e{" "}
           <strong>criar a configuração</strong> do FloatVideo dentro do
-          contêiner escolhido. Não pedimos permissão para publicar: o que
-          criamos fica numa área de trabalho separada, e a publicação é sempre
-          do cliente.
+          contêiner escolhido. O que criamos fica numa área de trabalho
+          separada.
+        </p>
+        <p>
+          A permissão de <strong>publicar</strong> só é pedida se o cliente
+          marcar a opção &ldquo;publicar automaticamente&rdquo; antes de
+          conectar. Sem essa marcação, ela não é sequer solicitada ao Google, e
+          a publicação continua sendo um ato dele, pelo Tag Manager.
         </p>
         <p>
           A autorização recebida do Google vale por cerca de uma hora e é usada

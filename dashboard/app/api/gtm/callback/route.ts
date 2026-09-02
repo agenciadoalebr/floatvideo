@@ -24,6 +24,7 @@ export async function GET(request: Request) {
     // Volta direto na seção de onde a pessoa saiu. Sem isto ela caía na
     // primeira seção do projeto e tinha que procurar o caminho de novo.
     destino.searchParams.set("secao", "analytics");
+    if (publicar) destino.searchParams.set("publicar", "1");
     if (erro) destino.searchParams.set("motivo", erro);
     return NextResponse.redirect(destino);
   }
@@ -41,10 +42,12 @@ export async function GET(request: Request) {
 
   let projectId = "";
   let nonce = "";
+  let publicar = false;
   try {
     const dados = JSON.parse(Buffer.from(state, "base64url").toString());
     projectId = dados.projectId ?? "";
     nonce = dados.nonce ?? "";
+    publicar = Boolean(dados.publicar);
   } catch {
     return voltar("", "state-invalido");
   }

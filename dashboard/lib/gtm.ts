@@ -8,17 +8,31 @@
  *    que usamos e descartamos no mesmo fluxo. Não existe token nosso
  *    guardado em banco: nada a vazar, nada a expirar, nada a limpar.
  *
- * 2. Não pedimos permissão de publicar. Criamos tudo numa área de
- *    trabalho separada e quem publica é o dono do site, depois de ver o
- *    que foi criado. Um escopo a menos e uma decisão a menos tomada no
- *    site dos outros.
+ * 2. A permissão de publicar é opcional e só é pedida quando a pessoa
+ *    marca a opção. Por padrão criamos tudo numa área de trabalho
+ *    separada e quem publica é o dono do site, depois de ver o que foi
+ *    criado — publicar coloca no ar, na hora, e essa decisão é dele.
  */
 const API = "https://tagmanager.googleapis.com/tagmanager/v2";
 
-export const ESCOPOS = [
+const ESCOPOS_BASE = [
   "https://www.googleapis.com/auth/tagmanager.readonly",
   "https://www.googleapis.com/auth/tagmanager.edit.containers",
-].join(" ");
+];
+
+/**
+ * Publicar é pedido à parte, e só quando a pessoa marca a opção.
+ * Permissão que não se usa não se pede: cada escopo a mais aparece na
+ * tela de consentimento do cliente e precisa ser justificado na
+ * verificação do Google.
+ */
+const ESCOPO_PUBLICAR = "https://www.googleapis.com/auth/tagmanager.publish";
+
+export function escopos(comPublicacao: boolean) {
+  return (
+    comPublicacao ? [...ESCOPOS_BASE, ESCOPO_PUBLICAR] : ESCOPOS_BASE
+  ).join(" ");
+}
 
 /** Nome da área de trabalho criada no contêiner do cliente. */
 export const NOME_WORKSPACE = "FloatVideo";
@@ -33,12 +47,16 @@ export function urlDeRedirecionamento(origem: string) {
   return process.env.GTM_OAUTH_REDIRECT ?? `${origem}/api/gtm/callback`;
 }
 
-export function urlDeAutorizacao(origem: string, state: string) {
+export function urlDeAutorizacao(
+  origem: string,
+  state: string,
+  comPublicacao = false
+) {
   const params = new URLSearchParams({
     client_id: process.env.GTM_OAUTH_CLIENT_ID ?? "",
     redirect_uri: urlDeRedirecionamento(origem),
     response_type: "code",
-    scope: ESCOPOS,
+    scope: escopos(comPublicacao),
     // Sem "access_type=offline" de propósito: ver o comentário do topo.
     include_granted_scopes: "true",
     // Sempre perguntar qual conta. Sem isto o Google usa a que já está
@@ -199,8 +217,44 @@ function variavelDeCamadaDeDados(nome: string, caminho: string) {
   };
 }
 
+/**
+ * Cria uma versão a partir da área de trabalho e publica.
+ *
+ * Separado da criação de propósito: publicar coloca no ar, na hora, no
+ * site do cliente. Ficar num passo próprio deixa claro no código — e na
+ * tela — que é uma decisão diferente de "montar a configuração".
+ */
+export async function publicarWorkspace(token: string, workspacePath: string) {
+  const versao = await chamar<{
+    containerVersion?: { path: string; name: string };
+  }>(token, `/${workspacePath}:create_version`, {
+    method: "POST",
+    body: JSON.stringify({
+      name: "FloatVideo — configuração automática",
+      notes:
+        "Acionador, variáveis e tag do FloatVideo, criados pelo painel do FloatVideo.",
+    }),
+  });
+
+  if (!versao.containerVersion?.path) {
+    throw new Error(
+      "O Google não gerou a versão. Publique pelo Tag Manager, se quiser."
+    );
+  }
+
+  await chamar(token, `/${versao.containerVersion.path}:publish`, {
+    method: "POST",
+  });
+
+  return versao.containerVersion.name;
+}
+
 export type ResultadoInstalacao = {
   workspace: string;
+  /** Caminho da área de trabalho, usado para publicar em seguida. */
+  workspacePath: string;
+  /** Nome da versão publicada, quando a publicação foi pedida. */
+  publicado?: string;
   variaveis: string[];
   acionador: string;
   tag: string | null;
@@ -341,6 +395,7 @@ export async function instalarNoContainer(
   if (!measurementId) {
     return {
       workspace: workspace.name,
+      workspacePath: workspace.path,
       variaveis: [video.name, ctaType.name],
       acionador: acionador.name,
       tag: null,
@@ -363,6 +418,7 @@ export async function instalarNoContainer(
     reaproveitados.push(NOME_TAG);
     return {
       workspace: workspace.name,
+      workspacePath: workspace.path,
       variaveis: [video.name, ctaType.name],
       acionador: acionador.name,
       tag: tagExistente.name,
@@ -425,6 +481,7 @@ export async function instalarNoContainer(
 
   return {
     workspace: workspace.name,
+      workspacePath: workspace.path,
     variaveis: [video.name, ctaType.name],
     acionador: acionador.name,
     tag: tag.name,

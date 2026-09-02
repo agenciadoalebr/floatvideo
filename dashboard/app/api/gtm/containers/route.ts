@@ -5,6 +5,7 @@ import {
   listarContas,
   listarContainersDaConta,
   instalarNoContainer,
+  publicarWorkspace,
 } from "@/lib/gtm";
 
 // Listar contêineres de uma conta de agência custa uma chamada por
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { containerPath, measurementId } = await request.json();
+  const { containerPath, measurementId, publicar } = await request.json();
 
   if (typeof containerPath !== "string" || !containerPath.startsWith("accounts/")) {
     return NextResponse.json({ error: "Contêiner inválido." }, { status: 400 });
@@ -90,6 +91,23 @@ export async function POST(request: Request) {
         ? measurementId.trim()
         : undefined
     );
+
+    if (publicar) {
+      try {
+        resultado.publicado = await publicarWorkspace(
+          token,
+          resultado.workspacePath
+        );
+      } catch (err) {
+        // A configuração já está criada; falhar na publicação não desfaz
+        // isso, e a pessoa consegue publicar pelo Tag Manager.
+        resultado.aviso =
+          (resultado.aviso ? resultado.aviso + " " : "") +
+          (err instanceof Error
+            ? `A publicação não foi concluída: ${err.message}`
+            : "A publicação não foi concluída.");
+      }
+    }
 
     // Trabalho feito: o token deixa de existir aqui também. Ele já não
     // estava no banco; agora não está nem no navegador.
