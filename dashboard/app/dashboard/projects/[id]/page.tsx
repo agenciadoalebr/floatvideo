@@ -150,6 +150,7 @@ export default async function ProjectPage({
                   pageRules={pageRules}
                   leads={leads}
                   eventos={eventCounts}
+                  porVideo={eventCountsByVideo}
                   dominio={project.domain}
                 />
               ) : (

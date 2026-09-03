@@ -30,9 +30,30 @@ type Props = {
   projectId: string;
   widget: Widget | null;
   pageRules: PageRule[];
+  /** Eventos por vídeo, para a linha mostrar views e conversão. */
+  porVideo?: Record<string, Record<string, number>>;
+  /** Tipo do botão de ação, que é o mesmo para todos os vídeos. */
+  tipoDoCta?: string | null;
 };
 
-export default function VideoList({ videos, projectId, widget, pageRules }: Props) {
+const NOME_DO_CTA: Record<string, string> = {
+  whatsapp: "WhatsApp",
+  whatsapp_form: "WhatsApp com formulário",
+  form: "Formulário",
+  buy: "Comprar",
+  link: "Link direto",
+};
+
+export default function VideoList({
+  videos,
+  projectId,
+  widget,
+  pageRules,
+  porVideo = {},
+  tipoDoCta,
+}: Props) {
+  const [busca, setBusca] = useState("");
+  const [menuAberto, setMenuAberto] = useState<string | null>(null);
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [gerandoId, setGerandoId] = useState<string | null>(null);
@@ -167,143 +188,287 @@ export default function VideoList({ videos, projectId, widget, pageRules }: Prop
 
   const videoAberto = videos.find((v) => v.id === regrasAbertas);
 
+  const alvo = busca.trim().toLowerCase();
+  const visiveis = alvo
+    ? videos.filter((v) => videoLabel(v).toLowerCase().includes(alvo))
+    : videos;
+
+  /** O que este vídeo é hoje, do ponto de vista de quem visita o site. */
+  function situacao(video: Video) {
+    if (video.status === "processing") {
+      return { texto: "Processando", cor: "bg-amber-100 text-amber-800" };
+    }
+    if (video.status === "error") {
+      return { texto: "Erro", cor: "bg-red-100 text-red-700" };
+    }
+    const temRegra = pageRules.some((r) => r.video_id === video.id);
+    if (!temRegra) {
+      return { texto: "Rascunho", cor: "bg-surface-muted text-ink-muted" };
+    }
+    if (!widget?.is_active) {
+      return { texto: "Pausado", cor: "bg-surface-muted text-ink-muted" };
+    }
+    return { texto: "Ativo", cor: "bg-emerald-100 text-emerald-800" };
+  }
+
   return (
     <>
-      <div className="grid gap-3 sm:grid-cols-3">
-      {videos.map((video) => (
-        <div
-          key={video.id}
-          className="overflow-hidden rounded-lg border border-neutral-200 bg-white"
-        >
-          <div className="relative aspect-video bg-neutral-100">
-            {video.thumbnail_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={video.thumbnail_url}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-            ) : video.mp4_url ? (
-              <video src={video.mp4_url} className="h-full w-full object-cover" muted />
-            ) : null}
-
-            {formatarDuracao(video.duration_seconds) && (
-              <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
-                {formatarDuracao(video.duration_seconds)}
-              </span>
-            )}
-
-            {/* Só nos que ficaram sem imagem: o envio novo já gera sozinho.
-                Ocupa o card inteiro de propósito — como chip no canto, por
-                cima do vídeo, ninguém achava. */}
-            {!video.thumbnail_url && video.mp4_url && video.original_file_key && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-black/45 text-center">
-                <p className="px-2 text-[11px] font-medium text-white">
-                  Este vídeo está sem miniatura
-                </p>
-                <button
-                  type="button"
-                  onClick={() => gerarMiniatura(video)}
-                  disabled={gerandoId === video.id}
-                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-brand-ink shadow hover:bg-neutral-100 disabled:opacity-60"
-                >
-                  {gerandoId === video.id ? "Gerando..." : "Gerar miniatura"}
-                </button>
-              </div>
-            )}
+      <div className="cartao overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+          <div>
+            <h3 className="text-base font-semibold text-brand-ink">
+              Seus vídeos gravados
+            </h3>
+            <p className="text-xs text-ink-muted">
+              Biblioteca de conteúdos e mensagens gravadas
+            </p>
           </div>
-          <div className="space-y-1 p-2">
-            {renamingId === video.id ? (
-              <input
-                autoFocus
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                onBlur={() => saveRename(video)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
-                  if (e.key === "Escape") setRenamingId(null);
-                }}
-                placeholder="Nome do vídeo"
-                className="w-full rounded border border-brand-blue px-2 py-1 text-sm outline-none"
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => startRename(video)}
-                title="Renomear vídeo"
-                aria-label={`Renomear ${videoLabel(video)}`}
-                className="group flex w-full items-center gap-1.5 text-left text-sm font-medium text-brand-ink hover:text-brand-blue"
-              >
-                <span className="truncate">{videoLabel(video)}</span>
-                {/* O lápis é o que sinaliza que dá pra editar: o título
-                    sozinho não passava essa impressão. Fica discreto e
-                    ganha cor junto do texto no hover/foco. */}
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                  aria-hidden="true"
-                  className="h-3.5 w-3.5 shrink-0 text-neutral-400 transition group-hover:text-brand-blue"
-                >
-                  <path d="M13.586 3.586a2 2 0 1 1 2.828 2.828l-.793.793-2.828-2.828.793-.793ZM11.379 5.793 3 14.172V17h2.828l8.38-8.379-2.83-2.828Z" />
-                </svg>
-              </button>
-            )}
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-500">
-                {video.source_type === "youtube" ? "YouTube" : "Upload"}
+          {videos.length > 3 && (
+            <label className="flex min-w-[200px] items-center gap-2 rounded-lg bg-surface-soft px-3 py-2">
+              <span aria-hidden className="text-ink-faint">
+                &#8981;
               </span>
-              {video.source_type === "upload" &&
-                video.mp4_url &&
-                video.original_file_key &&
-                !video.preview_url && (
+              <input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar vídeo..."
+                className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
+              />
+            </label>
+          )}
+        </div>
+
+        <ul className="divide-y divide-outline-soft border-t border-outline-soft">
+          {visiveis.map((video) => {
+            const estado = situacao(video);
+            const contas = porVideo[video.id] ?? {};
+            const views = contas.impression ?? 0;
+            const cliques = contas.cta_click ?? 0;
+            const conv = views ? (cliques / views) * 100 : null;
+
+            return (
+              <li key={video.id} className="flex items-center gap-4 px-5 py-4">
+                <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+                  {video.thumbnail_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={video.thumbnail_url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : video.mp4_url ? (
+                    <video
+                      src={video.mp4_url}
+                      className="h-full w-full object-cover"
+                      muted
+                    />
+                  ) : null}
+                  {formatarDuracao(video.duration_seconds) && (
+                    <span className="absolute bottom-0.5 left-0.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium text-white">
+                      {formatarDuracao(video.duration_seconds)}
+                    </span>
+                  )}
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  {renamingId === video.id ? (
+                    <input
+                      autoFocus
+                      value={draftName}
+                      onChange={(e) => setDraftName(e.target.value)}
+                      onBlur={() => saveRename(video)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") e.currentTarget.blur();
+                        if (e.key === "Escape") setRenamingId(null);
+                      }}
+                      placeholder="Nome do vídeo"
+                      className="w-full rounded border border-brand-blue px-2 py-1 text-sm outline-none"
+                    />
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startRename(video)}
+                        title="Renomear vídeo"
+                        className="truncate text-sm font-semibold text-brand-ink hover:text-brand-blue"
+                      >
+                        {videoLabel(video)}
+                      </button>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${estado.cor}`}
+                      >
+                        {estado.texto}
+                      </span>
+                    </div>
+                  )}
+                  <p className="mt-0.5 truncate text-xs text-ink-muted">
+                    {tipoDoCta
+                      ? `Botão: ${NOME_DO_CTA[tipoDoCta] ?? tipoDoCta}`
+                      : "Sem botão de ação"}
+                    {" • "}
+                    {estado.texto === "Rascunho"
+                      ? "Não publicado"
+                      : `${views.toLocaleString("pt-BR")} views`}
+                  </p>
+                </div>
+
+                <div className="hidden shrink-0 text-right sm:block">
+                  {cliques > 0 ? (
+                    <>
+                      <p className="text-sm font-semibold text-brand-ink">
+                        {cliques.toLocaleString("pt-BR")} cliques CTA
+                      </p>
+                      <p className="text-xs text-ink-faint">
+                        {conv?.toLocaleString("pt-BR", {
+                          maximumFractionDigits: 1,
+                        })}
+                        % conv.
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-ink-faint">&mdash;</p>
+                      <p className="text-xs text-ink-faint">Sem dados</p>
+                    </>
+                  )}
+                </div>
+
+                {/* As ações moram num menu: eram três botões por card, e
+                    numa lista isso vira uma parede de texto repetido. */}
+                <div className="relative shrink-0">
                   <button
                     type="button"
-                    onClick={() => gerarPrevia(video)}
-                    disabled={previaId === video.id}
-                    title="Cria uma versão curta e leve para o balão, que economiza banda"
-                    className="text-[10px] font-medium text-brand-blue underline disabled:opacity-60"
+                    onClick={() =>
+                      setMenuAberto(menuAberto === video.id ? null : video.id)
+                    }
+                    aria-label={`Ações de ${videoLabel(video)}`}
+                    aria-expanded={menuAberto === video.id}
+                    className="rounded-lg px-2 py-1 text-ink-faint hover:bg-surface-soft"
                   >
-                    {previaId === video.id ? "Preparando..." : "Gerar prévia leve"}
+                    &#8942;
                   </button>
-                )}
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor[video.status]}`}
-              >
-                {statusLabel[video.status]}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 border-t border-neutral-100">
-            <button
-              type="button"
-              onClick={() =>
-                setRegrasAbertas(regrasAbertas === video.id ? null : video.id)
-              }
-              aria-expanded={regrasAbertas === video.id}
-              className={`border-r border-neutral-100 py-1.5 text-xs hover:bg-neutral-50 ${
-                regrasAbertas === video.id
-                  ? "font-medium text-brand-blue"
-                  : "text-neutral-700"
-              }`}
-            >
-              Onde aparece?
-            </button>
-            <button
-              onClick={() => handleSeeMetrics(video)}
-              className="border-r border-neutral-100 py-1.5 text-xs text-neutral-700 hover:bg-neutral-50"
-            >
-              Ver métricas
-            </button>
-            <button
-              onClick={() => handleDelete(video)}
-              disabled={deletingId === video.id}
-              className="py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50"
-            >
-              {deletingId === video.id ? "Excluindo..." : "Excluir vídeo"}
-            </button>
-          </div>
+
+                  {menuAberto === video.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setMenuAberto(null)}
+                      />
+                      <div className="cartao-flutuante absolute right-0 top-full z-50 mt-1 w-56 p-1.5 text-left">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRegrasAbertas(video.id);
+                            setMenuAberto(null);
+                          }}
+                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
+                        >
+                          Onde aparece?
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            startRename(video);
+                            setMenuAberto(null);
+                          }}
+                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
+                        >
+                          Renomear
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSeeMetrics(video);
+                            setMenuAberto(null);
+                          }}
+                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
+                        >
+                          Ver métricas
+                        </button>
+
+                        {!video.thumbnail_url &&
+                          video.mp4_url &&
+                          video.original_file_key && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                gerarMiniatura(video);
+                                setMenuAberto(null);
+                              }}
+                              disabled={gerandoId === video.id}
+                              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
+                            >
+                              {gerandoId === video.id
+                                ? "Gerando..."
+                                : "Gerar miniatura"}
+                            </button>
+                          )}
+
+                        {video.source_type === "upload" &&
+                          video.mp4_url &&
+                          video.original_file_key &&
+                          !video.preview_url && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                gerarPrevia(video);
+                                setMenuAberto(null);
+                              }}
+                              disabled={previaId === video.id}
+                              title="Versão curta e leve para o balão, que economiza banda"
+                              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
+                            >
+                              {previaId === video.id
+                                ? "Preparando..."
+                                : "Gerar prévia leve"}
+                            </button>
+                          )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleDelete(video);
+                            setMenuAberto(null);
+                          }}
+                          disabled={deletingId === video.id}
+                          className="mt-1 block w-full rounded-lg border-t border-outline-soft px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        >
+                          {deletingId === video.id
+                            ? "Excluindo..."
+                            : "Excluir vídeo"}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+
+          {visiveis.length === 0 && (
+            <li className="px-5 py-8 text-center text-sm text-ink-muted">
+              Nenhum vídeo com esse nome.
+            </li>
+          )}
+        </ul>
+
+        <div className="flex items-center justify-between gap-3 border-t border-outline-soft bg-surface-soft px-5 py-3">
+          <p className="text-xs text-ink-muted">
+            {videos.length} {videos.length === 1 ? "vídeo" : "vídeos"} neste
+            site &middot; sem limite de quantidade
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              window.dispatchEvent(
+                new CustomEvent("fvw-goto-tab", { detail: "upload" })
+              )
+            }
+            className="text-xs font-medium text-brand-blue hover:underline"
+          >
+            Enviar outro &rarr;
+          </button>
         </div>
-      ))}
       </div>
 
       {/* Modal fora da grade: dentro do card os campos ficavam espremidos

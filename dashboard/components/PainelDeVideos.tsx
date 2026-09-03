@@ -58,6 +58,7 @@ export default function PainelDeVideos({
   pageRules,
   leads,
   eventos,
+  porVideo,
   dominio,
 }: {
   videos: Video[];
@@ -67,6 +68,7 @@ export default function PainelDeVideos({
   pageRules: PageRule[];
   leads: Lead[];
   eventos: Record<string, number>;
+  porVideo: Record<string, Record<string, number>>;
   dominio: string | null;
 }) {
   const router = useRouter();
@@ -115,6 +117,50 @@ export default function PainelDeVideos({
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="flex flex-wrap items-center gap-3 text-2xl font-semibold tracking-tight text-brand-ink">
+            Vídeos do seu site
+            {/* "Site conectado" não é enfeite: só aparece quando o widget
+                reportou exibição, que é a prova de que o código está
+                mesmo instalado na página do cliente. */}
+            <span
+              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                impressoes > 0
+                  ? "bg-surface-strong text-brand-blue"
+                  : "bg-amber-50 text-amber-900"
+              }`}
+            >
+              {impressoes > 0 ? "Site conectado" : "Aguardando 1ª exibição"}
+            </span>
+          </h1>
+          <p className="mt-1 text-sm text-ink-muted">
+            Gerencie a bolha de vídeo interativa exibida em{" "}
+            <strong className="text-brand-ink">
+              {dominio ?? "seu site"}
+            </strong>
+            .
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => irPara("widget")}
+            className="rounded-lg border border-outline-soft bg-surface-card px-4 py-2.5 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue"
+          >
+            Configurar widget
+          </button>
+          <button
+            type="button"
+            onClick={() => irPara("upload")}
+            className="btn-brand rounded-lg px-5 py-2.5 text-sm font-medium"
+          >
+            Subir novo vídeo
+          </button>
+        </div>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-3">
         {metricas.map((m) => (
           <div key={m.rotulo} className="cartao p-5">
@@ -311,18 +357,14 @@ export default function PainelDeVideos({
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section>
-          <h2 className="text-base font-semibold text-brand-ink">
-            Seus vídeos
-          </h2>
-          <p className="mt-1 text-sm text-ink-muted">
-            Quem aparece em qual página, e o que cada um rendeu.
-          </p>
-          <div className="mt-4">
+          <div>
             <VideoList
               videos={videos}
               projectId={projectId}
               widget={widget}
               pageRules={pageRules}
+              porVideo={porVideo}
+              tipoDoCta={cta?.type ?? null}
             />
           </div>
         </section>
