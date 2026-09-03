@@ -5,10 +5,14 @@ import {
   asaasConfigurado,
   criarAssinatura,
   garantirCliente,
-  limparCpfCnpj,
-  limparTelefone,
   primeiraFatura,
 } from "@/lib/asaas";
+import {
+  documentoValido,
+  limparDocumento,
+  limparNumeros,
+  telefoneValido,
+} from "@/lib/documentos";
 
 /**
  * Assina um plano.
@@ -41,18 +45,20 @@ export async function POST(request: Request) {
 
   const { plano, nome, cpfCnpj, telefone, codigo } = await request.json();
 
-  const documento = limparCpfCnpj(cpfCnpj);
-  if (documento.length !== 11 && documento.length !== 14) {
+  // A conferência do navegador é conforto; a que vale é esta. Sem ela,
+  // bastaria abrir o console para assinar com documento inventado.
+  const documento = limparDocumento(cpfCnpj);
+  if (!documentoValido(documento)) {
     return NextResponse.json(
       { error: "Informe um CPF ou CNPJ válido." },
       { status: 400 }
     );
   }
 
-  const celular = limparTelefone(telefone);
-  if (celular && (celular.length < 10 || celular.length > 11)) {
+  const celular = limparNumeros(telefone);
+  if (!telefoneValido(celular)) {
     return NextResponse.json(
-      { error: "Informe o telefone com DDD." },
+      { error: "Informe um telefone válido, com DDD." },
       { status: 400 }
     );
   }
@@ -149,7 +155,7 @@ export async function POST(request: Request) {
       nome: titular,
       cpfCnpj: documento,
       email: user.email ?? "",
-      telefone: celular || undefined,
+      telefone: celular,
     });
 
     const assinatura = await criarAssinatura({

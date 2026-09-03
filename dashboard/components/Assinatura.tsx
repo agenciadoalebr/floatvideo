@@ -2,6 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  documentoValido,
+  mascararDocumento,
+  mascararTelefone,
+  telefoneValido,
+} from "@/lib/documentos";
 
 export type Plano = {
   id: string;
@@ -63,6 +69,7 @@ export default function Assinatura({
   const [escolhido, setEscolhido] = useState(atual?.plan ?? planos[0]?.id ?? "");
   const [nome, setNome] = useState(nomeDaConta);
   const [documento, setDocumento] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState("");
   const [feito, setFeito] = useState<{
@@ -76,12 +83,27 @@ export default function Assinatura({
   async function assinar(e: React.FormEvent) {
     e.preventDefault();
     setErro("");
+
+    if (!documentoValido(documento)) {
+      setErro("Este CPF ou CNPJ não é válido. Confira os números.");
+      return;
+    }
+    if (!telefoneValido(telefone)) {
+      setErro("Informe um telefone válido, com DDD.");
+      return;
+    }
+
     setEnviando(true);
     try {
       const resposta = await fetch("/api/assinatura/criar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plano: escolhido, nome, cpfCnpj: documento }),
+        body: JSON.stringify({
+          plano: escolhido,
+          nome,
+          cpfCnpj: documento,
+          telefone,
+        }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) {
@@ -274,11 +296,21 @@ export default function Assinatura({
           </label>
 
           <label className="block">
+            <span className="text-xs text-neutral-600">Telefone com DDD</span>
+            <input
+              value={telefone}
+              onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
+              inputMode="tel"
+              placeholder="(11) 90000-0000"
+              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+            />
+          </label>
+
+          <label className="block">
             <span className="text-xs text-neutral-600">CPF ou CNPJ</span>
             <input
               value={documento}
-              onChange={(e) => setDocumento(e.target.value)}
-              inputMode="numeric"
+              onChange={(e) => setDocumento(mascararDocumento(e.target.value))}
               placeholder="000.000.000-00"
               className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
             />
@@ -290,7 +322,7 @@ export default function Assinatura({
 
           <button
             type="submit"
-            disabled={enviando || !documento.trim()}
+            disabled={enviando || !documento.trim() || !telefone.trim()}
             className="btn-brand w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
           >
             {enviando ? "Criando..." : "Assinar"}

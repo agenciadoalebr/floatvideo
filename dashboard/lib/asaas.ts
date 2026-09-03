@@ -140,13 +140,3 @@ export async function primeiraFatura(assinaturaId: string) {
 export async function cancelarAssinatura(assinaturaId: string) {
   await chamar(`/subscriptions/${assinaturaId}`, { method: "DELETE" });
 }
-
-/** Só dígitos: o Asaas recusa CPF/CNPJ com ponto, traço ou barra. */
-export function limparCpfCnpj(valor: string) {
-  return (valor ?? "").replace(/\D/g, "");
-}
-
-/** Mesma regra para o telefone: só dígitos, com DDD. */
-export function limparTelefone(valor: string) {
-  return (valor ?? "").replace(/\D/g, "");
-}

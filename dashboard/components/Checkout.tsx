@@ -4,6 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import {
+  documentoValido,
+  mascararDocumento,
+  mascararTelefone,
+  telefoneValido,
+} from "@/lib/documentos";
 
 export type PlanoPublico = {
   id: string;
@@ -41,6 +47,7 @@ export default function Checkout({
   const [plano, setPlano] = useState(planoInicial || planos[0]?.id || "");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [emailConfirma, setEmailConfirma] = useState("");
   const [telefone, setTelefone] = useState("");
   const [documento, setDocumento] = useState("");
   const [senha, setSenha] = useState("");
@@ -64,8 +71,25 @@ export default function Checkout({
     e.preventDefault();
     setErro("");
 
+    // Um e-mail digitado errado aqui é grave: é o login, o comprovante e
+    // o aviso de cobrança. Por isso a conferência antes de sair da tela.
+    if (!jaLogado && email.trim().toLowerCase() !== emailConfirma.trim().toLowerCase()) {
+      setErro("Os e-mails não são iguais. Confira os dois campos.");
+      return;
+    }
+
     if (!jaLogado && senha.length < 8) {
       setErro("Use uma senha com pelo menos 8 caracteres.");
+      return;
+    }
+
+    if (!documentoValido(documento)) {
+      setErro("Este CPF ou CNPJ não é válido. Confira os números.");
+      return;
+    }
+
+    if (!telefoneValido(telefone)) {
+      setErro("Informe um telefone válido, com DDD.");
       return;
     }
 
@@ -232,13 +256,35 @@ export default function Checkout({
           />
         </label>
 
+        {!jaLogado && (
+          <label className="block">
+            <span className="text-xs text-neutral-600">Confirme o e-mail</span>
+            <input
+              type="email"
+              required
+              value={emailConfirma}
+              // Colar nos dois campos anula a conferência: quem errou ao
+              // digitar vai colar o mesmo erro duas vezes.
+              onPaste={(e) => e.preventDefault()}
+              onChange={(e) => setEmailConfirma(e.target.value)}
+              placeholder="digite de novo"
+              className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+            />
+            {emailConfirma && email.trim().toLowerCase() !== emailConfirma.trim().toLowerCase() && (
+              <span className="mt-1 block text-xs text-amber-700">
+                Os e-mails ainda não são iguais.
+              </span>
+            )}
+          </label>
+        )}
+
         <label className="block">
           <span className="text-xs text-neutral-600">Telefone com DDD</span>
           <input
             required
             inputMode="tel"
             value={telefone}
-            onChange={(e) => setTelefone(e.target.value)}
+            onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
             placeholder="(11) 90000-0000"
             className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
           />
@@ -248,12 +294,16 @@ export default function Checkout({
           <span className="text-xs text-neutral-600">CPF ou CNPJ</span>
           <input
             required
-            inputMode="numeric"
             value={documento}
-            onChange={(e) => setDocumento(e.target.value)}
+            onChange={(e) => setDocumento(mascararDocumento(e.target.value))}
             placeholder="000.000.000-00"
             className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
           />
+          {documento.length > 13 && !documentoValido(documento) && (
+            <span className="mt-1 block text-xs text-amber-700">
+              Este número não confere. Confira antes de continuar.
+            </span>
+          )}
         </label>
 
         {!jaLogado && (
@@ -282,9 +332,7 @@ export default function Checkout({
             className="mt-1 w-full rounded-lg border border-neutral-300 px-3 py-2 font-mono text-sm tracking-wider outline-none focus:border-brand-blue"
           />
           <span className="mt-1 block text-xs text-neutral-500">
-            {(escolhido?.trial_dias ?? 0) > 0
-              ? `Recebeu um convite? Ele estende seu teste de ${escolhido?.trial_dias} para ${escolhido?.trial_dias_convite} dias.`
-              : `Recebeu um convite? Ele dá ${escolhido?.trial_dias_convite ?? 30} dias grátis neste plano.`}
+            Recebeu um convite? Insira ele aqui.
           </span>
         </label>
       </div>
