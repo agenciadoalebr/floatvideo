@@ -4,6 +4,7 @@ import InviteForm from "@/components/InviteForm";
 import MembersList from "@/components/MembersList";
 import PendingInvites from "@/components/PendingInvites";
 import type { Member, Invite } from "@/lib/types";
+import Conteudo from "@/components/Conteudo";
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -59,30 +60,32 @@ export default async function TeamPage() {
   const { data: ehAdminDaPlataforma } = await supabase.rpc("e_admin_da_plataforma");
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-xl font-semibold text-neutral-900">
-          {ehAdminDaPlataforma ? "Usuários" : "Minha equipe"}
-        </h1>
-        <p className="text-sm text-neutral-500">
-          {ehAdminDaPlataforma
-            ? "Gerencie quem tem acesso ao painel."
-            : "Convide quem trabalha com você nesta conta."}
-        </p>
+    <Conteudo>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-xl font-semibold text-neutral-900">
+            {ehAdminDaPlataforma ? "Usuários" : "Minha equipe"}
+          </h1>
+          <p className="text-sm text-neutral-500">
+            {ehAdminDaPlataforma
+              ? "Gerencie quem tem acesso ao painel."
+              : "Convide quem trabalha com você nesta conta."}
+          </p>
+        </div>
+
+        <InviteForm
+          organizationId={myMembership.organization_id}
+          podeEscolherPapel={!!ehAdminDaPlataforma}
+        />
+
+        <PendingInvites invites={invites ?? []} />
+
+        <MembersList
+          members={members}
+          currentUserId={user.id}
+          podeMudarPapel={!!ehAdminDaPlataforma}
+        />
       </div>
-
-      <InviteForm
-        organizationId={myMembership.organization_id}
-        podeEscolherPapel={!!ehAdminDaPlataforma}
-      />
-
-      <PendingInvites invites={invites ?? []} />
-
-      <MembersList
-        members={members}
-        currentUserId={user.id}
-        podeMudarPapel={!!ehAdminDaPlataforma}
-      />
-    </div>
+    </Conteudo>
   );
 }

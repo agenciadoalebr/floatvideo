@@ -47,8 +47,8 @@ export default function SeletorDeSite({ sites }: { sites: SiteDoMenu[] }) {
         className="flex items-center gap-2 rounded-lg px-2 py-1 text-left hover:bg-surface-soft"
       >
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-brand-ink">
-            {atual.dominio ?? atual.nome}
+          <span className="block max-w-[220px] truncate text-sm font-semibold text-brand-ink">
+            {atual.nome}
           </span>
           <span className="flex items-center gap-1.5 text-xs text-ink-faint">
             <span

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import InviteCodes, { type InviteCode } from "@/components/InviteCodes";
+import Conteudo from "@/components/Conteudo";
 
 /**
  * Códigos de convite do produto. Só quem administra a plataforma entra
@@ -33,15 +34,17 @@ export default async function ConvitesPage() {
     .returns<InviteCode[]>();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-brand-ink">Convites</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Códigos para novos clientes criarem conta no FloatVideo.
-        </p>
-      </div>
+    <Conteudo>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-xl font-semibold text-brand-ink">Convites</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Códigos para novos clientes criarem conta no FloatVideo.
+          </p>
+        </div>
 
-      <InviteCodes codigos={codigos ?? []} />
-    </div>
+        <InviteCodes codigos={codigos ?? []} />
+      </div>
+    </Conteudo>
   );
 }

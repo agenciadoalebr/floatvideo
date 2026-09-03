@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ListaDeSites, { type ResumoDoSite } from "@/components/ListaDeSites";
+import Conteudo from "@/components/Conteudo";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -31,12 +32,14 @@ export default async function DashboardPage() {
     | undefined;
 
   return (
-    <ListaDeSites
-      sites={(sites ?? []) as unknown as ResumoDoSite[]}
-      // A exceção negociada na conta vence o limite do plano — a mesma
-      // regra que o banco aplica ao recusar o cadastro.
-      limite={org?.max_projects ?? org?.plans?.max_projects ?? null}
-      planoNome={org?.plans?.nome ?? null}
-    />
+    <Conteudo>
+      <ListaDeSites
+        sites={(sites ?? []) as unknown as ResumoDoSite[]}
+        // A exceção negociada na conta vence o limite do plano — a mesma
+        // regra que o banco aplica ao recusar o cadastro.
+        limite={org?.max_projects ?? org?.plans?.max_projects ?? null}
+        planoNome={org?.plans?.nome ?? null}
+      />
+    </Conteudo>
   );
 }

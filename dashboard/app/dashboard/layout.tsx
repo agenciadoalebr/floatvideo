@@ -112,11 +112,10 @@ export default async function DashboardLayout({
         </div>
       </header>
 
-      {/* Largura total: o painel tem preview, tabela e cartão lado a lado,
-          e espremer isso numa coluna central deixava metade da tela
-          vazia num monitor comum. O teto de 1408px existe só para o
-          conteúdo não esticar sem fim num monitor ultrawide. */}
-      <main className="mx-auto max-w-[88rem] px-4 py-8 sm:px-6">{children}</main>
+      {/* Sem coluna central aqui: dentro de um site o menu precisa
+          encostar na borda esquerda, logo abaixo do logo. Quem define o
+          respiro é cada tela, pelo componente Conteudo. */}
+      <main>{children}</main>
     </div>
   );
 }

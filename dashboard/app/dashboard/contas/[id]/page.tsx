@@ -9,6 +9,7 @@ import ContaDetalhe, {
   type Site,
 } from "@/components/ContaDetalhe";
 import type { Plano } from "@/components/ContasList";
+import Conteudo from "@/components/Conteudo";
 
 /**
  * O PostgREST devolve a tabela relacionada como objeto ou como lista,
@@ -119,28 +120,30 @@ export default async function ContaPage({
   }));
 
   return (
-    <div className="space-y-6">
-      <div>
-        <Link
-          href="/dashboard/contas"
-          className="text-xs text-neutral-500 hover:text-brand-blue"
-        >
-          ← Contas
-        </Link>
-        <h1 className="mt-1 text-xl font-semibold text-brand-ink">{org.name}</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Cliente desde{" "}
-          {new Date(org.created_at).toLocaleDateString("pt-BR")}
-        </p>
-      </div>
+    <Conteudo>
+      <div className="space-y-6">
+        <div>
+          <Link
+            href="/dashboard/contas"
+            className="text-xs text-neutral-500 hover:text-brand-blue"
+          >
+            ← Contas
+          </Link>
+          <h1 className="mt-1 text-xl font-semibold text-brand-ink">{org.name}</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            Cliente desde{" "}
+            {new Date(org.created_at).toLocaleDateString("pt-BR")}
+          </p>
+        </div>
 
-      <ContaDetalhe
-        conta={conta}
-        assinatura={(assinatura ?? null) as AssinaturaAdmin}
-        pessoas={pessoas}
-        sites={sites}
-        planos={planos ?? []}
-      />
-    </div>
+        <ContaDetalhe
+          conta={conta}
+          assinatura={(assinatura ?? null) as AssinaturaAdmin}
+          pessoas={pessoas}
+          sites={sites}
+          planos={planos ?? []}
+        />
+      </div>
+    </Conteudo>
   );
 }
