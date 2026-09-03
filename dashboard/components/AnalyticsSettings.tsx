@@ -80,6 +80,9 @@ export default function AnalyticsSettings({ widget }: Props) {
   const [modo, setModo] = useState<Widget["analytics_mode"]>(
     widget?.analytics_mode ?? "auto"
   );
+  const [otimizadas, setOtimizadas] = useState(
+    widget?.conversoes_otimizadas ?? true
+  );
   const [salvando, setSalvando] = useState(false);
   const [salvo, setSalvo] = useState(false);
   const [erro, setErro] = useState("");
@@ -92,7 +95,7 @@ export default function AnalyticsSettings({ widget }: Props) {
     const supabase = createClient();
     const { error } = await supabase
       .from("widgets")
-      .update({ analytics_mode: modo })
+      .update({ analytics_mode: modo, conversoes_otimizadas: otimizadas })
       .eq("id", widget.id);
 
     setSalvando(false);
@@ -141,6 +144,35 @@ export default function AnalyticsSettings({ widget }: Props) {
               conversão apareceria dobrada.
             </p>
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-neutral-200 p-3">
+            <input
+              type="checkbox"
+              checked={otimizadas}
+              onChange={(e) => setOtimizadas(e.target.checked)}
+              disabled={!widget}
+              className="mt-0.5"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-neutral-800">
+                Conversões otimizadas do Google Ads
+              </span>
+              <span className="mt-0.5 block text-xs text-neutral-600">
+                Manda junto do <code>floatvideo_cta_click</code> o e-mail e o
+                telefone de quem preencheu o formulário, em{" "}
+                <strong>hash SHA-256</strong>, no campo{" "}
+                <code>user_data</code>. É com isso que o Google Ads liga a
+                venda ao anúncio que a originou — sem isso, quem fecha pelo
+                WhatsApp depois de clicar num anúncio não volta como
+                conversão, e a campanha aprende errado.
+              </span>
+              <span className="mt-1 block text-xs text-neutral-500">
+                O dado vai embaralhado e não pode ser lido de volta, nem por
+                nós nem por outro script da página. Em sites sem HTTPS o
+                evento sai sem ele, em vez de sair em texto puro.
+              </span>
+            </span>
+          </label>
 
           <div className="flex items-center gap-3">
             <button

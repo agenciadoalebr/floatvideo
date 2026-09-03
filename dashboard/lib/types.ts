@@ -58,6 +58,7 @@ export type Widget = {
   reappear_hours: number;
   /** Por onde os eventos saem da página do cliente. */
   analytics_mode: "auto" | "gtm" | "gtag" | "none";
+  conversoes_otimizadas: boolean;
   is_active: boolean;
   notify_webhook_url: string | null;
   notify_email: string | null;

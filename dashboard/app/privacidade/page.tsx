@@ -84,9 +84,19 @@ export default function PrivacidadePage() {
           configurou, são enviados ao e-mail ou ao sistema dele.
         </p>
         <p>
-          Dados de formulário <strong>nunca</strong> são colocados na camada de
-          dados da página (o <em>dataLayer</em>), porque ela é visível a
-          qualquer script do site.
+          Dados de formulário <strong>nunca</strong> são colocados em texto
+          legível na camada de dados da página (o <em>dataLayer</em>), porque
+          ela é visível a qualquer script do site.
+        </p>
+        <p>
+          A única exceção são as <strong>conversões otimizadas</strong>, quando
+          o dono do site as ativa: nesse caso o e-mail e o telefone vão junto
+          do evento de conversão <strong>embaralhados com SHA-256</strong>, um
+          código que não pode ser revertido para o valor original. Serve para o
+          Google Ads reconhecer que aquela conversão veio de um anúncio, e não
+          serve para ninguém — nós inclusive — ler o contato. Em páginas sem
+          HTTPS nem isso é enviado. O dono do site pode desligar essa opção a
+          qualquer momento no painel, em Analytics do site.
         </p>
       </section>
 

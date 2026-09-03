@@ -1011,12 +1011,20 @@
         });
 
         submitLead(config, data);
-        // De proposito sem os campos preenchidos: o dataLayer e visivel
-        // pra qualquer script da pagina, entao dado de lead nao entra ai.
-        trackEvent(config, "cta_click", {
-          cta_type: config.cta.type,
-          cta_label: config.cta.label || "",
-        });
+        // Os campos preenchidos nao entram no dataLayer em texto: ele e
+        // visivel pra qualquer script da pagina. O que vai junto e o
+        // hash SHA-256 do e-mail e do telefone, que serve pro Google Ads
+        // casar a conversao com o clique no anuncio e nao serve pra
+        // ninguem ler.
+        trackConversao(
+          config,
+          "cta_click",
+          {
+            cta_type: config.cta.type,
+            cta_label: config.cta.label || "",
+          },
+          data
+        );
 
         // No formulario de WhatsApp o envio e so a primeira metade: a
         // pessoa espera cair na conversa. Abre ja com o nome dela na
@@ -1489,7 +1497,7 @@
 
   // ---------- Analytics & Leads (via RPC pública do Supabase) ----------
 
-  function trackEvent(config, eventType, extra) {
+  function trackEvent(config, eventType, extra, user) {
     rpc("record_widget_event", {
       p_widget_id: config.widget_id,
       p_event_type: eventType,
@@ -1497,7 +1505,22 @@
       p_session_id: getSessionId(),
     }).catch(function () {});
 
-    enviarParaAnalytics(config, eventType, extra);
+    enviarParaAnalytics(config, eventType, extra, user);
+  }
+
+  /**
+   * Mesmo evento do trackEvent, mas esperando o hash do contato ficar
+   * pronto para mandar junto. So os cliques que geram lead passam por
+   * aqui: e neles que existe e-mail ou telefone para casar.
+   */
+  function trackConversao(config, eventType, extra, data) {
+    dadosParaConversao(config, data)
+      .then(function (user) {
+        trackEvent(config, eventType, extra, user);
+      })
+      .catch(function () {
+        trackEvent(config, eventType, extra);
+      });
   }
 
   // Manda o evento pras ferramentas de medicao do proprio site. O
@@ -1512,7 +1535,7 @@
   // dois, mandar pelos dois caminhos faria o evento chegar duas vezes no
   // GA4, e a conversao apareceria dobrada — numero inflado e pior que
   // numero faltando, porque e nele que o cliente decide gasto de midia.
-  function enviarParaAnalytics(config, eventType, extra) {
+  function enviarParaAnalytics(config, eventType, extra, user) {
     var modo = config.analytics_mode || "auto";
     if (modo === "none") return;
 
@@ -1536,7 +1559,11 @@
     if (modo !== "gtag") {
       try {
         var dl = (global.dataLayer = global.dataLayer || []);
-        dl.push({ event: nome, floatvideo: dados });
+        var evento = { event: nome, floatvideo: dados };
+        // Fora do objeto "floatvideo" de proposito: e o nome que a tag de
+        // dados fornecidos pelo usuario do Google Ads procura.
+        if (user) evento.user_data = user;
+        dl.push(evento);
       } catch (e) {}
     }
 
@@ -1549,9 +1576,111 @@
 
     if (usarGtag) {
       try {
+        if (user) dados.user_data = user;
         global.gtag("event", nome, dados);
       } catch (e) {}
     }
+  }
+
+  // ---------- Conversoes otimizadas do Google Ads ----------
+  //
+  // O Google casa a conversao com o clique no anuncio pelo e-mail ou
+  // telefone de quem converteu. Sem isso, venda fechada no WhatsApp
+  // depois de um anuncio nao volta como conversao, e a campanha aprende
+  // errado — otimiza pra quem clica, nao pra quem compra.
+  //
+  // Vai como hash SHA-256, nunca em texto. O dataLayer e visivel pra
+  // qualquer script da pagina, e e por isso que os campos do formulario
+  // nunca entraram nele; o hash resolve o impasse: serve pro Google
+  // casar, e nao serve pra ninguem ler.
+
+  // O Google exige o dado normalizado ANTES do hash — hash de "  Joao@
+  // Gmail.com " e diferente do de "joao@gmail.com", e a conversao
+  // simplesmente nao casa.
+  function normalizarEmail(valor) {
+    var email = String(valor || "").trim().toLowerCase();
+    if (email.indexOf("@") === -1) return "";
+    var partes = email.split("@");
+    // No Gmail, ponto nao conta e tudo depois do "+" e apelido.
+    if (partes[1] === "gmail.com" || partes[1] === "googlemail.com") {
+      partes[0] = partes[0].split("+")[0].replace(/\./g, "");
+    }
+    return partes[0] + "@" + partes[1];
+  }
+
+  // Formato E.164: "+" e o pais junto. Numero brasileiro digitado sem o
+  // 55 nao casa com nada do lado do Google.
+  function normalizarTelefone(valor) {
+    var digitos = String(valor || "").replace(/\D/g, "");
+    if (!digitos) return "";
+    if (digitos.length === 10 || digitos.length === 11) digitos = "55" + digitos;
+    if (digitos.length < 12) return "";
+    return "+" + digitos;
+  }
+
+  function sha256(texto) {
+    // crypto.subtle so existe em pagina segura. Em http o evento sai
+    // sem os dados, em vez de sair com eles em texto puro.
+    if (!global.crypto || !global.crypto.subtle || !global.TextEncoder) {
+      return Promise.resolve(null);
+    }
+    return global.crypto.subtle
+      .digest("SHA-256", new TextEncoder().encode(texto))
+      .then(function (buffer) {
+        var bytes = new Uint8Array(buffer);
+        var hex = "";
+        for (var i = 0; i < bytes.length; i++) {
+          hex += ("0" + bytes[i].toString(16)).slice(-2);
+        }
+        return hex;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
+
+  /** Acha o e-mail e o telefone entre os campos que a pessoa preencheu. */
+  function acharContato(data) {
+    var achado = { email: "", telefone: "" };
+    for (var k in data) {
+      if (!Object.prototype.hasOwnProperty.call(data, k)) continue;
+      var chave = k.toLowerCase();
+      var valor = String(data[k] || "");
+      if (!achado.email && (chave.indexOf("mail") !== -1 || valor.indexOf("@") !== -1)) {
+        achado.email = valor;
+      }
+      if (!achado.telefone && (chave.indexOf("telefone") !== -1 || chave.indexOf("celular") !== -1 || chave.indexOf("whats") !== -1 || chave.indexOf("phone") !== -1)) {
+        achado.telefone = valor;
+      }
+    }
+    return achado;
+  }
+
+  /**
+   * Monta o user_data com hash e devolve uma promessa.
+   *
+   * Promessa, e nao valor: o hash e assincrono. Quem chama espera antes
+   * de empurrar o evento, senao a conversao sai sem o dado que a torna
+   * otimizada.
+   */
+  function dadosParaConversao(config, data) {
+    if (config.conversoes_otimizadas === false) return Promise.resolve(null);
+
+    var contato = acharContato(data || {});
+    var email = normalizarEmail(contato.email);
+    var telefone = normalizarTelefone(contato.telefone);
+
+    if (!email && !telefone) return Promise.resolve(null);
+
+    return Promise.all([
+      email ? sha256(email) : Promise.resolve(null),
+      telefone ? sha256(telefone) : Promise.resolve(null),
+    ]).then(function (hashes) {
+      var user = {};
+      if (hashes[0]) user.sha256_email_address = hashes[0];
+      if (hashes[1]) user.sha256_phone_number = hashes[1];
+      return Object.keys(user).length ? user : null;
+    });
   }
 
   function submitLead(config, data) {
