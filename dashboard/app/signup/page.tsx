@@ -18,7 +18,6 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [email, setEmail] = useState(searchParams.get("email") ?? "");
-  const [codigo, setCodigo] = useState(searchParams.get("codigo") ?? "");
   const [nome, setNome] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -41,44 +40,27 @@ function SignupForm() {
     setLoading(true);
     const supabase = createClient();
 
-    // Duas portas de entrada: convite por e-mail (alguém já te adicionou
-    // a uma conta existente) e código de convite (conta nova, sua).
+    // Esta tela é só para quem foi convidado por e-mail para a conta de
+    // outra pessoa — gente de equipe, que não paga nada. Quem tem código
+    // de convite passa pela tela de compra: lá o código vale 30 dias de
+    // teste, e é o pagamento que abre a conta.
     const { data: temConvitePorEmail } = await supabase.rpc("has_pending_invite", {
       p_email: email,
     });
 
-    const codigoLimpo = codigo.trim().toUpperCase();
-
     if (!temConvitePorEmail) {
-      if (!codigoLimpo) {
-        setLoading(false);
-        setError(
-          "Informe o código de convite que você recebeu, ou peça a quem administra a conta para te convidar por e-mail."
-        );
-        return;
-      }
-
-      const { data: codigoValido } = await supabase.rpc("invite_code_disponivel", {
-        p_code: codigoLimpo,
-      });
-
-      // Conferência só para dar uma mensagem clara aqui. Quem realmente
-      // decide, e consome o código, é o banco na criação da conta.
-      if (!codigoValido) {
-        setLoading(false);
-        setError("Este código de convite não existe ou já foi utilizado.");
-        return;
-      }
+      setLoading(false);
+      setError(
+        "Não encontramos um convite para este e-mail. Se você tem um código de convite, use a tela de assinatura; se alguém te adicionou a uma conta, confira se o e-mail é o mesmo do convite."
+      );
+      return;
     }
 
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          invite_code: temConvitePorEmail ? null : codigoLimpo,
-          name: nome.trim() || null,
-        },
+        data: { name: nome.trim() || null },
       },
     });
 
@@ -86,9 +68,7 @@ function SignupForm() {
 
     if (signUpError) {
       setError(
-        signUpError.message.includes("codigo de convite")
-          ? "Este código de convite não existe ou já foi utilizado."
-          : signUpError.message
+        signUpError.message
       );
       return;
     }
@@ -108,21 +88,15 @@ function SignupForm() {
         <div className="flex flex-col items-center space-y-2 text-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-floatvideo.webp" alt="FloatVideo" className="h-10 w-auto" />
-          <h1 className="text-xl font-semibold text-neutral-900">Criar sua conta</h1>
+          <h1 className="text-xl font-semibold text-neutral-900">Entrar na equipe</h1>
           <p className="text-sm text-neutral-500">
-            Use o código de convite que você recebeu.
+            Use o mesmo e-mail em que você recebeu o convite.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <input
-            placeholder="Código de convite (FV-0000-0000)"
-            value={codigo}
-            onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-            className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-center font-mono text-sm tracking-wider outline-none focus:border-brand-blue"
-          />
-          <input
-            placeholder="Nome da sua empresa (opcional)"
+            placeholder="Seu nome (opcional)"
             value={nome}
             onChange={(e) => setNome(e.target.value)}
             className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
@@ -169,11 +143,14 @@ function SignupForm() {
 
         {/* O código digitado vai junto: quem já preencheu o campo não
             precisa digitar de novo depois de voltar do Google. */}
-        <BotaoGoogle texto="Criar conta com o Google" codigo={codigo} />
+        <BotaoGoogle texto="Entrar com o Google" />
 
         <p className="text-center text-xs text-neutral-400">
-          Foi convidado por e-mail para uma conta que já existe? Deixe o código
-          em branco — reconhecemos pelo seu e-mail.
+          Tem um código de convite e quer abrir a sua própria conta?{" "}
+          <Link href="/assinar" className="underline hover:text-neutral-600">
+            É por aqui
+          </Link>{" "}
+          — o código vale 30 dias grátis.
         </p>
 
         <p className="text-center text-xs text-neutral-400">

@@ -32,6 +32,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/" ||
     // Politica e termos precisam abrir sem login — inclusive pro Google,
     // que exige a politica publica pra verificar o app.
+    // A tela de compra e publica: e ela que cria a conta.
+    request.nextUrl.pathname.startsWith("/assinar") ||
     request.nextUrl.pathname.startsWith("/privacidade") ||
     request.nextUrl.pathname.startsWith("/termos") ||
     // O Asaas chama este endereco de servidor pra servidor: nao ha sessao

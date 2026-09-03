@@ -80,7 +80,7 @@ export default async function LandingPage() {
   const supabase = await createClient();
   const { data: planos } = await supabase
     .from("plans")
-    .select("id, nome, preco_centavos, max_projects, descricao")
+    .select("id, nome, preco_centavos, max_projects, descricao, trial_dias")
     .eq("publico", true)
     .order("ordem");
 
@@ -138,10 +138,10 @@ export default async function LandingPage() {
                   Quero no meu site
                 </a>
                 <Link
-                  href="/signup"
+                  href="/assinar"
                   className="rounded-lg border border-neutral-300 px-6 py-3 text-sm font-medium text-neutral-700 hover:border-brand-blue hover:text-brand-blue"
                 >
-                  Tenho um código de convite
+                  Assinar agora
                 </Link>
               </div>
               <p className="mt-4 text-xs text-neutral-500">
@@ -278,14 +278,17 @@ export default async function LandingPage() {
                     <li>Métricas, retenção e integração com o GA4</li>
                     <li>Suporte no WhatsApp</li>
                   </ul>
-                  <a
-                    href={WHATSAPP}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  {/* Leva o plano escolhido junto: quem clicou no card
+                      do Agência não deve cair numa tela pedindo para
+                      escolher de novo. */}
+                  <Link
+                    href={`/assinar?plano=${p.id}`}
                     className="btn-brand mt-6 rounded-lg px-4 py-2.5 text-center text-sm font-medium"
                   >
-                    Começar
-                  </a>
+                    {p.trial_dias > 0
+                      ? `Começar com ${p.trial_dias} dias grátis`
+                      : "Assinar"}
+                  </Link>
                 </div>
               ))}
             </div>

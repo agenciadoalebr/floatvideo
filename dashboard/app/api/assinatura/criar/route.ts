@@ -6,16 +6,21 @@ import {
   criarAssinatura,
   garantirCliente,
   limparCpfCnpj,
+  limparTelefone,
   primeiraFatura,
 } from "@/lib/asaas";
 
 /**
  * Assina um plano.
  *
- * O valor vem da tabela de planos, nunca do navegador: quem paga não
- * escolhe quanto paga. E a gravação da assinatura usa a chave de serviço
- * porque status e datas são decididos pelo Asaas — o cliente lê, não
- * escreve.
+ * Atende as duas portas: quem já é cliente e assina pelo painel, e quem
+ * chega pela landing e ainda não tem organização — nesse caso é aqui que
+ * a organização nasce. O acesso vem de ter organização, então criá-la
+ * junto da assinatura é o que faz o pagamento valer como entrada.
+ *
+ * O valor e os dias de teste vêm da tabela de planos, nunca do
+ * navegador: quem paga não escolhe quanto paga nem por quanto tempo
+ * deixa de pagar.
  */
 export async function POST(request: Request) {
   if (!asaasConfigurado()) {
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Não autenticado." }, { status: 401 });
   }
 
-  const { plano, nome, cpfCnpj } = await request.json();
+  const { plano, nome, cpfCnpj, telefone, codigo } = await request.json();
 
   const documento = limparCpfCnpj(cpfCnpj);
   if (documento.length !== 11 && documento.length !== 14) {
@@ -44,15 +49,27 @@ export async function POST(request: Request) {
     );
   }
 
-  // Só o dono da conta assina — quem foi convidado não decide o plano.
+  const celular = limparTelefone(telefone);
+  if (celular && (celular.length < 10 || celular.length > 11)) {
+    return NextResponse.json(
+      { error: "Informe o telefone com DDD." },
+      { status: 400 }
+    );
+  }
+
+  const admin = createAdminClient();
+
   const { data: membership } = await supabase
     .from("organization_members")
-    .select("organization_id, role, organizations(name)")
+    .select("organization_id, role")
     .eq("user_id", user.id)
     .limit(1)
     .maybeSingle();
 
-  if (!membership || membership.role !== "owner") {
+  // Quem foi convidado para a conta de outra pessoa não decide o plano
+  // dela. Quem ainda não tem conta nenhuma segue adiante: a dele nasce
+  // logo abaixo.
+  if (membership && membership.role !== "owner") {
     return NextResponse.json(
       { error: "Só o dono da conta pode assinar." },
       { status: 403 }
@@ -61,7 +78,7 @@ export async function POST(request: Request) {
 
   const { data: planoEscolhido } = await supabase
     .from("plans")
-    .select("id, nome, preco_centavos, trial_dias, publico")
+    .select("id, nome, preco_centavos, trial_dias, trial_dias_convite, publico")
     .eq("id", plano)
     .maybeSingle();
 
@@ -69,45 +86,98 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Plano inválido." }, { status: 400 });
   }
 
-  const admin = createAdminClient();
-
   const titular = (nome ?? "").trim() || (user.email ?? "Cliente FloatVideo");
+  const codigoLimpo = (codigo ?? "").trim().toUpperCase();
+
+  // O código é consumido antes de qualquer chamada ao Asaas: se ele já
+  // tiver sido usado, a pessoa descobre agora, e não depois de uma
+  // assinatura criada com o prazo errado.
+  let diasDeTeste = planoEscolhido.trial_dias;
+
+  if (codigoLimpo) {
+    const { data: consumido } = await admin
+      .from("invite_codes")
+      .update({
+        used_by: user.id,
+        used_email: user.email,
+        used_at: new Date().toISOString(),
+      })
+      .eq("code", codigoLimpo)
+      .is("used_at", null)
+      .select("code")
+      .maybeSingle();
+
+    if (!consumido) {
+      return NextResponse.json(
+        { error: "Este código de convite não existe ou já foi utilizado." },
+        { status: 400 }
+      );
+    }
+
+    diasDeTeste = planoEscolhido.trial_dias_convite;
+  }
+
+  let organizacaoId = membership?.organization_id ?? null;
+
+  if (!organizacaoId) {
+    const { data: nova, error: erroOrg } = await admin
+      .from("organizations")
+      .insert({ name: titular, plan: planoEscolhido.id })
+      .select("id")
+      .single();
+
+    if (erroOrg || !nova) {
+      return NextResponse.json(
+        { error: "Não foi possível criar sua conta agora." },
+        { status: 500 }
+      );
+    }
+
+    organizacaoId = nova.id;
+
+    await admin
+      .from("organization_members")
+      .insert({
+        organization_id: organizacaoId,
+        user_id: user.id,
+        role: "owner",
+      });
+  }
 
   try {
     const clienteId = await garantirCliente({
       nome: titular,
       cpfCnpj: documento,
       email: user.email ?? "",
+      telefone: celular || undefined,
     });
 
     const assinatura = await criarAssinatura({
       clienteId,
       valorCentavos: planoEscolhido.preco_centavos,
       descricao: `FloatVideo — plano ${planoEscolhido.nome}`,
-      diasDeTeste: planoEscolhido.trial_dias,
-      referencia: membership.organization_id,
+      diasDeTeste,
+      referencia: organizacaoId,
     });
 
     const fatura = await primeiraFatura(assinatura.id);
 
     const fimDoTeste = new Date();
-    fimDoTeste.setDate(fimDoTeste.getDate() + planoEscolhido.trial_dias);
+    fimDoTeste.setDate(fimDoTeste.getDate() + diasDeTeste);
 
     await admin.from("subscriptions").upsert(
       {
-        organization_id: membership.organization_id,
+        organization_id: organizacaoId,
         plan: planoEscolhido.id,
         // Com dias de teste a conta começa em teste; sem eles, ela só
         // vira ativa quando o primeiro pagamento for confirmado.
-        status: planoEscolhido.trial_dias > 0 ? "trialing" : "overdue",
+        status: diasDeTeste > 0 ? "trialing" : "overdue",
         asaas_customer_id: clienteId,
-        // Guardado para a administração achar a conta pelo documento sem
-        // ter de abrir o Asaas.
+        asaas_subscription_id: assinatura.id,
         titular,
         cpf_cnpj: documento,
-        asaas_subscription_id: assinatura.id,
-        trial_ends_at:
-          planoEscolhido.trial_dias > 0 ? fimDoTeste.toISOString() : null,
+        telefone: celular || null,
+        trial_ends_at: diasDeTeste > 0 ? fimDoTeste.toISOString() : null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "organization_id" }
@@ -118,13 +188,13 @@ export async function POST(request: Request) {
     await admin
       .from("organizations")
       .update({ plan: planoEscolhido.id })
-      .eq("id", membership.organization_id);
+      .eq("id", organizacaoId);
 
     return NextResponse.json({
       assinatura: assinatura.id,
       vencimento: fatura.vencimento ?? assinatura.nextDueDate,
       fatura: fatura.url,
-      diasDeTeste: planoEscolhido.trial_dias,
+      diasDeTeste,
     });
   } catch (err) {
     return NextResponse.json(

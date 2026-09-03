@@ -61,6 +61,7 @@ export async function garantirCliente(dados: {
   nome: string;
   cpfCnpj: string;
   email: string;
+  telefone?: string;
 }): Promise<string> {
   const existentes = await chamar<{ data?: ClienteAsaas[] }>(
     `/customers?cpfCnpj=${encodeURIComponent(dados.cpfCnpj)}`
@@ -74,6 +75,9 @@ export async function garantirCliente(dados: {
       name: dados.nome,
       cpfCnpj: dados.cpfCnpj,
       email: dados.email,
+      // O Asaas usa o celular para avisar sobre a cobrança — quem não
+      // abre e-mail costuma abrir mensagem.
+      ...(dados.telefone ? { mobilePhone: dados.telefone } : {}),
     }),
   });
 
@@ -139,5 +143,10 @@ export async function cancelarAssinatura(assinaturaId: string) {
 
 /** Só dígitos: o Asaas recusa CPF/CNPJ com ponto, traço ou barra. */
 export function limparCpfCnpj(valor: string) {
+  return (valor ?? "").replace(/\D/g, "");
+}
+
+/** Mesma regra para o telefone: só dígitos, com DDD. */
+export function limparTelefone(valor: string) {
   return (valor ?? "").replace(/\D/g, "");
 }
