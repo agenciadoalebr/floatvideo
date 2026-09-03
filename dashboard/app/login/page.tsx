@@ -93,8 +93,8 @@ function LoginForm() {
           <Link href="/forgot-password" className="hover:text-neutral-600">
             Esqueci minha senha
           </Link>
-          <Link href="/signup" className="hover:text-neutral-600">
-            Tenho um código de convite
+          <Link href="/assinar" className="hover:text-neutral-600">
+            Criar minha conta
           </Link>
         </div>
       </div>

@@ -49,6 +49,15 @@ export default async function DashboardLayout({
                 className="h-8 w-auto"
               />
             </Link>
+            {/* O logo também leva ao painel, mas ninguém descobre isso
+                numa conta recém-criada, que ainda não tem site nenhum na
+                tela. O link escrito resolve. */}
+            <Link
+              href="/dashboard"
+              className="text-sm text-neutral-500 hover:text-brand-blue"
+            >
+              Painel
+            </Link>
             {/* Links de administração da plataforma. Para o cliente, a
                 equipe dele fica no menu da conta: ali é o lugar do que é
                 "meu", e o cabeçalho continua sendo o dos vídeos. */}

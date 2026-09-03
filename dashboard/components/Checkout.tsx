@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -43,7 +42,6 @@ export default function Checkout({
   codigoInicial: string;
   jaLogado: boolean;
 }) {
-  const router = useRouter();
   const [plano, setPlano] = useState(planoInicial || planos[0]?.id || "");
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -140,8 +138,11 @@ export default function Checkout({
         return;
       }
 
+      // Sem router.refresh() aqui de proposito: a página é server
+      // component e, agora que a organização existe, ela redireciona para
+      // o painel — engolindo esta tela de confirmação antes de a pessoa
+      // conseguir ler quantos dias grátis tem.
       setFeito(dados);
-      router.refresh();
     } catch {
       setErro("Não foi possível falar com o servidor. Tente de novo.");
     } finally {
