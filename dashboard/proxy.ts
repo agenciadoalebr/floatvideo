@@ -7,6 +7,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|embed.js|player.js|fvw-styles.css|test-widget.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|js|css)$).*)",
+    // robots.txt e sitemap.xml ficam de fora: são o que um rastreador
+    // pede antes de qualquer coisa, e mandá-los para o /login faz o site
+    // parecer fechado para quem vem de fora.
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|embed.js|player.js|fvw-styles.css|test-widget.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|html|js|css|txt|xml|ico)$).*)",
   ],
 };
