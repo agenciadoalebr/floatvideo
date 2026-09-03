@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import VideoUploader from "@/components/VideoUploader";
 import YouTubeForm from "@/components/YouTubeForm";
-import VideoList from "@/components/VideoList";
+import PainelDeVideos from "@/components/PainelDeVideos";
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
@@ -155,16 +155,20 @@ export default async function ProjectPage({
             count: readyVideos.length,
             content:
               (videos ?? []).length > 0 ? (
-                <VideoList
+                <PainelDeVideos
                   videos={videos ?? []}
                   projectId={project.id}
                   widget={widget}
+                  cta={cta}
                   pageRules={pageRules}
+                  leads={leads}
+                  eventos={eventCounts}
+                  dominio={project.domain}
                 />
               ) : (
-                <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
-                  Nenhum vídeo ainda. Vá em <strong>Upload</strong>, no menu ao lado, para
-                  enviar um arquivo ou colar um link do YouTube.
+                <p className="cartao p-4 text-sm text-ink-muted">
+                  Nenhum vídeo ainda. Vá em <strong>Upload</strong>, no menu ao
+                  lado, para enviar um arquivo ou colar um link do YouTube.
                 </p>
               ),
           },
