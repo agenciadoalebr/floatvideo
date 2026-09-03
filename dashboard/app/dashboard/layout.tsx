@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AccountMenu from "@/components/AccountMenu";
+import SeletorDeSite, { type SiteDoMenu } from "@/components/SeletorDeSite";
 
 export default async function DashboardLayout({
   children,
@@ -36,11 +37,30 @@ export default async function DashboardLayout({
     ehAdminDaPlataforma = !!admin;
   }
 
+  // O cabeçalho precisa saber os sites para o seletor. São poucos por
+  // conta (o plano maior cobre cinco), então a consulta é barata.
+  const { data: sites } = await supabase
+    .from("projects")
+    .select("id, name, domain, widgets(is_active)")
+    .order("created_at", { ascending: false });
+
+  const paraOMenu: SiteDoMenu[] = (sites ?? []).map((s) => ({
+    id: s.id,
+    nome: s.name,
+    dominio: s.domain,
+    ativo: (s.widgets as { is_active: boolean }[] | null)?.some(
+      (w) => w.is_active
+    ) ?? false,
+  }));
+
   return (
     <div className="min-h-screen bg-surface">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-6">
+      {/* Cabeçalho de largura total, fixo no topo: é a moldura do produto
+          inteiro, e encolher para o meio da tela era desperdiçar as duas
+          pontas — justamente onde ficam a identidade e a conta. */}
+      <header className="sticky top-0 z-30 border-b border-outline-soft bg-surface-card/95 backdrop-blur">
+        <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-4">
             <Link href="/dashboard" className="shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -49,50 +69,54 @@ export default async function DashboardLayout({
                 className="h-8 w-auto"
               />
             </Link>
-            {/* O logo também leva ao painel, mas ninguém descobre isso
-                numa conta recém-criada, que ainda não tem site nenhum na
-                tela. O link escrito resolve. */}
-            <Link
-              href="/dashboard"
-              className="text-sm text-neutral-500 hover:text-brand-blue"
-            >
-              Painel
-            </Link>
+
+            <SeletorDeSite sites={paraOMenu} />
+
             {/* Links de administração da plataforma. Para o cliente, a
                 equipe dele fica no menu da conta: ali é o lugar do que é
                 "meu", e o cabeçalho continua sendo o dos vídeos. */}
             {ehAdminDaPlataforma && (
-              <>
-                <Link
-                  href="/dashboard/team"
-                  className="text-sm text-neutral-500 hover:text-brand-blue"
-                >
-                  Usuários
-                </Link>
-                <Link
-                  href="/dashboard/contas"
-                  className="text-sm text-neutral-500 hover:text-brand-blue"
-                >
-                  Contas
-                </Link>
-                <Link
-                  href="/dashboard/convites"
-                  className="text-sm text-neutral-500 hover:text-brand-blue"
-                >
-                  Convites
-                </Link>
-              </>
+              <nav className="hidden items-center gap-4 lg:flex">
+                <span className="h-8 w-px bg-outline-soft" />
+                {[
+                  ["/dashboard/team", "Usuários"],
+                  ["/dashboard/contas", "Contas"],
+                  ["/dashboard/convites", "Convites"],
+                ].map(([href, rotulo]) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className="text-sm text-ink-muted hover:text-brand-blue"
+                  >
+                    {rotulo}
+                  </Link>
+                ))}
+              </nav>
             )}
           </div>
-          <AccountMenu
-            email={user?.email ?? ""}
-            ehAdminDaPlataforma={ehAdminDaPlataforma}
-            podeGerenciarEquipe={canManageUsers}
-            ehDonoDaConta={ehDonoDaConta}
-          />
+
+          <div className="flex shrink-0 items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="hidden text-sm text-ink-muted hover:text-brand-blue sm:block"
+            >
+              Seus sites
+            </Link>
+            <AccountMenu
+              email={user?.email ?? ""}
+              ehAdminDaPlataforma={ehAdminDaPlataforma}
+              podeGerenciarEquipe={canManageUsers}
+              ehDonoDaConta={ehDonoDaConta}
+            />
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+
+      {/* Largura total: o painel tem preview, tabela e cartão lado a lado,
+          e espremer isso numa coluna central deixava metade da tela
+          vazia num monitor comum. O teto de 1408px existe só para o
+          conteúdo não esticar sem fim num monitor ultrawide. */}
+      <main className="mx-auto max-w-[88rem] px-4 py-8 sm:px-6">{children}</main>
     </div>
   );
 }

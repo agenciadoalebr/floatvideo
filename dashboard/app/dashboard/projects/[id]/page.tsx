@@ -4,6 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import VideoUploader from "@/components/VideoUploader";
 import YouTubeForm from "@/components/YouTubeForm";
 import PainelDeVideos from "@/components/PainelDeVideos";
+import {
+  IconeVideos,
+  IconeUpload,
+  IconeWidget,
+  IconeBotao,
+  IconeCodigo,
+  IconeAnalytics,
+  IconeLeads,
+  IconeMetricas,
+} from "@/components/IconesDoMenu";
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
@@ -147,9 +157,36 @@ export default async function ProjectPage({
       />
 
       <ProjectTabs
+        rodape={
+          <>
+            {/* O estado de verdade, e não um "operando 100%" decorativo:
+                é widget ligado com vídeo escolhido e regra de página. */}
+            <p className="flex items-center gap-2 rounded-lg bg-surface-card px-3 py-2 text-xs text-ink-muted">
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${
+                  ativo && readyVideos.length > 0 && pageRules.length > 0
+                    ? "bg-emerald-500"
+                    : "bg-amber-500"
+                }`}
+              />
+              {ativo && readyVideos.length > 0 && pageRules.length > 0
+                ? "Vídeo no ar neste site"
+                : "Ainda não está no ar"}
+            </p>
+            <a
+              href="https://wa.me/5527999999999"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-lg bg-surface-card px-3 py-2 text-xs font-medium text-ink-muted hover:text-brand-blue"
+            >
+              Suporte via WhatsApp
+            </a>
+          </>
+        }
         tabs={[
           {
             id: "videos",
+            icone: IconeVideos,
             label: "Vídeos",
             grupo: "Conteúdo",
             count: readyVideos.length,
@@ -174,6 +211,7 @@ export default async function ProjectPage({
           },
           {
             id: "upload",
+            icone: IconeUpload,
             label: "Upload",
             grupo: "Conteúdo",
             content: (
@@ -185,6 +223,7 @@ export default async function ProjectPage({
           },
           {
             id: "widget",
+            icone: IconeWidget,
             label: "Widget",
             grupo: "Aparência",
             content: (
@@ -203,12 +242,14 @@ export default async function ProjectPage({
           },
           {
             id: "cta",
+            icone: IconeBotao,
             label: "Botão de ação",
             grupo: "Aparência",
             content: <CtaPanel widget={widget} cta={cta} />,
           },
           {
             id: "instalacao",
+            icone: IconeCodigo,
             label: "Instalação",
             grupo: "Publicação",
             content: (
@@ -221,6 +262,7 @@ export default async function ProjectPage({
           },
           {
             id: "analytics",
+            icone: IconeAnalytics,
             label: "Analytics do site",
             grupo: "Publicação",
             content: (
@@ -229,6 +271,7 @@ export default async function ProjectPage({
           },
           {
             id: "leads",
+            icone: IconeLeads,
             label: "Leads",
             grupo: "Resultados",
             count: leads.length,
@@ -240,6 +283,7 @@ export default async function ProjectPage({
           },
           {
             id: "metricas",
+            icone: IconeMetricas,
             label: "Métricas",
             grupo: "Resultados",
             content: widget ? (

@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 export type Tab = {
   id: string;
   label: string;
+  /** Desenho ao lado do rótulo, para reconhecer a seção sem ler. */
+  icone?: ReactNode;
   /** Numero opcional ao lado do rotulo (ex.: quantidade de leads). */
   count?: number;
   /** Assunto ao qual a seção pertence, para agrupar no menu. */
@@ -25,7 +27,14 @@ export type Tab = {
  * O conteúdo continua vindo pronto do servidor via children: as consultas
  * ficam lá, e só a troca de seção roda no navegador.
  */
-export default function ProjectTabs({ tabs }: { tabs: Tab[] }) {
+export default function ProjectTabs({
+  tabs,
+  rodape,
+}: {
+  tabs: Tab[];
+  /** Bloco preso ao pé do menu — o estado do widget e o suporte. */
+  rodape?: ReactNode;
+}) {
   // "?secao=" permite voltar direto a uma seção — é o que traz a pessoa
   // de volta ao Analytics depois de autorizar no Google, em vez de
   // largá-la na primeira seção do projeto.
@@ -64,17 +73,27 @@ export default function ProjectTabs({ tabs }: { tabs: Tab[] }) {
         type="button"
         onClick={() => setActive(tab.id)}
         aria-current={on ? "page" : undefined}
-        className={`flex w-full shrink-0 items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition ${
+        className={`flex w-full shrink-0 items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition ${
           on
-            ? "bg-brand-ink font-medium text-white"
-            : "text-neutral-600 hover:bg-neutral-100 hover:text-brand-ink"
+            ? "bg-surface-strong font-medium text-brand-ink"
+            : "text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
         }`}
       >
-        <span className="whitespace-nowrap">{tab.label}</span>
+        {tab.icone && (
+          <span
+            aria-hidden
+            className={on ? "text-brand-blue" : "text-ink-faint"}
+          >
+            {tab.icone}
+          </span>
+        )}
+        <span className="flex-1 whitespace-nowrap">{tab.label}</span>
         {typeof tab.count === "number" && tab.count > 0 && (
           <span
             className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-              on ? "bg-white/20 text-white" : "bg-neutral-200 text-neutral-600"
+              on
+                ? "bg-brand-blue/10 text-brand-blue"
+                : "bg-surface-muted text-ink-faint"
             }`}
           >
             {tab.count}
@@ -95,19 +114,22 @@ export default function ProjectTabs({ tabs }: { tabs: Tab[] }) {
         ))}
       </nav>
 
-      <nav className="hidden w-52 shrink-0 space-y-5 lg:sticky lg:top-6 lg:block">
-        {grupos.map((g, i) => (
-          <div key={g.nome ?? `grupo-${i}`} className="space-y-1">
-            {g.nome && (
-              <p className="px-3 text-[11px] font-medium uppercase tracking-wide text-neutral-400">
-                {g.nome}
-              </p>
-            )}
-            {g.itens.map((tab) => (
-              <Item key={tab.id} tab={tab} />
-            ))}
-          </div>
-        ))}
+      {/* 260px, como manda o sistema de design. Preso abaixo do
+          cabeçalho, que tem 65px de altura. */}
+      <nav className="hidden w-[260px] shrink-0 flex-col gap-5 lg:sticky lg:top-[81px] lg:flex lg:max-h-[calc(100vh-105px)]">
+        <div className="flex-1 space-y-5 overflow-y-auto">
+          {grupos.map((g, i) => (
+            <div key={g.nome ?? `grupo-${i}`} className="space-y-1">
+              {g.nome && (
+                <p className="rotulo-metrica px-3 pb-1">{g.nome}</p>
+              )}
+              {g.itens.map((tab) => (
+                <Item key={tab.id} tab={tab} />
+              ))}
+            </div>
+          ))}
+        </div>
+        {rodape && <div className="space-y-2">{rodape}</div>}
       </nav>
 
       {/* Todas as seções ficam montadas e a inativa é apenas escondida: o
