@@ -64,6 +64,7 @@ export default function ContasList({
   const [salvando, setSalvando] = useState<string | null>(null);
   const [erro, setErro] = useState("");
   const [busca, setBusca] = useState("");
+  const [excluindo, setExcluindo] = useState<string | null>(null);
 
   // A lista de contas é pequena e já veio inteira do servidor; filtrar
   // aqui responde a cada tecla sem uma ida ao banco por letra digitada.
@@ -91,6 +92,43 @@ export default function ContasList({
       return;
     }
     router.refresh();
+  }
+
+  async function excluir(conta: Conta) {
+    // Digitar o nome, e não um "tem certeza?": aqui somem sites, vídeos,
+    // métricas e leads de um cliente, e a assinatura dele é cancelada.
+    const confirmacao = prompt(
+      `Isto apaga a conta "${conta.nome}" e tudo dentro dela — ${conta.sites} site(s), vídeos, métricas e leads — e cancela a assinatura no Asaas. Não há como desfazer.
+
+Para confirmar, digite o nome da conta:`
+    );
+
+    if (confirmacao === null) return;
+
+    if (confirmacao.trim() !== conta.nome.trim()) {
+      setErro("O nome digitado não confere. Nada foi excluído.");
+      return;
+    }
+
+    setErro("");
+    setExcluindo(conta.id);
+    try {
+      const resposta = await fetch("/api/admin/excluir-conta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: conta.id }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível excluir agora.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      setErro("Não foi possível falar com o servidor. Tente de novo.");
+    } finally {
+      setExcluindo(null);
+    }
   }
 
   if (contas.length === 0) {
@@ -127,12 +165,13 @@ export default function ContasList({
               <th className="px-4 py-2 font-medium">Pessoas</th>
               <th className="px-4 py-2 font-medium">Desde</th>
               <th className="px-4 py-2 font-medium">Plano</th>
+              <th className="px-4 py-2" />
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {visiveis.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-neutral-500">
+                <td colSpan={8} className="px-4 py-6 text-center text-neutral-500">
                   Nenhuma conta com &ldquo;{busca}&rdquo;.
                 </td>
               </tr>
@@ -207,6 +246,16 @@ export default function ContasList({
                       </option>
                     ))}
                   </select>
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <button
+                    type="button"
+                    onClick={() => excluir(c)}
+                    disabled={excluindo === c.id}
+                    className="text-red-600 hover:text-red-700 hover:underline disabled:opacity-50"
+                  >
+                    {excluindo === c.id ? "Excluindo..." : "Excluir"}
+                  </button>
                 </td>
               </tr>
             ))}
