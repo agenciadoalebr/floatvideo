@@ -37,7 +37,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-surface">
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-6">

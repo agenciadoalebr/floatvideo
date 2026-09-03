@@ -33,3 +33,6 @@ npm-debug.log*
 
 # Repo antigo do Create Next App, guardado ao unificar tudo num repositorio so
 dashboard/.git-backup-createnextapp/
+
+# Exports do Stitch: material de referencia, nao codigo do produto.
+design/extraido/

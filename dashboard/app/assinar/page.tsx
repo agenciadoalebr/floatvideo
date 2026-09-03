@@ -50,7 +50,7 @@ export default async function AssinarPage({
     .returns<PlanoPublico[]>();
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-surface">
       <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link href="/">

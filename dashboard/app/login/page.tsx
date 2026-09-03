@@ -46,7 +46,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex flex-col items-center space-y-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}

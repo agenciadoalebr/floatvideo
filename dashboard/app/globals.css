@@ -11,6 +11,25 @@
   --color-brand-deep: #2c09dc;
   --color-brand-ink: #00092d;
 
+  /* Superfícies do sistema de design.
+
+     O fundo não é cinza neutro: é um branco levemente puxado para o azul,
+     da mesma família do degradê da marca. A diferença é sutil de perto e
+     evidente no conjunto — os cards brancos passam a ter contorno sem
+     precisar de sombra pesada. */
+  --color-surface: #faf8ff;
+  --color-surface-card: #ffffff;
+  --color-surface-soft: #f3f2ff;
+  --color-surface-muted: #ebedff;
+  --color-surface-strong: #e3e7ff;
+
+  --color-outline: #c1c6d7;
+  --color-outline-soft: #e4e6f4;
+
+  --color-ink: #0e193c;
+  --color-ink-muted: #414754;
+  --color-ink-faint: #717786;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -18,14 +37,27 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #00092d;
+  --background: #faf8ff;
+  --foreground: #0e193c;
+
+  /* Profundidade por camadas rasas, não por sombra pesada: um fio de
+     borda e um brilho de apoio. Sombra forte num painel com muitos
+     cartões vira sujeira visual. */
+  --sombra-card: 0 1px 2px rgba(0, 9, 45, 0.04);
+  --sombra-flutuante: 0 4px 12px -2px rgba(0, 9, 45, 0.06),
+    0 12px 24px -4px rgba(0, 9, 45, 0.04);
+  /* Só para o preview do balão, que é o produto aparecendo dentro do
+     painel e merece o destaque elétrico. */
+  --sombra-balao: 0 8px 24px -4px rgba(0, 127, 255, 0.25);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  /* Números de métrica com largura fixa: sem isso a coluna "dança" a
+     cada atualização, porque o 1 é mais estreito que o 8. */
+  font-variant-numeric: tabular-nums;
 }
 
 @layer components {
@@ -39,6 +71,8 @@ body {
       var(--color-brand-violet)
     );
     color: #fff;
+    /* Fio de luz no topo: é o que dá volume ao botão sem sombra. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
   .btn-brand:hover:not(:disabled) {
     background-image: linear-gradient(
@@ -59,5 +93,33 @@ body {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+  }
+
+  /* O cartão padrão do painel. Existe para as telas pararem de repetir
+     "rounded-lg border border-neutral-200 bg-white p-5" com variações
+     que ninguém escolheu de propósito. */
+  .cartao {
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-outline-soft);
+    border-radius: 1rem;
+    box-shadow: var(--sombra-card);
+  }
+
+  .cartao-flutuante {
+    background: var(--color-surface-card);
+    border: 1px solid var(--color-outline-soft);
+    border-radius: 0.75rem;
+    box-shadow: var(--sombra-flutuante);
+  }
+
+  /* Rótulo das métricas: maiúsculas pequenas e espaçadas, para o número
+     ao lado ficar sendo a única coisa que se lê de longe. */
+  .rotulo-metrica {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ink-faint);
   }
 }

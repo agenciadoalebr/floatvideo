@@ -59,7 +59,7 @@ export default function SetupPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface px-4">
         <p className="text-sm text-neutral-400">Carregando...</p>
       </div>
     );
@@ -67,7 +67,7 @@ export default function SetupPage() {
 
   if (!needsSetup) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface px-4">
         <div className="w-full max-w-sm space-y-3 text-center">
           <p className="text-sm text-neutral-600">
             Este sistema já tem um administrador configurado.
@@ -81,7 +81,7 @@ export default function SetupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-1">
           <h1 className="text-2xl font-semibold text-neutral-900">
