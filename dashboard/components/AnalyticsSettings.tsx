@@ -468,6 +468,113 @@ export default function AnalyticsSettings({ widget }: Props) {
         </Secao>
 
         <Secao
+          titulo="Conversões otimizadas do Google Ads"
+          descricao="Para o Ads reconhecer que a venda veio de um anúncio, mesmo quando ela fecha no WhatsApp dias depois."
+        >
+
+          <p className="text-xs text-neutral-600">
+            Quem clica no seu anúncio, preenche o formulário do vídeo e só
+            fecha a compra depois — pelo WhatsApp, por telefone, na loja —
+            some do relatório. O clique e a venda são a mesma pessoa, mas o
+            Google não tem como saber. As conversões otimizadas resolvem isso:
+            o widget manda o e-mail e o telefone junto da conversão,{" "}
+            <strong>embaralhados com SHA-256</strong>, e o Google usa esse
+            código para reconhecer a pessoa sem nunca ler o contato.
+          </p>
+
+          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+            <p className="text-xs text-emerald-900">
+              <strong>Do nosso lado já está pronto.</strong> Se a opção lá em
+              cima estiver marcada, o evento{" "}
+              <Copiavel texto="floatvideo_cta_click" /> já sai com o campo{" "}
+              <Copiavel texto="user_data" /> preenchido. Falta só ligar esse
+              campo na tag de conversão — é o que os passos abaixo fazem.
+            </p>
+          </div>
+
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+            <p className="text-xs text-amber-900">
+              <strong>Faça isto depois</strong> de a tag de conversão do Ads já
+              estar funcionando (a seção anterior). Conversão otimizada melhora
+              uma conversão que existe; ela não cria uma.
+            </p>
+          </div>
+
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
+            <li>
+              <strong>Aceite os termos no Google Ads.</strong> Metas →
+              Conversões → abra a ação de conversão do FloatVideo → seção{" "}
+              <em>Conversões otimizadas</em> →{" "}
+              <em>Ativar conversões otimizadas</em>, aceite os termos de dados
+              do cliente e escolha <strong>Google Tag Manager</strong> como
+              método. Sem esse aceite, o Ads ignora o dado que a gente manda.
+            </li>
+
+            <li>
+              <strong>Crie a variável no GTM.</strong> Variáveis →{" "}
+              <em>Nova</em> → nome{" "}
+              <Copiavel texto="DL - user_data" /> → tipo{" "}
+              <em>Variável da camada de dados</em>.
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+                <li>
+                  Nome da variável da camada de dados:{" "}
+                  <Copiavel texto="user_data" />
+                </li>
+                <li>Versão 2 → Salvar</li>
+              </ul>
+            </li>
+
+            <li>
+              <strong>Ligue a variável na tag de conversão.</strong> Abra a tag{" "}
+              <em>Google Ads - Float Video</em> que você já criou. Marque{" "}
+              <em>Fornecer dados fornecidos pelo usuário</em>, escolha{" "}
+              <em>Selecionar variável de dados fornecidos pelo usuário</em> e
+              aponte para <strong>DL - user_data</strong>. Salve.
+            </li>
+
+            <li>
+              <strong>Confira no Visualizar.</strong> Abra o site com{" "}
+              <Copiavel texto="?fvw_reset" />, preencha e envie o formulário do
+              vídeo. No painel do GTM, clique no evento{" "}
+              <em>floatvideo_cta_click</em> → aba <em>Variables</em> → procure{" "}
+              <strong>DL - user_data</strong>. Ele deve mostrar um objeto com{" "}
+              <code className="rounded bg-neutral-100 px-1">
+                sha256_email_address
+              </code>{" "}
+              e{" "}
+              <code className="rounded bg-neutral-100 px-1">
+                sha256_phone_number
+              </code>
+              , com valores de 64 caracteres. Se aparecer{" "}
+              <em>undefined</em>, o nome da variável está diferente de{" "}
+              <code className="rounded bg-neutral-100 px-1">user_data</code>.
+            </li>
+
+            <li>
+              <strong>Publique</strong> — Enviar → Publicar.
+            </li>
+          </ol>
+
+          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs text-neutral-600">
+              <strong>Onde conferir depois:</strong> no Google Ads, a mesma tela
+              da ação de conversão passa a mostrar um diagnóstico de conversões
+              otimizadas. Ele leva alguns dias para sair de &quot;coletando
+              dados&quot;, e só considera conversões recebidas depois do aceite
+              do passo 1 — as antigas não entram.
+            </p>
+          </div>
+
+          <p className="text-xs text-neutral-400">
+            Só o formulário alimenta isso. Nos botões de WhatsApp e de link
+            direto não há e-mail nem telefone digitado, então esses cliques
+            continuam contando como conversão, mas sem o dado que liga a
+            pessoa ao anúncio. É mais um motivo para preferir o CTA de
+            &quot;WhatsApp com formulário&quot; quando você anuncia.
+          </p>
+        </Secao>
+
+        <Secao
           titulo="Eventos que o widget envia"
         descricao="Na ordem em que acontecem. Todos levam junto um objeto floatvideo com o widget, a página e o vídeo."
       >
