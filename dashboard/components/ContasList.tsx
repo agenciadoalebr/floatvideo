@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -178,7 +179,14 @@ Para confirmar, digite o nome da conta:`
             )}
             {visiveis.map((c) => (
               <tr key={c.id}>
-                <td className="px-4 py-2 font-medium text-brand-ink">{c.nome}</td>
+                <td className="px-4 py-2 font-medium">
+                  <Link
+                    href={`/dashboard/contas/${c.id}`}
+                    className="text-brand-ink hover:text-brand-blue hover:underline"
+                  >
+                    {c.nome}
+                  </Link>
+                </td>
                 <td className="px-4 py-2 text-neutral-600">
                   {c.dono ?? "—"}
                   {/* O titular só aparece quando é diferente do e-mail:
