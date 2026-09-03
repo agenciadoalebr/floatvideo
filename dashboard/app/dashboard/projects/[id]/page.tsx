@@ -16,7 +16,7 @@ import {
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
-import { secaoValida } from "@/components/MenuDoSite";
+import { secaoValida } from "@/components/secoes";
 import ProjectDomainField from "@/components/ProjectDomainField";
 import CtaPanel from "@/components/CtaPanel";
 import AnalyticsSettings from "@/components/AnalyticsSettings";

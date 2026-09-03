@@ -4,59 +4,10 @@ import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  IconeVideos,
-  IconeUpload,
-  IconeWidget,
-  IconeBotao,
-  IconeCodigo,
-  IconeAnalytics,
-  IconeLeads,
-  IconeMetricas,
-} from "@/components/IconesDoMenu";
-
-export type ItemDoMenu = {
-  id: string;
-  rotulo: string;
-  grupo: string;
-  icone: ReactNode;
-};
-
-export const SECOES: ItemDoMenu[] = [
-  { id: "videos", rotulo: "Vídeos", grupo: "Conteúdo", icone: IconeVideos },
-  { id: "upload", rotulo: "Upload", grupo: "Conteúdo", icone: IconeUpload },
-  { id: "widget", rotulo: "Widget", grupo: "Aparência", icone: IconeWidget },
-  {
-    id: "cta",
-    rotulo: "Botão de ação",
-    grupo: "Aparência",
-    icone: IconeBotao,
-  },
-  {
-    id: "instalacao",
-    rotulo: "Instalação",
-    grupo: "Publicação",
-    icone: IconeCodigo,
-  },
-  {
-    id: "analytics",
-    rotulo: "Analytics do site",
-    grupo: "Publicação",
-    icone: IconeAnalytics,
-  },
-  { id: "leads", rotulo: "Leads", grupo: "Resultados", icone: IconeLeads },
-  {
-    id: "metricas",
-    rotulo: "Métricas",
-    grupo: "Resultados",
-    icone: IconeMetricas,
-  },
-];
-
-export const SECAO_PADRAO = "videos";
-
-export function secaoValida(valor: string | undefined) {
-  return valor && SECOES.some((s) => s.id === valor) ? valor : SECAO_PADRAO;
-}
+  SECOES,
+  secaoValida,
+  type ItemDoMenu,
+} from "@/components/secoes";
 
 /**
  * Menu do site, coluna fixa à esquerda.
