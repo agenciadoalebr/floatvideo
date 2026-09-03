@@ -32,6 +32,50 @@
     });
   }
 
+  // O que esta montado agora. Loja em SPA (VTEX, Nuvemshop, Shopify e o
+  // proprio painel) troca de pagina sem recarregar o documento: sem
+  // guardar isso, o balao do produto A continuava na tela — e com a CTA
+  // de comprar apontando pro produto errado — enquanto a pessoa lia o
+  // produto B.
+  var montado = null;
+
+  function carregarConfig(embedKey) {
+    // p_page_url deixa o servidor escolher o video pela regra de
+    // pagina. A escolha e feita la, e nao aqui, pra o mesmo criterio
+    // valer tambem no registro de evento e de lead.
+    return rpc("get_widget_config", {
+      p_embed_key: embedKey,
+      p_origin: location.origin,
+      p_page_url: location.href,
+    }).then(function (res) {
+      if (!res.ok) throw new Error("config indisponível");
+      return res.json();
+    });
+  }
+
+  function aplicar(embedKey, config) {
+    var videoNovo =
+      config && config.is_active !== false && config.video
+        ? config.video.id
+        : null;
+
+    // A supressao e por video, entao so da pra consultar depois de
+    // saber qual video esta pagina pediu: quem fechou o video de um
+    // produto continua vendo o dos outros.
+    if (videoNovo && isSuppressed(embedKey, videoNovo)) videoNovo = null;
+
+    if (montado && montado.videoId === videoNovo) return;
+
+    if (montado) {
+      montado.destruir();
+      montado = null;
+    }
+
+    if (!videoNovo) return;
+
+    montado = FVWPlayer.init(config, embedKey);
+  }
+
   var FVWPlayer = {
     boot: function (embedKey) {
       // Atalho de teste: abrir a pagina com ?fvw_reset na URL apaga a
@@ -40,29 +84,18 @@
       // uma janela anonima toda vez.
       clearSuppression(embedKey);
 
-      // p_page_url deixa o servidor escolher o video pela regra de
-      // pagina. A escolha e feita la, e nao aqui, pra o mesmo criterio
-      // valer tambem no registro de evento e de lead.
-      rpc("get_widget_config", {
-        p_embed_key: embedKey,
-        p_origin: location.origin,
-        p_page_url: location.href,
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error("config indisponível");
-          return res.json();
-        })
-        .then(function (config) {
-          if (!config || config.is_active === false || !config.video) return;
-          // A supressao e por video, entao so da pra consultar depois de
-          // saber qual video esta pagina pediu: quem fechou o video de um
-          // produto continua vendo o dos outros.
-          if (isSuppressed(embedKey, config.video.id)) return;
-          FVWPlayer.init(config, embedKey);
-        })
-        .catch(function (err) {
-          console.warn("[FloatingVideoWidget] falha ao carregar config:", err);
-        });
+      function reavaliar() {
+        carregarConfig(embedKey)
+          .then(function (config) {
+            aplicar(embedKey, config);
+          })
+          .catch(function (err) {
+            console.warn("[FloatingVideoWidget] falha ao carregar config:", err);
+          });
+      }
+
+      reavaliar();
+      vigiarNavegacao(reavaliar);
     },
 
     init: function (config, embedKey) {
@@ -95,7 +128,7 @@
       el.style.transform = "translateY(16px) scale(0.9)";
       root.appendChild(el);
 
-      agendarAparicao(config, function (gatilho) {
+      var cancelarAparicao = agendarAparicao(config, function (gatilho) {
         // O vídeo só é carregado agora, e não no load da página. Para o
         // YouTube isso é o que mais pesa: a API dele são centenas de KB
         // que antes desciam junto com a loja abrindo, mesmo quando o
@@ -123,10 +156,69 @@
       wirePlayToggle(el);
       wireRestartButton(el);
       wireProgressBar(el);
-      startProgressLoop(el, config);
+      var relogioDoProgresso = startProgressLoop(el, config);
 
+      return {
+        videoId: config.video.id,
+        expandido: function () {
+          return el.classList.contains("fvw-expanded");
+        },
+        destruir: function () {
+          cancelarAparicao();
+          clearInterval(relogioDoProgresso);
+          // O player do YouTube tem um iframe e listeners proprios: sem
+          // o destroy dele, sobra um iframe invisivel tocando audio.
+          if (el._ytPlayer && typeof el._ytPlayer.destroy === "function") {
+            try {
+              el._ytPlayer.destroy();
+            } catch (e) {}
+          }
+          var hospedeiro = root.host || root;
+          if (hospedeiro && hospedeiro.parentNode) {
+            hospedeiro.parentNode.removeChild(hospedeiro);
+          }
+        },
+      };
     },
   };
+
+  /**
+   * Avisa quando a URL muda sem o documento recarregar.
+   *
+   * pushState e replaceState nao disparam evento nenhum — e sao
+   * justamente o que todo roteador de SPA usa. Envolve-los e a unica
+   * forma de saber. O atraso junta a rajada de chamadas que um roteador
+   * costuma fazer numa troca de rota so.
+   */
+  function vigiarNavegacao(aoMudar) {
+    var ultima = location.href;
+    var relogio = null;
+
+    function conferir() {
+      if (location.href === ultima) return;
+      ultima = location.href;
+      clearTimeout(relogio);
+      relogio = setTimeout(function () {
+        // Trocar a pagina embaixo de quem esta assistindo em tela cheia
+        // seria pior que mostrar o video errado: espera fechar.
+        if (montado && montado.expandido()) return;
+        aoMudar();
+      }, 300);
+    }
+
+    ["pushState", "replaceState"].forEach(function (nome) {
+      var original = history[nome];
+      if (typeof original !== "function") return;
+      history[nome] = function () {
+        var r = original.apply(this, arguments);
+        conferir();
+        return r;
+      };
+    });
+
+    window.addEventListener("popstate", conferir);
+    window.addEventListener("hashchange", conferir);
+  }
 
   function montarVideo(el, config) {
     if (el._videoMontado) return;
@@ -662,7 +754,7 @@
   }
 
   function startProgressLoop(el, config) {
-    setInterval(function () {
+    return setInterval(function () {
       var fill = el.querySelector(".fvw-progress-fill");
       if (!fill) return;
       var duration = 0;
@@ -760,13 +852,23 @@
     var delay = (config.delay_seconds || 0) * 1000;
     var alvoScroll = config.trigger_scroll || 50;
     var pronto = false;
+    // Guardados pra poder desmontar: numa SPA o balao pode ser removido
+    // antes mesmo de aparecer, e um setTimeout orfao acordaria depois
+    // pra mexer num elemento que nao esta mais na pagina.
+    var relogios = [];
 
     function aparecer(gatilho) {
       if (pronto) return;
       pronto = true;
+      soltar();
+      mostrar(gatilho);
+    }
+
+    function soltar() {
       window.removeEventListener("scroll", aoRolar);
       document.removeEventListener("mouseout", aoSair);
-      mostrar(gatilho);
+      for (var i = 0; i < relogios.length; i++) clearTimeout(relogios[i]);
+      relogios = [];
     }
 
     function aoRolar() {
@@ -802,11 +904,13 @@
       // movimento em vez de esperar o carregamento na frente da pessoa.
       // Continua fora do carregamento da pagina, que era o problema.
       if (typeof preparar === "function" && delay > ANTECEDENCIA) {
-        setTimeout(preparar, delay - ANTECEDENCIA);
+        relogios.push(setTimeout(preparar, delay - ANTECEDENCIA));
       }
-      setTimeout(function () {
-        aparecer("time");
-      }, delay);
+      relogios.push(
+        setTimeout(function () {
+          aparecer("time");
+        }, delay)
+      );
     }
 
     if (modo === "scroll" || modo === "any") {
@@ -817,6 +921,11 @@
     if ((modo === "exit" || modo === "any") && !semPonteiro) {
       document.addEventListener("mouseout", aoSair);
     }
+
+    return function cancelar() {
+      pronto = true;
+      soltar();
+    };
   }
 
   // Guarda no navegador de quem fechou o balão, pra não insistir toda
