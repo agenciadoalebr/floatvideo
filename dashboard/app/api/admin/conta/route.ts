@@ -42,6 +42,7 @@ export async function POST(request: Request) {
     fimDoTeste,
     observacoes,
     bloqueioManual,
+    exibirMarca,
   } = await request.json();
 
   if (!organizationId || typeof organizationId !== "string") {
@@ -99,6 +100,12 @@ export async function POST(request: Request) {
   // Asaas, sem ninguém perceber.
   if (typeof bloqueioManual === "boolean") {
     daConta.bloqueio_manual = bloqueioManual;
+  }
+
+  // Retirar a nossa assinatura do vídeo é atendimento, não configuração
+  // do cliente: por isso mora aqui e não no painel dele.
+  if (typeof exibirMarca === "boolean") {
+    daConta.exibir_marca = exibirMarca;
   }
 
   if (Object.keys(daConta).length > 0) {

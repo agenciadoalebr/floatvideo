@@ -20,6 +20,8 @@ export type ContaCompleta = {
   email_do_dono: string | null;
   observacoes: string | null;
   bloqueio_manual: boolean;
+  /** Assinatura "Float Video" no rodapé do vídeo aberto. */
+  exibir_marca: boolean;
 };
 
 export type AssinaturaAdmin = {
@@ -118,6 +120,7 @@ export default function ContaDetalhe({
   );
   const [observacoes, setObservacoes] = useState(conta.observacoes ?? "");
   const [bloqueio, setBloqueio] = useState(conta.bloqueio_manual);
+  const [exibirMarca, setExibirMarca] = useState(conta.exibir_marca);
   const [acessando, setAcessando] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
@@ -159,6 +162,7 @@ export default function ContaDetalhe({
           fimDoTeste: fimDoTeste || null,
           observacoes,
           bloqueioManual: bloqueio,
+          exibirMarca,
         }),
       });
       const dados = await resposta.json();
@@ -406,6 +410,41 @@ export default function ContaDetalhe({
                   </span>
                 </label>
               </div>
+            </div>
+
+            {/* Fica junto das outras decisões nossas sobre a conta, e não
+                nas configurações do cliente: quem tira a assinatura somos
+                nós, caso a caso. */}
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-outline-soft pt-4">
+              <span>
+                <span className="block text-sm font-medium text-brand-ink">
+                  Assinatura no vídeo
+                </span>
+                <span className="block text-xs text-ink-faint">
+                  O &ldquo;Float Video&rdquo; embaixo do vídeo aberto, no site
+                  do cliente.
+                </span>
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={exibirMarca}
+                aria-label={
+                  exibirMarca
+                    ? "Retirar a assinatura do vídeo"
+                    : "Mostrar a assinatura no vídeo"
+                }
+                onClick={() => setExibirMarca((v) => !v)}
+                className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                  exibirMarca ? "bg-brand-blue" : "bg-surface-muted"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                    exibirMarca ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </button>
             </div>
 
             <label className="mt-5 block border-t border-outline-soft pt-4">

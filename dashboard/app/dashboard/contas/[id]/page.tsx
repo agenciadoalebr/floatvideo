@@ -59,7 +59,7 @@ export default async function ContaPage({
   const { data: org } = await admin
     .from("organizations")
     .select(
-      "id, name, plan, created_at, max_projects, observacoes_internas, bloqueio_manual, plans(max_projects)"
+      "id, name, plan, created_at, max_projects, observacoes_internas, bloqueio_manual, exibir_marca, plans(max_projects)"
     )
     .eq("id", id)
     .maybeSingle();
@@ -131,6 +131,7 @@ export default async function ContaPage({
     email_do_dono: emailDoDono,
     observacoes: org.observacoes_internas,
     bloqueio_manual: org.bloqueio_manual,
+    exibir_marca: org.exibir_marca,
     limite_do_plano:
       primeiro(org.plans as { max_projects: number | null } | { max_projects: number | null }[] | null)
         ?.max_projects ?? null,

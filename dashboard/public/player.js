@@ -300,11 +300,14 @@
       posterMarkup(config.video) +
       '<div class="fvw-progress"><div class="fvw-progress-fill"></div></div>' +
       (config.cta ? buildCTAMarkup(config.cta) : "") +
-      // Depois do CTA de proposito: no empilhamento, quem vem depois
-      // fica por cima — e a assinatura nao pode sumir sob o botao.
-      '<a class="fvw-marca" href="' + SITE_DA_MARCA +
-      '" target="_blank" rel="noopener noreferrer">Float Video</a>' +
-      "</div>";
+      "</div>" +
+      // Fora do .fvw-media-slot: e ele que recorta no formato do balao,
+      // e a assinatura mora abaixo da borda de baixo do video. Conta com
+      // a marca desligada nao recebe nem o elemento.
+      (config.exibir_marca === false
+        ? ""
+        : '<a class="fvw-marca" href="' + SITE_DA_MARCA +
+          '" target="_blank" rel="noopener noreferrer">Float Video</a>');
 
     return wrapper;
   }
