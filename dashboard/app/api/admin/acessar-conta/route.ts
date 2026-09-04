@@ -106,24 +106,37 @@ export async function POST(request: Request) {
     request,
   });
 
-  // Sem dizer para onde voltar, o Supabase usa a Site URL do projeto — que
-  // pode estar apontando para o ambiente local e joga quem clicou num
-  // localhost que não existe. A origem do próprio pedido é o destino
-  // certo: é o endereço em que a administração já está.
-  const destino = new URL("/dashboard", request.url).toString();
-
+  // O link pronto do Supabase não serve aqui: ele devolve o token no
+  // fragmento da URL (#access_token=...), que só o navegador enxerga.
+  // Este painel guarda sessão em cookie, lida no servidor — o token no
+  // fragmento passava batido e a sessão do administrador continuava de pé.
+  //
+  // Então usamos só o token do link e trocamos ele por uma sessão aqui
+  // mesmo, no servidor. O verifyOtp escreve os cookies na resposta, e o
+  // navegador volta ao painel já como o cliente.
   const { data: link, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
-    options: { redirectTo: destino },
   });
 
-  if (error || !link?.properties?.action_link) {
+  if (error || !link?.properties?.hashed_token) {
     return NextResponse.json(
       { error: error?.message ?? "Não foi possível gerar o acesso." },
       { status: 502 }
     );
   }
 
-  return NextResponse.json({ ok: true, url: link.properties.action_link, email });
+  const { error: erroDaTroca } = await supabase.auth.verifyOtp({
+    type: "magiclink",
+    token_hash: link.properties.hashed_token,
+  });
+
+  if (erroDaTroca) {
+    return NextResponse.json(
+      { error: erroDaTroca.message },
+      { status: 502 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, email });
 }

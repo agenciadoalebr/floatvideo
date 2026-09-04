@@ -198,7 +198,8 @@ export default function ContaDetalhe({
         setErro(dados.error ?? "Não foi possível acessar agora.");
         return;
       }
-      window.location.href = dados.url;
+      // A sessão já trocou nos cookies; basta recarregar o painel.
+      window.location.href = "/dashboard";
     } catch {
       setErro("Não foi possível falar com o servidor. Tente de novo.");
     } finally {
