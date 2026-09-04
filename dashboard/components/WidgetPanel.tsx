@@ -19,6 +19,9 @@ const readyVideos = (videos: Video[]) => videos.filter((v) => v.status === "read
 
 export default function WidgetPanel({ projectId, videos, widget }: Props) {
   const router = useRouter();
+  // Qual aparelho a prévia está simulando. Só visual: não muda nada
+  // do que é salvo.
+  const [aparelho, setAparelho] = useState<"desktop" | "mobile">("desktop");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [salvo, setSalvo] = useState(false);
@@ -165,375 +168,619 @@ export default function WidgetPanel({ projectId, videos, widget }: Props) {
 
   if (readyVideos(videos).length === 0) {
     return (
-      <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
-        Adicione um vídeo acima para poder configurar o widget.
+      <p className="cartao p-4 text-sm text-ink-muted">
+        Envie um vídeo primeiro — é ele que aparece dentro do balão.
       </p>
     );
   }
 
+  const PX = { sm: 96, md: 128, lg: 160 } as const;
+
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <form
-        onSubmit={handleSave}
-        className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5"
-      >
-        <div className="border-b border-neutral-100 pb-3">
-          <h3 className="text-sm font-semibold text-neutral-700">
-            Edição global
-          </h3>
-          <p className="mt-1 text-xs text-neutral-500">
-            Vale para <strong>todos os vídeos</strong> deste site.
+    <form onSubmit={handleSave} className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-brand-ink">
+            Personalização do widget
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-ink-muted">
+            Defina como e onde a bolha de vídeo aparece para quem visita o
+            seu site. Vale para todos os vídeos deste site.
           </p>
         </div>
 
-        <Bloco titulo="Aparência">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">Formato</label>
-            <select
-              value={shape}
-              onChange={(e) => setShape(e.target.value as Widget["shape"])}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            >
-              <option value="round">Redondo</option>
-              <option value="rectangular">Retangular</option>
-              <option value="vertical">Vertical 9:16 (stories)</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">Tamanho</label>
-            <select
-              value={size}
-              onChange={(e) => setSize(e.target.value as Widget["size"])}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            >
-              <option value="sm">Pequeno</option>
-              <option value="md">Médio</option>
-              <option value="lg">Grande</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">Posição</label>
-            <select
-              value={position}
-              onChange={(e) => setPosition(e.target.value as Widget["position"])}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            >
-              <option value="bottom-right">Direita</option>
-              <option value="bottom-left">Esquerda</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Cor da borda
-            </label>
-            <input
-              type="color"
-              value={borderColor}
-              onChange={(e) => setBorderColor(e.target.value)}
-              className="mt-1 h-9 w-full rounded-md border border-neutral-300"
-            />
-          </div>
-        </div>
-
-        </Bloco>
-
-        <Bloco titulo="Posição na tela">
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Distância da lateral (px)
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={offsetX}
-              onChange={(e) => setOffsetX(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Distância de baixo (px)
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={offsetY}
-              onChange={(e) => setOffsetY(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-
-        </Bloco>
-
-        <Bloco titulo="Comportamento">
-        <div>
-          <label className="block text-xs font-medium text-neutral-600">
-            O balão aparece
-          </label>
-          <select
-            value={gatilho}
-            onChange={(e) =>
-              setGatilho(e.target.value as Widget["trigger_mode"])
-            }
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+        <div className="flex items-center gap-2">
+          {salvo && (
+            <span className="text-xs font-medium text-emerald-700">
+              Alterações salvas
+            </span>
+          )}
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-brand rounded-lg px-5 py-2.5 text-sm font-medium disabled:opacity-50"
           >
-            <option value="time">Depois de alguns segundos</option>
-            <option value="scroll">Quando a pessoa rolar a página</option>
-            <option value="exit">Quando a pessoa for embora (saída)</option>
-            <option value="any">O que acontecer primeiro</option>
-          </select>
-          <p className="mt-1 text-xs text-neutral-500">
-            {gatilho === "exit"
-              ? "O balão espera o ponteiro subir para fechar a aba — a última chance antes de a pessoa sair. No celular não existe ponteiro, então lá vale o tempo abaixo."
-              : gatilho === "scroll"
-                ? "Aparece para quem desceu na página, ou seja, para quem demonstrou interesse."
-                : gatilho === "any"
-                  ? "Tempo, rolagem e saída ao mesmo tempo: vale o primeiro que acontecer."
-                  : "O comportamento de sempre."}
-          </p>
+            {saving ? "Salvando..." : "Salvar alterações"}
+          </button>
         </div>
+      </div>
 
-        {gatilho !== "scroll" && (
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Segundos de espera
-            </label>
-            <input
-              type="number"
-              min={0}
-              value={delaySeconds}
-              onChange={(e) => setDelaySeconds(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            />
-          </div>
-        )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {(gatilho === "scroll" || gatilho === "any") && (
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Rolar quanto da página (%)
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={scrollPct}
-              onChange={(e) => setScrollPct(Number(e.target.value))}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-            />
-            <p className="mt-1 text-xs text-neutral-500">
-              Em página que cabe inteira na tela, sem rolagem possível, o
-              balão aparece de imediato.
-            </p>
-          </div>
-        )}
-
-        <div>
-          <label className="block text-xs font-medium text-neutral-600">
-            Se a pessoa fechar, volta a aparecer em
-          </label>
-          <select
-            value={reappearHours}
-            onChange={(e) => setReappearHours(Number(e.target.value))}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+        <div className="space-y-5">
+          <Etapa
+            numero={1}
+            titulo="Formato e dimensões"
+            descricao="O formato visual da bolha flutuante"
           >
-            <option value={1}>1 hora</option>
-            <option value={6}>6 horas</option>
-            <option value={24}>1 dia</option>
-            <option value={72}>3 dias</option>
-            <option value={168}>7 dias</option>
-          </select>
-          <p className="mt-1 text-xs text-neutral-500">
-            Vale só para o vídeo que a pessoa fechou. Os vídeos das outras
-            páginas continuam aparecendo normalmente.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-neutral-700">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={autoplay}
-              onChange={(e) => setAutoplay(e.target.checked)}
-            />
-            Autoplay
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-            />
-            Widget ativo
-          </label>
-        </div>
-
-        </Bloco>
-
-        <Bloco titulo="Celular">
-        <div>
-          <label className="flex items-center gap-2 text-xs font-medium text-neutral-600">
-            <input
-              type="checkbox"
-              checked={customMobile}
-              onChange={(e) => setCustomMobile(e.target.checked)}
-            />
-            Usar layout diferente no celular
-          </label>
-          {customMobile && (
-            <div className="mt-2 space-y-3 rounded-md border border-neutral-100 bg-neutral-50 p-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600">
-                    Tamanho (mobile)
-                  </label>
-                  <select
-                    value={mobileSize}
-                    onChange={(e) => setMobileSize(e.target.value as Widget["size"])}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["round", "Círculo clássico", "Proporção 1:1, discreto"],
+                  [
+                    "rectangular",
+                    "Retângulo arredondado",
+                    "Estilo card, mais presença",
+                  ],
+                ] as const
+              ).map(([valor, nome, nota]) => (
+                <button
+                  key={valor}
+                  type="button"
+                  onClick={() => setShape(valor)}
+                  className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                    shape === valor
+                      ? "border-brand-blue bg-surface-soft"
+                      : "border-outline-soft hover:border-outline"
+                  }`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center bg-gradient-to-br from-brand-blue to-brand-violet text-white ${
+                      valor === "round" ? "rounded-full" : "rounded-lg"
+                    }`}
                   >
-                    <option value="sm">Pequeno</option>
-                    <option value="md">Médio</option>
-                    <option value="lg">Grande</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600">
-                    Posição (mobile)
-                  </label>
-                  <select
-                    value={mobilePosition}
-                    onChange={(e) => setMobilePosition(e.target.value as Widget["position"])}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                  >
-                    <option value="bottom-right">Direita</option>
-                    <option value="bottom-left">Esquerda</option>
-                  </select>
-                </div>
+                    ▶
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-brand-ink">
+                      {nome}
+                    </span>
+                    <span className="block text-xs text-ink-faint">{nota}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-medium text-ink-muted">
+                  Tamanho da bolha
+                </span>
+                <span className="text-xs text-ink-faint">{PX[size]} px</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600">
-                    Distância da lateral (px)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={mobileOffsetX}
-                    onChange={(e) => setMobileOffsetX(Number(e.target.value))}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-neutral-600">
-                    Distância de baixo (px)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={mobileOffsetY}
-                    onChange={(e) => setMobileOffsetY(Number(e.target.value))}
-                    className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-                  />
-                </div>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {(
+                  [
+                    ["sm", "Pequeno"],
+                    ["md", "Médio"],
+                    ["lg", "Grande"],
+                  ] as const
+                ).map(([valor, nome]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setSize(valor)}
+                    className={`rounded-lg border px-3 py-2 text-sm transition ${
+                      size === valor
+                        ? "border-brand-blue bg-surface-soft font-medium text-brand-ink"
+                        : "border-outline-soft text-ink-muted hover:border-outline"
+                    }`}
+                  >
+                    {nome}
+                    <span className="block text-[11px] text-ink-faint">
+                      {PX[valor]}px
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
-          )}
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-soft p-3">
+              <input
+                type="checkbox"
+                checked={shape === "vertical"}
+                onChange={(e) => setShape(e.target.checked ? "vertical" : "round")}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-brand-ink">
+                  Formato vertical 9:16
+                </span>
+                <span className="block text-xs text-ink-muted">
+                  Para vídeo gravado no celular, em pé. Ocupa o balão inteiro
+                  sem cortar as laterais.
+                </span>
+              </span>
+            </label>
+          </Etapa>
+
+          <Etapa
+            numero={2}
+            titulo="Posição na tela"
+            descricao="Onde o balão fica fixado"
+          >
+            <div>
+              <span className="text-xs font-medium text-ink-muted">
+                Canto de exibição
+              </span>
+              <div className="mt-2 grid max-w-[220px] grid-cols-2 gap-2">
+                {(
+                  [
+                    ["bottom-left", "Inferior esquerdo"],
+                    ["bottom-right", "Inferior direito"],
+                  ] as const
+                ).map(([valor, nome]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setPosition(valor)}
+                    className={`rounded-lg border p-3 text-xs transition ${
+                      position === valor
+                        ? "border-brand-blue bg-surface-soft font-medium text-brand-ink"
+                        : "border-outline-soft text-ink-muted hover:border-outline"
+                    }`}
+                  >
+                    <span
+                      className={`mb-2 flex h-8 rounded bg-surface-muted ${
+                        valor === "bottom-right"
+                          ? "justify-end"
+                          : "justify-start"
+                      } items-end p-1`}
+                    >
+                      <span className="h-3 w-3 rounded-full bg-brand-blue" />
+                    </span>
+                    {nome}
+                  </button>
+                ))}
+              </div>
+              {position === "bottom-right" && (
+                <p className="mt-2 text-xs text-ink-faint">
+                  O canto inferior direito é o mais usado — mas confira se ele
+                  não cobre um botão da sua página.
+                </p>
+              )}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Numero
+                rotulo="Distância horizontal"
+                valor={offsetX}
+                aoMudar={setOffsetX}
+              />
+              <Numero
+                rotulo="Distância vertical"
+                valor={offsetY}
+                aoMudar={setOffsetY}
+              />
+            </div>
+
+            <label className="block">
+              <span className="text-xs font-medium text-ink-muted">
+                Cor da borda
+              </span>
+              <span className="mt-2 flex items-center gap-3">
+                <input
+                  type="color"
+                  value={borderColor}
+                  onChange={(e) => setBorderColor(e.target.value)}
+                  className="h-10 w-14 cursor-pointer rounded-lg border border-outline-soft bg-surface-card p-1"
+                />
+                <input
+                  value={borderColor}
+                  onChange={(e) => setBorderColor(e.target.value)}
+                  className="w-28 rounded-lg border border-outline-soft px-3 py-2 font-mono text-sm uppercase outline-none focus:border-brand-blue"
+                />
+              </span>
+            </label>
+          </Etapa>
+
+          <Etapa
+            numero={3}
+            titulo="Comportamento"
+            descricao="Quando o balão aparece e como ele começa"
+          >
+            <div>
+              <span className="text-xs font-medium text-ink-muted">
+                Quando o widget deve aparecer
+              </span>
+              <div className="mt-2 space-y-2">
+                {(
+                  [
+                    [
+                      "time",
+                      "Depois de alguns segundos",
+                      "Espera a pessoa começar a ler a página",
+                    ],
+                    [
+                      "scroll",
+                      "Quando a pessoa rolar a página",
+                      "Dispara quando ela desce até certo ponto",
+                    ],
+                    [
+                      "exit",
+                      "Quando a pessoa for embora",
+                      "O cursor sobe em direção a fechar a aba",
+                    ],
+                    [
+                      "any",
+                      "O que acontecer primeiro",
+                      "Combina os três acima",
+                    ],
+                  ] as const
+                ).map(([valor, nome, nota]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setGatilho(valor)}
+                    className={`flex w-full items-start gap-3 rounded-xl border p-3 text-left transition ${
+                      gatilho === valor
+                        ? "border-brand-blue bg-surface-soft"
+                        : "border-outline-soft hover:border-outline"
+                    }`}
+                  >
+                    <span
+                      className={`mt-1 h-3.5 w-3.5 shrink-0 rounded-full border-2 ${
+                        gatilho === valor
+                          ? "border-brand-blue bg-brand-blue"
+                          : "border-outline"
+                      }`}
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-brand-ink">
+                        {nome}
+                      </span>
+                      <span className="block text-xs text-ink-faint">
+                        {nota}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {(gatilho === "time" || gatilho === "any") && (
+                <Numero
+                  rotulo="Segundos de espera"
+                  valor={delaySeconds}
+                  aoMudar={setDelaySeconds}
+                  unidade="s"
+                />
+              )}
+              {(gatilho === "scroll" || gatilho === "any") && (
+                <Numero
+                  rotulo="Rolagem da página"
+                  valor={scrollPct}
+                  aoMudar={setScrollPct}
+                  unidade="%"
+                />
+              )}
+            </div>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-soft p-3">
+              <input
+                type="checkbox"
+                checked={autoplay}
+                onChange={(e) => setAutoplay(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-brand-ink">
+                  Reprodução automática
+                </span>
+                <span className="block text-xs text-ink-muted">
+                  O vídeo já começa rodando, sem som, para prender a atenção.
+                  O som entra quando a pessoa clica.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-soft p-3">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-brand-ink">
+                  Widget ligado
+                </span>
+                <span className="block text-xs text-ink-muted">
+                  Desligado, nada aparece no site — e nada é apagado.
+                </span>
+              </span>
+            </label>
+
+            <label className="block">
+              <span className="text-xs font-medium text-ink-muted">
+                Se a pessoa fechar o vídeo, esconder por
+              </span>
+              <select
+                value={reappearHours}
+                onChange={(e) => setReappearHours(Number(e.target.value))}
+                className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm"
+              >
+                <option value={1}>1 hora</option>
+                <option value={6}>6 horas</option>
+                <option value={24}>1 dia</option>
+                <option value={72}>3 dias</option>
+                <option value={168}>7 dias</option>
+              </select>
+              <span className="mt-1 block text-xs text-ink-faint">
+                Vale só para o vídeo fechado. Outros produtos continuam
+                mostrando o deles.
+              </span>
+            </label>
+          </Etapa>
+
+          <Etapa
+            numero={4}
+            titulo="Aparência no celular"
+            descricao="Onde o dedo alcança e o que não pode ser coberto"
+          >
+            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-outline-soft p-3">
+              <input
+                type="checkbox"
+                checked={customMobile}
+                onChange={(e) => setCustomMobile(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium text-brand-ink">
+                  Regras próprias para o celular
+                </span>
+                <span className="block text-xs text-ink-muted">
+                  Sem isso, o celular usa a mesma configuração do computador.
+                </span>
+              </span>
+            </label>
+
+            {customMobile && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className="text-xs font-medium text-ink-muted">
+                    Tamanho no celular
+                  </span>
+                  <select
+                    value={mobileSize}
+                    onChange={(e) =>
+                      setMobileSize(e.target.value as Widget["size"])
+                    }
+                    className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm"
+                  >
+                    <option value="sm">Pequeno (96px)</option>
+                    <option value="md">Médio (128px)</option>
+                    <option value="lg">Grande (160px)</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-ink-muted">
+                    Canto no celular
+                  </span>
+                  <select
+                    value={mobilePosition}
+                    onChange={(e) =>
+                      setMobilePosition(e.target.value as Widget["position"])
+                    }
+                    className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm"
+                  >
+                    <option value="bottom-right">Inferior direito</option>
+                    <option value="bottom-left">Inferior esquerdo</option>
+                  </select>
+                </label>
+                <Numero
+                  rotulo="Distância horizontal"
+                  valor={mobileOffsetX}
+                  aoMudar={setMobileOffsetX}
+                />
+                <Numero
+                  rotulo="Distância vertical"
+                  valor={mobileOffsetY}
+                  aoMudar={setMobileOffsetY}
+                />
+                <p className="text-xs text-ink-faint sm:col-span-2">
+                  Muita loja tem barra fixa embaixo no celular. Subir a
+                  distância vertical evita o balão cobrir o botão de comprar.
+                </p>
+              </div>
+            )}
+          </Etapa>
         </div>
 
-        </Bloco>
+        {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar
+            um campo lá embaixo sem enxergar o resultado era o que tornava
+            a edição às cegas. */}
+        <div className="space-y-4 xl:sticky xl:top-[85px]">
+          <div className="cartao overflow-hidden">
+            <div className="flex items-center justify-between gap-2 border-b border-outline-soft px-4 py-3">
+              <span className="flex items-center gap-2 text-sm font-medium text-brand-ink">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Prévia ao vivo
+              </span>
+              <div className="flex gap-1 rounded-lg bg-surface-soft p-0.5">
+                {(
+                  [
+                    ["desktop", "Computador"],
+                    ["mobile", "Celular"],
+                  ] as const
+                ).map(([valor, nome]) => (
+                  <button
+                    key={valor}
+                    type="button"
+                    onClick={() => setAparelho(valor)}
+                    className={`rounded-md px-2.5 py-1 text-xs transition ${
+                      aparelho === valor
+                        ? "bg-surface-card font-medium text-brand-ink shadow-sm"
+                        : "text-ink-muted"
+                    }`}
+                  >
+                    {nome}
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            <div className="p-4">
+              <div
+                className={`mx-auto ${aparelho === "mobile" ? "max-w-[260px]" : ""}`}
+              >
+                <WidgetPreview
+                  video={videoFoco}
+                  focalX={focalX}
+                  focalY={focalY}
+                  shape={shape}
+                  size={aparelho === "mobile" && customMobile ? mobileSize : size}
+                  position={
+                    aparelho === "mobile" && customMobile
+                      ? mobilePosition
+                      : position
+                  }
+                  borderColor={borderColor}
+                  offsetX={
+                    aparelho === "mobile" && customMobile
+                      ? mobileOffsetX
+                      : offsetX
+                  }
+                  offsetY={
+                    aparelho === "mobile" && customMobile
+                      ? mobileOffsetY
+                      : offsetY
+                  }
+                />
+              </div>
+            </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="btn-brand w-full rounded-md px-3 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {saving ? "Salvando..." : "Salvar widget"}
-        </button>
-        {salvo && !error && (
-          <p
-            role="status"
-            className="rounded-md bg-emerald-50 px-3 py-2 text-center text-xs font-medium text-emerald-700"
-          >
-            Widget salvo — as mudanças já valem no site.
-          </p>
-        )}
-        {error && <p className="text-xs text-red-600">{error}</p>}
-      </form>
-
-      {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar
-          um campo lá embaixo sem enxergar o resultado era justamente o
-          que tornava a edição às cegas. */}
-      {/* A prévia acompanha a rolagem: o formulário é longo, e ajustar um
-          campo lá embaixo sem enxergar o resultado era o que tornava a
-          edição às cegas. */}
-      <div className="space-y-4 lg:sticky lg:top-4 lg:self-start">
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Enquadramento por vídeo
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              Escolha o vídeo para ajustar como ele fica dentro do balão.
-              Trocar aqui não muda o vídeo que vai ao ar.
+            {/* O peso é o do arquivo que está no ar, medido na build —
+                não uma estimativa simpática. */}
+            <p className="flex items-center justify-between gap-2 border-t border-outline-soft bg-surface-soft px-4 py-2.5 text-xs text-ink-muted">
+              <span>Peso do widget no site do cliente</span>
+              <strong className="text-brand-ink">34 KB</strong>
             </p>
           </div>
 
-          <select
-            value={videoFocoId}
-            onChange={(e) => setVideoFocoId(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          >
-            {readyVideos(videos).map((v) => (
-              <option key={v.id} value={v.id}>
-                {videoLabel(v)}
-              </option>
-            ))}
-          </select>
+          <div className="cartao space-y-3 p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-brand-ink">
+                Enquadramento por vídeo
+              </h3>
+              <p className="mt-1 text-xs text-ink-muted">
+                Escolha o vídeo para ajustar como ele fica dentro do balão.
+                Trocar aqui não muda o vídeo que vai ao ar.
+              </p>
+            </div>
 
-          {videoFocoId && (
-            <VideoFraming
-              videoId={videoFocoId}
-              focalX={focalX}
-              focalY={focalY}
-              onChange={(x, y) => {
-                setFocalX(x);
-                setFocalY(y);
-              }}
-            />
-          )}
+            <select
+              value={videoFocoId}
+              onChange={(e) => setVideoFocoId(e.target.value)}
+              className="w-full rounded-lg border border-outline-soft px-3 py-2 text-sm"
+            >
+              {readyVideos(videos).map((v) => (
+                <option key={v.id} value={v.id}>
+                  {videoLabel(v)}
+                </option>
+              ))}
+            </select>
+
+            {videoFocoId && (
+              <VideoFraming
+                videoId={videoFocoId}
+                focalX={focalX}
+                focalY={focalY}
+                onChange={(x, y) => {
+                  setFocalX(x);
+                  setFocalY(y);
+                }}
+              />
+            )}
+          </div>
         </div>
-
-        <WidgetPreview
-          video={videoFoco}
-          focalX={focalX}
-          focalY={focalY}
-          shape={shape}
-          size={size}
-          position={position}
-          borderColor={borderColor}
-          offsetX={offsetX}
-          offsetY={offsetY}
-        />
       </div>
-    </div>
+    </form>
   );
 }
 
-/** Agrupa campos sob um titulo, pra o formulario deixar de ser uma
- *  lista corrida de controles sem hierarquia. */
-function Bloco({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+/** Um passo do formulário, numerado. */
+function Etapa({
+  numero,
+  titulo,
+  descricao,
+  children,
+}: {
+  numero: number;
+  titulo: string;
+  descricao: string;
+  children: React.ReactNode;
+}) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-        {titulo}
-      </legend>
-      {children}
-    </fieldset>
+    <section className="cartao p-5">
+      <div className="flex items-start justify-between gap-3 border-b border-outline-soft pb-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-violet text-sm font-semibold text-white">
+            {numero}
+          </span>
+          <div>
+            <h2 className="text-base font-semibold text-brand-ink">{titulo}</h2>
+            <p className="text-xs text-ink-muted">{descricao}</p>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
   );
 }
 
+/** Campo numérico com os botões de menos e mais. */
+function Numero({
+  rotulo,
+  valor,
+  aoMudar,
+  unidade = "px",
+}: {
+  rotulo: string;
+  valor: number;
+  aoMudar: (n: number) => void;
+  unidade?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-ink-muted">{rotulo}</span>
+      <span className="mt-1 flex items-center rounded-lg border border-outline-soft">
+        <button
+          type="button"
+          onClick={() => aoMudar(Math.max(0, valor - 1))}
+          aria-label={`Diminuir ${rotulo}`}
+          className="px-3 py-2 text-ink-faint hover:text-brand-blue"
+        >
+          −
+        </button>
+        <input
+          type="number"
+          value={valor}
+          onChange={(e) => aoMudar(Number(e.target.value))}
+          className="w-full border-x border-outline-soft px-2 py-2 text-center text-sm outline-none"
+        />
+        <span className="px-2 text-xs text-ink-faint">{unidade}</span>
+        <button
+          type="button"
+          onClick={() => aoMudar(valor + 1)}
+          aria-label={`Aumentar ${rotulo}`}
+          className="px-3 py-2 text-ink-faint hover:text-brand-blue"
+        >
+          +
+        </button>
+      </span>
+    </label>
+  );
+}
