@@ -103,7 +103,7 @@ export default function MembersList({
                 <button
                   onClick={() => handleDelete(member.user_id, member.email)}
                   disabled={isSelf || isLastOwner || deletingId === member.user_id}
-                  className="text-xs text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-neutral-300 disabled:no-underline"
+                  className="text-xs text-red-600 hover:underline disabled:cursor-not-allowed disabled:text-ink-faint disabled:no-underline"
                   title={
                     isSelf
                       ? "Você não pode excluir a si mesmo"

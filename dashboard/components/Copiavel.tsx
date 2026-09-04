@@ -49,7 +49,7 @@ export default function Copiavel({
     >
       <code
         ref={ref}
-        className={`rounded bg-neutral-100 px-1 text-neutral-800 ${
+        className={`rounded bg-surface-soft px-1 text-brand-ink ${
           bloco ? "flex-1 break-all py-0.5" : "whitespace-nowrap"
         }`}
       >
@@ -63,7 +63,7 @@ export default function Copiavel({
         className={`shrink-0 rounded p-0.5 transition ${
           copiado
             ? "text-emerald-600"
-            : "text-neutral-400 hover:bg-neutral-100 hover:text-brand-blue"
+            : "text-ink-faint hover:bg-surface-soft hover:text-brand-blue"
         }`}
       >
         {copiado ? (

@@ -42,33 +42,33 @@ export default function PasswordForm() {
   return (
     <form
       onSubmit={salvar}
-      className="max-w-md space-y-3 rounded-lg border border-neutral-200 bg-white p-5"
+      className="max-w-md space-y-3 rounded-lg border border-outline-soft bg-surface-card p-5"
     >
       <div>
-        <h2 className="text-sm font-semibold text-neutral-700">Alterar senha</h2>
-        <p className="mt-1 text-xs text-neutral-500">
+        <h2 className="text-sm font-semibold text-ink">Alterar senha</h2>
+        <p className="mt-1 text-xs text-ink-faint">
           Você continua conectado nos aparelhos onde já entrou.
         </p>
       </div>
 
       <label className="block">
-        <span className="text-xs text-neutral-600">Nova senha</span>
+        <span className="text-xs text-ink-muted">Nova senha</span>
         <input
           type="password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           autoComplete="new-password"
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+          className="mt-1 w-full rounded-md border border-outline px-3 py-2 text-sm outline-none focus:border-brand-blue"
         />
       </label>
       <label className="block">
-        <span className="text-xs text-neutral-600">Confirme a nova senha</span>
+        <span className="text-xs text-ink-muted">Confirme a nova senha</span>
         <input
           type="password"
           value={confirma}
           onChange={(e) => setConfirma(e.target.value)}
           autoComplete="new-password"
-          className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+          className="mt-1 w-full rounded-md border border-outline px-3 py-2 text-sm outline-none focus:border-brand-blue"
         />
       </label>
 

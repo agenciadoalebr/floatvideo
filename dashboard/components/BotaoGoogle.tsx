@@ -61,7 +61,7 @@ export default function BotaoGoogle({
         type="button"
         onClick={entrar}
         disabled={indo}
-        className="flex w-full items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition hover:bg-neutral-50 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg border border-outline bg-surface-card px-3 py-2 text-sm font-medium text-ink transition hover:bg-surface-soft disabled:opacity-50"
       >
         <svg viewBox="0 0 18 18" aria-hidden="true" className="h-4 w-4">
           <path

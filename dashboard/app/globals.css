@@ -4,7 +4,15 @@
    play vai do ciano ao violeta, e o texto é um navy quase preto. Usar
    exatamente essas cores mantém a interface colada na marca em vez de
    "parecida com". */
-@theme inline {
+/* Paleta em @theme, e não @theme inline, de propósito: com "inline" o
+   Tailwind grava o valor literal na classe (background-color:#f3f2ff) e
+   trocar a variável em tempo de execução não muda nada. Sem "inline" a
+   classe sai como var(--color-surface-soft) — e é isso que permite o
+   modo noturno existir trocando só as variáveis.
+
+   O "inline" continua no bloco de baixo, onde ele é necessário: ali as
+   variáveis apontam para outras variáveis. */
+@theme {
   --color-brand-cyan: #00d6fc;
   --color-brand-blue: #007fff;
   --color-brand-violet: #3f1afb;
@@ -29,7 +37,9 @@
   --color-ink: #0e193c;
   --color-ink-muted: #414754;
   --color-ink-faint: #717786;
+}
 
+@theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -37,6 +47,7 @@
 }
 
 :root {
+  color-scheme: light;
   --background: #faf8ff;
   --foreground: #0e193c;
 
@@ -49,6 +60,52 @@
   /* Só para o preview do balão, que é o produto aparecendo dentro do
      painel e merece o destaque elétrico. */
   --sombra-balao: 0 8px 24px -4px rgba(0, 127, 255, 0.25);
+}
+
+/* Modo noturno.
+ *
+ * Só troca as variáveis: nenhuma tela sabe que ele existe. É a razão de
+ * a paleta ter saído do @theme inline — com o valor gravado na classe,
+ * isto aqui não teria efeito nenhum.
+ *
+ * O fundo não é preto: é o mesmo navy da marca, escurecido. Preto puro
+ * com cartão cinza vira aquele contraste duro de painel genérico, e o
+ * azul mantém a interface reconhecível como a mesma de dia.
+ */
+[data-tema="escuro"] {
+  color-scheme: dark;
+
+  --background: #0a0f1f;
+  --foreground: #e9edf9;
+
+  --color-surface: #0a0f1f;
+  --color-surface-card: #131a2e;
+  --color-surface-soft: #1a2238;
+  --color-surface-muted: #222b45;
+  --color-surface-strong: #2b3557;
+
+  --color-outline: #3d476b;
+  --color-outline-soft: #262f4d;
+
+  --color-ink: #e9edf9;
+  --color-ink-muted: #a8b1c8;
+  --color-ink-faint: #7c86a0;
+
+  /* O texto mais forte da interface. No claro é o navy quase preto do
+     logotipo; no escuro tem que ser o oposto, ou some no fundo. */
+  --color-brand-ink: #f0f4ff;
+
+  /* Azul e violeta ganham luz: as cores do logotipo são escuras demais
+     para servirem de destaque sobre fundo escuro. */
+  --color-brand-blue: #4da3ff;
+  --color-brand-violet: #7c5cff;
+  --color-brand-deep: #5f7dff;
+
+  /* Sombra some no escuro; quem separa as camadas passa a ser a borda,
+     com um respiro de preto por baixo para o cartão não colar no fundo. */
+  --sombra-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sombra-flutuante: 0 4px 12px -2px rgba(0, 0, 0, 0.5),
+    0 12px 24px -4px rgba(0, 0, 0, 0.4);
 }
 
 body {
@@ -122,4 +179,58 @@ body {
     text-transform: uppercase;
     color: var(--color-ink-faint);
   }
+}
+
+/* As tintas de estado no escuro.
+ *
+ * Verde, âmbar e vermelho aparecem em dezenas de lugares como fundo
+ * claríssimo com texto escuro — um padrão que só existe sobre fundo
+ * branco. No escuro esses blocos viravam manchas acesas.
+ *
+ * Reescrever cada tela para usar tokens semânticos seria o certo, mas
+ * são mais de vinte arquivos e o risco de esquecer um é alto. Aqui a
+ * troca fica num lugar só: mesma classe, valor diferente quando o tema é
+ * escuro. Fundo com pouca luz e texto claro, mantendo o matiz que
+ * distingue aviso de erro de confirmação.
+ */
+[data-tema="escuro"] {
+  /* fundos */
+  .bg-emerald-50 { background-color: #10281d; }
+  .bg-emerald-100 { background-color: #16341f; }
+  .bg-amber-50 { background-color: #2e2210; }
+  .bg-amber-100 { background-color: #3a2b12; }
+  .bg-red-50 { background-color: #2e1416; }
+  .bg-red-100 { background-color: #3a181b; }
+  .bg-blue-100 { background-color: #14243f; }
+  .bg-sky-50 { background-color: #10243a; }
+  .bg-indigo-50 { background-color: #1a1c3d; }
+
+  /* textos */
+  .text-emerald-900, .text-emerald-800, .text-emerald-700 { color: #6ee7b7; }
+  .text-emerald-600 { color: #34d399; }
+  .text-amber-900, .text-amber-800, .text-amber-700 { color: #fcd34d; }
+  .text-red-900, .text-red-800, .text-red-700 { color: #fca5a5; }
+  .text-red-600 { color: #f87171; }
+  .text-blue-800 { color: #93c5fd; }
+  .text-sky-800 { color: #7dd3fc; }
+  .text-indigo-800 { color: #a5b4fc; }
+
+  /* bordas */
+  .border-emerald-200, .border-emerald-300 { border-color: #1f5137; }
+  .border-amber-200 { border-color: #4d3a15; }
+  .border-red-200, .border-red-300 { border-color: #5a2326; }
+}
+
+/* O logotipo no escuro.
+ *
+ * O arquivo tem a palavra "Float" em navy quase preto, que desaparece
+ * sobre o fundo escuro — sobrava um "Video" solto no canto. Isto o
+ * transforma em silhueta branca: legível e proposital.
+ *
+ * É remendo, e vale dizer por quê: o certo é um segundo arquivo de
+ * logotipo com o texto claro, mantendo o degradê do play. Enquanto ele
+ * não existe, silhueta é melhor que metade da marca invisível.
+ */
+[data-tema="escuro"] img[alt="FloatVideo"] {
+  filter: brightness(0) invert(1);
 }

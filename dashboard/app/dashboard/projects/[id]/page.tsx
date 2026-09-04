@@ -230,7 +230,7 @@ export default async function ProjectPage({
 
 function VazioSemWidget() {
   return (
-    <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+    <p className="rounded-lg border border-outline-soft bg-surface-card p-4 text-sm text-ink-faint">
       Configure o widget primeiro — os dados aparecem aqui depois que ele
       começar a rodar no site.
     </p>

@@ -123,7 +123,7 @@ export default function AnalyticsSettings({ widget }: Props) {
                 setModo(e.target.value as Widget["analytics_mode"])
               }
               disabled={!widget}
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="w-full rounded-md border border-outline px-3 py-2 text-sm"
             >
               {MODOS.map((m) => (
                 <option key={m.valor} value={m.valor}>
@@ -131,7 +131,7 @@ export default function AnalyticsSettings({ widget }: Props) {
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-ink-faint">
               {MODOS.find((m) => m.valor === modo)?.ajuda}
             </p>
           </div>
@@ -145,7 +145,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
 
-          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-neutral-200 p-3">
+          <label className="flex cursor-pointer items-start gap-3 rounded-md border border-outline-soft p-3">
             <input
               type="checkbox"
               checked={otimizadas}
@@ -154,10 +154,10 @@ export default function AnalyticsSettings({ widget }: Props) {
               className="mt-0.5"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-medium text-neutral-800">
+              <span className="block text-sm font-medium text-brand-ink">
                 Conversões otimizadas do Google Ads
               </span>
-              <span className="mt-0.5 block text-xs text-neutral-600">
+              <span className="mt-0.5 block text-xs text-ink-muted">
                 Manda junto do <code>floatvideo_cta_click</code> o e-mail e o
                 telefone de quem preencheu o formulário, em{" "}
                 <strong>hash SHA-256</strong>, no campo{" "}
@@ -166,7 +166,7 @@ export default function AnalyticsSettings({ widget }: Props) {
                 WhatsApp depois de clicar num anúncio não volta como
                 conversão, e a campanha aprende errado.
               </span>
-              <span className="mt-1 block text-xs text-neutral-500">
+              <span className="mt-1 block text-xs text-ink-faint">
                 O dado vai embaralhado e não pode ser lido de volta, nem por
                 nós nem por outro script da página. Em sites sem HTTPS o
                 evento sai sem ele, em vez de sair em texto puro.
@@ -197,20 +197,20 @@ export default function AnalyticsSettings({ widget }: Props) {
           titulo="Como ligar no Google Tag Manager"
           descricao="Passo a passo manual, para quem prefere fazer à mão ou não usa a conexão automática."
         >
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs text-neutral-600">
+          <div className="rounded-md border border-outline-soft bg-surface-soft p-3">
+            <p className="text-xs text-ink-muted">
               <strong>Precisa mesmo fazer isso?</strong> Com o script
               instalado, os eventos já chegam sozinhos na página. Mas o GTM
               ignora por padrão eventos que ele não conhece — sem um acionador,
               ele não repassa nada ao GA4. E não dá para configurarmos isso
               daqui: as tags vivem dentro da conta do cliente.
             </p>
-            <p className="mt-2 text-xs text-neutral-600">
+            <p className="mt-2 text-xs text-ink-muted">
               Em site com GA4 direto, <strong>sem</strong> GTM, não há esse
               passo: o evento já entra no GA4 sozinho.
             </p>
           </div>
-          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-ink-muted">
             <li>
               <strong>Crie o acionador.</strong> No menu à esquerda, clique em{" "}
               <em>Acionadores</em> → <em>Novo</em>. Dê o nome{" "}
@@ -218,7 +218,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               caixa <em>Configuração do acionador</em>, escolha{" "}
               <em>Evento personalizado</em> (fica no fim da lista, em
               &quot;Outros&quot;).
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-ink-faint">
                 <li>
                   Em <em>Nome do evento</em>, escreva{" "}
                   <Copiavel texto="floatvideo_.*" />
@@ -250,11 +250,11 @@ export default function AnalyticsSettings({ widget }: Props) {
               Dê o nome <Copiavel texto="GA4 - Float Video" />. Em{" "}
               <em>Configuração da tag</em>, escolha{" "}
               <em>Google Analytics: evento do GA4</em>.
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-ink-faint">
                 <li>
                   Aponte para a sua configuração do GA4 (a tag de configuração
                   que já existe na conta, ou o ID de métrica{" "}
-                  <code className="rounded bg-neutral-100 px-1">G-XXXXXXX</code>
+                  <code className="rounded bg-surface-soft px-1">G-XXXXXXX</code>
                   )
                 </li>
                 <li>
@@ -276,7 +276,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               do site e abra. Na janela que abrir, acrescente{" "}
               <Copiavel texto="?fvw_reset" /> no fim da URL, espere o balão aparecer, clique nele e clique no botão
               de ação. Os eventos{" "}
-              <code className="rounded bg-neutral-100 px-1">floatvideo_...</code>{" "}
+              <code className="rounded bg-surface-soft px-1">floatvideo_...</code>{" "}
               vão aparecendo na coluna da esquerda do painel de depuração, e ao
               clicar em cada um dá para conferir se a tag disparou.
             </li>
@@ -298,18 +298,18 @@ export default function AnalyticsSettings({ widget }: Props) {
             </li>
           </ol>
 
-          <details className="rounded-md border border-neutral-200 bg-neutral-50 p-3 [&[open]>summary>span]:rotate-90">
-            <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-neutral-700 marker:content-none">
+          <details className="rounded-md border border-outline-soft bg-surface-soft p-3 [&[open]>summary>span]:rotate-90">
+            <summary className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-ink marker:content-none">
               <span className="inline-block transition-transform">›</span>
               Opcional: saber de qual vídeo veio cada clique
             </summary>
-            <p className="mt-2 text-xs text-neutral-600">
+            <p className="mt-2 text-xs text-ink-muted">
               Com os passos acima você já mede <em>quantos</em> cliques houve.
               Os detalhes (qual vídeo, qual tipo de botão) vêm dentro do evento,
               mas o GTM só os enxerga se você apontar um dedo para cada campo —
               é o que ele chama de variável de camada de dados.
             </p>
-            <ol className="mt-2 list-decimal space-y-2 pl-4 text-xs text-neutral-600">
+            <ol className="mt-2 list-decimal space-y-2 pl-4 text-xs text-ink-muted">
               <li>
                 <strong>Variáveis</strong> → em &quot;Variáveis definidas pelo
                 usuário&quot;, <strong>Novo</strong> → tipo{" "}
@@ -340,7 +340,7 @@ export default function AnalyticsSettings({ widget }: Props) {
                 <Copiavel texto="cta_type" />.
               </li>
             </ol>
-            <p className="mt-2 text-xs text-neutral-500">
+            <p className="mt-2 text-xs text-ink-faint">
               Pular esse último passo não quebra nada: os eventos continuam
               chegando, sendo contados e servindo como conversão. O que ele
               muda é poder abrir um relatório e ver <em>qual vídeo</em> gerou
@@ -348,14 +348,14 @@ export default function AnalyticsSettings({ widget }: Props) {
               passou — feito depois, vale só dali para frente.
             </p>
           </details>
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-ink-faint">
             Para conferir se está chegando: abra o Preview do GTM, ou digite{" "}
-            <code className="rounded bg-neutral-100 px-1">dataLayer</code> no
+            <code className="rounded bg-surface-soft px-1">dataLayer</code> no
             console do navegador na página do cliente.
           </p>
 
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs text-neutral-600">
+          <div className="rounded-md border border-outline-soft bg-surface-soft p-3">
+            <p className="text-xs text-ink-muted">
               <strong>Se o GA4 ficar poluído:</strong> a impressão dispara em
               toda página onde o balão aparece, então é o evento mais frequente
               de longe. Para deixá-la de fora, troque o nome do evento no
@@ -369,7 +369,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               </span>
               <Copiavel bloco texto="^floatvideo_(?!impression)" />
             </p>
-            <p className="mt-2 text-xs text-neutral-500">
+            <p className="mt-2 text-xs text-ink-faint">
               Lembre que essa lista é fixa: evento novo que criarmos aqui não
               entra no GA4 até ser acrescentado nela. As métricas deste painel
               não mudam — nelas a impressão é o denominador de tudo.
@@ -391,7 +391,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
 
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-ink-muted">
             O passo a passo abaixo é o outro caminho: a tag de conversão do Ads
             direto no GTM. Mais direto e não depende do vínculo com o GA4.
           </p>
@@ -406,14 +406,14 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
 
-          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-ink-muted">
             <li>
               <strong>Crie a ação de conversão no Google Ads.</strong> Metas →
               Conversões → <em>Nova ação de conversão</em> → <em>Site</em>.
               Informe o domínio e, quando ele oferecer, escolha configurar{" "}
               <em>manualmente com código</em>. Anote o{" "}
               <strong>ID de conversão</strong> (começa com{" "}
-              <code className="rounded bg-neutral-100 px-1">AW-</code>) e o{" "}
+              <code className="rounded bg-surface-soft px-1">AW-</code>) e o{" "}
               <strong>rótulo de conversão</strong> — os dois aparecem juntos na
               tela de instalação.
             </li>
@@ -422,7 +422,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               <strong>Crie o acionador no GTM.</strong> Acionadores →{" "}
               <em>Novo</em> → nome <Copiavel texto="Float Video - CTA click" />{" "}
               → <em>Evento personalizado</em>.
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-ink-faint">
                 <li>
                   Nome do evento: <Copiavel texto="floatvideo_cta_click" />
                 </li>
@@ -459,7 +459,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             </li>
           </ol>
 
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-ink-faint">
             No Ads a conversão leva algumas horas para sair de &quot;não
             verificada&quot;. Se depois de um dia continuar sem registrar,
             quase sempre é o Vinculador de conversões faltando ou o contêiner
@@ -472,7 +472,7 @@ export default function AnalyticsSettings({ widget }: Props) {
           descricao="Para o Ads reconhecer que a venda veio de um anúncio, mesmo quando ela fecha no WhatsApp dias depois."
         >
 
-          <p className="text-xs text-neutral-600">
+          <p className="text-xs text-ink-muted">
             Quem clica no seu anúncio, preenche o formulário do vídeo e só
             fecha a compra depois — pelo WhatsApp, por telefone, na loja —
             some do relatório. O clique e a venda são a mesma pessoa, mas o
@@ -500,7 +500,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
 
-          <ol className="list-decimal space-y-4 pl-4 text-xs text-neutral-600">
+          <ol className="list-decimal space-y-4 pl-4 text-xs text-ink-muted">
             <li>
               <strong>Aceite os termos no Google Ads.</strong> Metas →
               Conversões → abra a ação de conversão do FloatVideo → seção{" "}
@@ -515,7 +515,7 @@ export default function AnalyticsSettings({ widget }: Props) {
               <em>Nova</em> → nome{" "}
               <Copiavel texto="DL - user_data" /> → tipo{" "}
               <em>Variável da camada de dados</em>.
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-neutral-500">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-ink-faint">
                 <li>
                   Nome da variável da camada de dados:{" "}
                   <Copiavel texto="user_data" />
@@ -538,16 +538,16 @@ export default function AnalyticsSettings({ widget }: Props) {
               vídeo. No painel do GTM, clique no evento{" "}
               <em>floatvideo_cta_click</em> → aba <em>Variables</em> → procure{" "}
               <strong>DL - user_data</strong>. Ele deve mostrar um objeto com{" "}
-              <code className="rounded bg-neutral-100 px-1">
+              <code className="rounded bg-surface-soft px-1">
                 sha256_email_address
               </code>{" "}
               e{" "}
-              <code className="rounded bg-neutral-100 px-1">
+              <code className="rounded bg-surface-soft px-1">
                 sha256_phone_number
               </code>
               , com valores de 64 caracteres. Se aparecer{" "}
               <em>undefined</em>, o nome da variável está diferente de{" "}
-              <code className="rounded bg-neutral-100 px-1">user_data</code>.
+              <code className="rounded bg-surface-soft px-1">user_data</code>.
             </li>
 
             <li>
@@ -555,8 +555,8 @@ export default function AnalyticsSettings({ widget }: Props) {
             </li>
           </ol>
 
-          <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-            <p className="text-xs text-neutral-600">
+          <div className="rounded-md border border-outline-soft bg-surface-soft p-3">
+            <p className="text-xs text-ink-muted">
               <strong>Onde conferir depois:</strong> no Google Ads, a mesma tela
               da ação de conversão passa a mostrar um diagnóstico de conversões
               otimizadas. Ele leva alguns dias para sair de &quot;coletando
@@ -565,7 +565,7 @@ export default function AnalyticsSettings({ widget }: Props) {
             </p>
           </div>
 
-          <p className="text-xs text-neutral-400">
+          <p className="text-xs text-ink-faint">
             Só o formulário alimenta isso. Nos botões de WhatsApp e de link
             direto não há e-mail nem telefone digitado, então esses cliques
             continuam contando como conversão, mas sem o dado que liga a
@@ -578,23 +578,23 @@ export default function AnalyticsSettings({ widget }: Props) {
           titulo="Eventos que o widget envia"
         descricao="Na ordem em que acontecem. Todos levam junto um objeto floatvideo com o widget, a página e o vídeo."
       >
-        <ul className="divide-y divide-neutral-100 text-xs">
+        <ul className="divide-y divide-outline-soft text-xs">
           {EVENTOS.map((e) => (
             <li key={e.nome} className="py-2">
               <Copiavel texto={e.nome} />
-              <p className="mt-1 text-neutral-600">{e.quando}</p>
+              <p className="mt-1 text-ink-muted">{e.quando}</p>
             </li>
           ))}
         </ul>
-        <p className="text-xs text-neutral-400">
-          No <code className="rounded bg-neutral-100 px-1">cta_click</code> vão
-          também <code className="rounded bg-neutral-100 px-1">cta_type</code> e{" "}
-          <code className="rounded bg-neutral-100 px-1">cta_label</code>; no
+        <p className="text-xs text-ink-faint">
+          No <code className="rounded bg-surface-soft px-1">cta_click</code> vão
+          também <code className="rounded bg-surface-soft px-1">cta_type</code> e{" "}
+          <code className="rounded bg-surface-soft px-1">cta_label</code>; no
           botão Comprar, mais um{" "}
-          <code className="rounded bg-neutral-100 px-1">botao_encontrado</code>,
+          <code className="rounded bg-surface-soft px-1">botao_encontrado</code>,
           que diz se o botão de compra da loja foi localizado.
         </p>
-        <p className="text-xs text-neutral-400">
+        <p className="text-xs text-ink-faint">
           Dados de lead (nome, telefone, e-mail) <strong>nunca</strong> entram
           aí: o dataLayer é visível para qualquer script da página.
         </p>
@@ -625,22 +625,22 @@ function Secao({
   return (
     <details
       open={aberta}
-      className="rounded-lg border border-neutral-200 bg-white [&[open]_.fv-seta]:rotate-90"
+      className="rounded-lg border border-outline-soft bg-surface-card [&[open]_.fv-seta]:rotate-90"
     >
       <summary className="flex cursor-pointer list-none items-start gap-2 p-5 marker:content-none [&::-webkit-details-marker]:hidden">
-        <span className="fv-seta mt-0.5 text-neutral-400 transition-transform">
+        <span className="fv-seta mt-0.5 text-ink-faint transition-transform">
           ›
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-semibold text-neutral-700">
+          <span className="block text-sm font-semibold text-ink">
             {titulo}
           </span>
-          <span className="mt-1 block text-xs text-neutral-500">
+          <span className="mt-1 block text-xs text-ink-faint">
             {descricao}
           </span>
         </span>
       </summary>
-      <div className="space-y-3 border-t border-neutral-100 p-5 pt-4">
+      <div className="space-y-3 border-t border-outline-soft p-5 pt-4">
         {children}
       </div>
     </details>

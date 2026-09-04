@@ -51,7 +51,7 @@ export default function ProjectDomainField({
     return (
       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm">
         {domain ? (
-          <span className="text-neutral-500">{domain}</span>
+          <span className="text-ink-faint">{domain}</span>
         ) : (
           <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
             Sem domínio — o widget roda em qualquer site
@@ -59,7 +59,7 @@ export default function ProjectDomainField({
         )}
         <button
           onClick={() => setEditando(true)}
-          className="text-xs text-neutral-400 underline hover:text-brand-blue"
+          className="text-xs text-ink-faint underline hover:text-brand-blue"
         >
           {domain ? "alterar" : "definir domínio"}
         </button>
@@ -93,7 +93,7 @@ export default function ProjectDomainField({
           setErro("");
           setValor(domain ?? "");
         }}
-        className="text-xs text-neutral-400 hover:text-neutral-700"
+        className="text-xs text-ink-faint hover:text-ink"
       >
         cancelar
       </button>

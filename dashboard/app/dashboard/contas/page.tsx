@@ -16,7 +16,7 @@ export default async function ContasPage() {
 
   if (!ehAdmin) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="rounded-lg border border-outline-soft bg-surface-card p-6 text-sm text-ink-faint">
         Esta área é da administração da plataforma.
       </div>
     );

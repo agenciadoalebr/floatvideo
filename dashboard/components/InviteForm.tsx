@@ -122,7 +122,7 @@ export default function InviteForm({
             Se o e-mail não chegar, mande este link por outro caminho:
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 overflow-x-auto rounded bg-white px-2 py-1">
+            <code className="flex-1 overflow-x-auto rounded bg-surface-card px-2 py-1">
               {inviteLink}
             </code>
             <button

@@ -69,24 +69,24 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
   }
 
   return (
-    <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
-      <p className="text-xs font-medium text-neutral-700">
+    <div className="rounded-md border border-outline-soft bg-surface-soft p-3">
+      <p className="text-xs font-medium text-ink">
         Onde este vídeo aparece
       </p>
-      <p className="mt-1 text-xs text-neutral-500">
+      <p className="mt-1 text-xs text-ink-faint">
         {minhas.length === 0
           ? "Sem nenhuma regra, este vídeo não aparece em lugar nenhum. Adicione ao menos uma abaixo."
           : "Este vídeo aparece só onde as regras abaixo mandam."}
       </p>
 
       {minhas.length > 0 && (
-        <ul className="mt-2 divide-y divide-neutral-200 rounded border border-neutral-200 bg-white">
+        <ul className="mt-2 divide-y divide-outline-soft rounded border border-outline-soft bg-surface-card">
           {minhas.map((r) => (
             <li
               key={r.id}
               className="flex items-center justify-between gap-2 px-2 py-1.5 text-xs"
             >
-              <span className="text-neutral-600">
+              <span className="text-ink-muted">
                 {r.match_type === "all" ? (
                   "Todas as páginas do site"
                 ) : (
@@ -96,7 +96,7 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
                       : r.match_type === "not_contains"
                         ? "Não aparece se a URL contém"
                         : "URL contém"}{" "}
-                    <code className="rounded bg-neutral-100 px-1 text-neutral-800">
+                    <code className="rounded bg-surface-soft px-1 text-brand-ink">
                       {r.pattern}
                     </code>
                   </>
@@ -120,7 +120,7 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
           onChange={(e) =>
             setMatchType(e.target.value as "contains" | "exact" | "all" | "not_contains")
           }
-          className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs"
+          className="rounded-md border border-outline px-2 py-1.5 text-xs"
         >
           <option value="all">Todas as páginas do site</option>
           <option value="contains">URL contém</option>
@@ -128,7 +128,7 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
           <option value="not_contains">URL não contém (exceção)</option>
         </select>
         {matchType === "all" ? (
-          <span className="self-center text-xs text-neutral-400">
+          <span className="self-center text-xs text-ink-faint">
             sem trecho a preencher
           </span>
         ) : (
@@ -148,14 +148,14 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
                   ? "/checkout"
                   : "/precos"
             }
-            className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
+            className="rounded-md border border-outline px-2 py-1.5 text-xs outline-none focus:border-brand-blue"
           />
         )}
         <button
           type="button"
           onClick={adicionar}
           disabled={salvando}
-          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
+          className="rounded-md border border-outline bg-surface-card px-3 py-1.5 text-xs font-medium text-ink hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
         >
           {salvando ? "..." : "Adicionar"}
         </button>
@@ -163,7 +163,7 @@ export default function PageRules({ widgetId, videoId, rules }: Props) {
       {erro && <p className="mt-1 text-xs text-red-600">{erro}</p>}
 
       {matchType === "not_contains" && (
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="mt-2 text-xs text-ink-faint">
           Exceção: onde ela bater, este vídeo não aparece — mesmo que outra
           regra dele sirva. Sozinha, vale como &quot;em todas as páginas,
           menos essa&quot;.

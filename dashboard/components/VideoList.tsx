@@ -294,7 +294,7 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
 
                   {temArquivo && (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/25">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 opacity-0 shadow transition group-hover:opacity-100">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-card/90 opacity-0 shadow transition group-hover:opacity-100">
                         <svg viewBox="0 0 24 24" className="h-5 w-5 fill-brand-ink">
                           <path d="M8 5v14l11-7z" />
                         </svg>
@@ -321,7 +321,7 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
                   {video.source_type === "youtube" && (
                     <span
                       title="Vídeo do YouTube"
-                      className="absolute bottom-2 left-2 flex items-center rounded bg-white/90 p-1 shadow"
+                      className="absolute bottom-2 left-2 flex items-center rounded bg-surface-card/90 p-1 shadow"
                     >
                       <MarcaYouTube className="h-3.5 w-auto" />
                     </span>
@@ -448,7 +448,7 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
                         }`}
                       >
                         <span
-                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface-card shadow transition-all ${
                             ligado ? "left-[22px]" : "left-0.5"
                           }`}
                         />

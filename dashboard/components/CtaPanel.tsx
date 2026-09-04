@@ -176,7 +176,7 @@ export default function CtaPanel({ widget, cta, videoDeFundo = null }: Props) {
 
   if (!widget) {
     return (
-      <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+      <p className="rounded-lg border border-outline-soft bg-surface-card p-4 text-sm text-ink-faint">
         Configure o widget primeiro — o botão de ação aparece dentro dele.
       </p>
     );

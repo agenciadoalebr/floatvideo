@@ -69,7 +69,7 @@ export default function PrimeirosPassos({
         <h2 className="text-sm font-semibold text-brand-ink">
           Para o vídeo entrar no ar
         </h2>
-        <span className="text-xs text-neutral-500">
+        <span className="text-xs text-ink-faint">
           {concluidos} de {passos.length}
         </span>
       </div>
@@ -81,7 +81,7 @@ export default function PrimeirosPassos({
               className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
                 passo.feito
                   ? "bg-emerald-600 text-white"
-                  : "border border-neutral-300 bg-white text-neutral-500"
+                  : "border border-outline bg-surface-card text-ink-faint"
               }`}
             >
               {passo.feito ? "✓" : i + 1}
@@ -89,13 +89,13 @@ export default function PrimeirosPassos({
             <div className="min-w-0 flex-1">
               <p
                 className={`text-sm font-medium ${
-                  passo.feito ? "text-neutral-400 line-through" : "text-brand-ink"
+                  passo.feito ? "text-ink-faint line-through" : "text-brand-ink"
                 }`}
               >
                 {passo.titulo}
               </p>
               {!passo.feito && (
-                <p className="mt-0.5 text-xs text-neutral-600">
+                <p className="mt-0.5 text-xs text-ink-muted">
                   {passo.descricao}
                 </p>
               )}
@@ -118,7 +118,7 @@ export default function PrimeirosPassos({
       </ol>
 
       {concluidos === passos.length - 1 && !passos[2].feito && (
-        <p className="mt-4 text-xs text-neutral-600">
+        <p className="mt-4 text-xs text-ink-muted">
           Depois de colar o código, abra seu site e espere o balão aparecer —
           este guia some sozinho quando registrarmos a primeira exibição.
         </p>

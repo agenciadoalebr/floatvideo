@@ -230,11 +230,11 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
-      <p className="text-sm font-medium text-neutral-700">
+    <div className="rounded-md border border-outline-soft bg-surface-soft p-4">
+      <p className="text-sm font-medium text-ink">
         Instalar pelo Google Tag Manager
       </p>
-      <p className="mt-1 text-xs text-neutral-600">
+      <p className="mt-1 text-xs text-ink-muted">
         Se o seu site usa o Google Tag Manager, conecte a conta e nós criamos a
         tag do vídeo para você — sem mexer no código do site.
       </p>
@@ -247,7 +247,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
 
       {!conectado && (
         <div className="mt-3 space-y-3">
-          <label className="flex items-start gap-2 text-xs text-neutral-700">
+          <label className="flex items-start gap-2 text-xs text-ink">
             <input
               type="checkbox"
               checked={publicar}
@@ -256,7 +256,7 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
             />
             <span>
               Publicar automaticamente ao terminar
-              <span className="mt-0.5 block text-neutral-500">
+              <span className="mt-0.5 block text-ink-faint">
                 Coloca o vídeo no ar na hora. Sem marcar, deixamos tudo pronto
                 numa área de trabalho e você publica quando quiser. A permissão
                 de publicar só é pedida ao Google se você marcar aqui.
@@ -277,20 +277,20 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
 
       {conectado && (
         <div className="mt-3 space-y-3">
-          <div className="flex items-center justify-between gap-3 rounded-md border border-neutral-200 bg-white px-3 py-2">
-            <span className="text-xs text-neutral-600">
+          <div className="flex items-center justify-between gap-3 rounded-md border border-outline-soft bg-surface-card px-3 py-2">
+            <span className="text-xs text-ink-muted">
               Conta do Google conectada
             </span>
             <button
               type="button"
               onClick={desconectar}
-              className="text-xs font-medium text-neutral-500 underline hover:text-brand-blue"
+              className="text-xs font-medium text-ink-faint underline hover:text-brand-blue"
             >
               Desconectar
             </button>
           </div>
 
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-faint">
             Desconectar encerra a conexão aqui e permite entrar com outra
             conta. Para tirar a permissão do FloatVideo por completo, o
             caminho é a{" "}
@@ -306,25 +306,25 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           </p>
 
           {carregando && !contas && (
-            <p className="text-xs text-neutral-500">Buscando suas contas...</p>
+            <p className="text-xs text-ink-faint">Buscando suas contas...</p>
           )}
 
           {contas && contas.length === 0 && (
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-ink-muted">
               Nenhuma conta do Tag Manager nesta conta do Google.
             </p>
           )}
 
           {contas && contas.length > 0 && (
             <label className="block">
-              <span className="text-xs text-neutral-600">Conta</span>
+              <span className="text-xs text-ink-muted">Conta</span>
               <select
                 value={conta}
                 onChange={(e) => {
                   setConta(e.target.value);
                   if (e.target.value) carregarContainers(e.target.value);
                 }}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-md border border-outline px-3 py-2 text-sm"
               >
                 <option value="">Escolha a conta...</option>
                 {contas.map((c) => (
@@ -337,13 +337,13 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           )}
 
           {carregando && contas && (
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-ink-faint">
               Buscando os contêineres...
             </p>
           )}
 
           {containers && containers.length === 0 && (
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-ink-muted">
               Esta conta não tem contêiner de site.
             </p>
           )}
@@ -351,11 +351,11 @@ export default function GtmConnect({ projectId }: { projectId: string }) {
           {containers && containers.length > 0 && (
             <>
               <label className="block">
-                <span className="text-xs text-neutral-600">Contêiner</span>
+                <span className="text-xs text-ink-muted">Contêiner</span>
                 <select
                   value={escolhido}
                   onChange={(e) => setEscolhido(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-md border border-outline px-3 py-2 text-sm"
                 >
                   <option value="">Escolha...</option>
                   {containers.map((c) => (

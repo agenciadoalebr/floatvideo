@@ -48,7 +48,7 @@ export default async function ContaPage({
 
   if (!ehAdmin) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="rounded-lg border border-outline-soft bg-surface-card p-6 text-sm text-ink-faint">
         Esta área é da administração da plataforma.
       </div>
     );
@@ -156,7 +156,7 @@ export default async function ContaPage({
         <div>
           <Link
             href="/dashboard/contas"
-            className="text-xs text-neutral-500 hover:text-brand-blue"
+            className="text-xs text-ink-faint hover:text-brand-blue"
           >
             ← Contas
           </Link>

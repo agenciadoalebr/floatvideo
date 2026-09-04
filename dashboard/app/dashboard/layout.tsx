@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AccountMenu from "@/components/AccountMenu";
+import BotaoDeTema from "@/components/BotaoDeTema";
 import SeletorDeSite, { type SiteDoMenu } from "@/components/SeletorDeSite";
 
 export default async function DashboardLayout({
@@ -102,6 +103,7 @@ export default async function DashboardLayout({
             >
               Seus sites
             </Link>
+            <BotaoDeTema />
             <AccountMenu
               email={user?.email ?? ""}
               ehAdminDaPlataforma={ehAdminDaPlataforma}

@@ -162,7 +162,7 @@ export default function InviteCodes({ codigos }: { codigos: InviteCode[] }) {
               <button
                 type="button"
                 onClick={() => copiar(novos.join("\n"))}
-                className="rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
+                className="rounded-lg border border-emerald-300 bg-surface-card px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
               >
                 Copiar todos
               </button>
@@ -174,7 +174,7 @@ export default function InviteCodes({ codigos }: { codigos: InviteCode[] }) {
                   type="button"
                   onClick={() => copiar(c)}
                   title="Copiar"
-                  className="rounded-lg bg-white px-2 py-2 text-center font-mono text-xs text-brand-ink hover:text-brand-blue"
+                  className="rounded-lg bg-surface-card px-2 py-2 text-center font-mono text-xs text-brand-ink hover:text-brand-blue"
                 >
                   {c}
                 </button>
