@@ -12,46 +12,15 @@ import {
   formatarDuracao,
 } from "@/lib/miniatura";
 import PageRules from "@/components/PageRules";
-
-const statusLabel: Record<Video["status"], string> = {
-  processing: "Processando...",
-  ready: "Pronto",
-  error: "Erro",
-};
-
-const statusColor: Record<Video["status"], string> = {
-  processing: "bg-amber-100 text-amber-700",
-  ready: "bg-emerald-100 text-emerald-700",
-  error: "bg-red-100 text-red-700",
-};
+import ModalDePreview from "@/components/ModalDePreview";
 
 type Props = {
   videos: Video[];
-  projectId: string;
   widget: Widget | null;
   pageRules: PageRule[];
-  /** Eventos por vídeo, para a linha mostrar views e conversão. */
-  porVideo?: Record<string, Record<string, number>>;
-  /** Tipo do botão de ação, que é o mesmo para todos os vídeos. */
-  tipoDoCta?: string | null;
 };
 
-const NOME_DO_CTA: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  whatsapp_form: "WhatsApp com formulário",
-  form: "Formulário",
-  buy: "Comprar",
-  link: "Link direto",
-};
-
-export default function VideoList({
-  videos,
-  projectId,
-  widget,
-  pageRules,
-  porVideo = {},
-  tipoDoCta,
-}: Props) {
+export default function VideoList({ videos, widget, pageRules }: Props) {
   const [busca, setBusca] = useState("");
   const [menuAberto, setMenuAberto] = useState<string | null>(null);
   const router = useRouter();
@@ -62,6 +31,7 @@ export default function VideoList({
   // Qual card está com as regras de página abertas. Um por vez: dois
   // cards abertos lado a lado deixariam a lista alta e confusa.
   const [regrasAbertas, setRegrasAbertas] = useState<string | null>(null);
+  const [previaAberta, setPreviaAberta] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
 
   // Esc fecha o modal de regras. Fica aqui, e não no modal, pra o
@@ -179,13 +149,14 @@ export default function VideoList({
   // Troca para a aba de métricas já filtrada neste vídeo. Os dois
   // componentes não têm relação de pai/filho, e o evento de janela evita
   // erguer esse estado até a página inteira só pra ligar um botão.
-  function handleSeeMetrics(video: Video) {
+  function handleSeeMetrics() {
     window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "metricas" }));
   }
 
   if (videos.length === 0) return null;
 
   const videoAberto = videos.find((v) => v.id === regrasAbertas);
+  const videoEmPrevia = videos.find((v) => v.id === previaAberta);
 
   const alvo = busca.trim().toLowerCase();
   const visiveis = alvo
@@ -210,47 +181,70 @@ export default function VideoList({
     return { texto: "Ativo", cor: "bg-emerald-100 text-emerald-800" };
   }
 
+
+  /** As quatro ações do card, na ordem em que costumam ser usadas. */
+  function Acoes({ video }: { video: Video }) {
+    const botoes: [string, () => void][] = [
+      ["Preview", () => setPreviaAberta(video.id)],
+      ["Regras de URL", () => setRegrasAbertas(video.id)],
+      ["Renomear", () => startRename(video)],
+      ["Métricas", () => handleSeeMetrics()],
+    ];
+
+    return (
+      <div className="grid grid-cols-2 gap-1.5">
+        {botoes.map(([rotulo, aoClicar]) => (
+          <button
+            key={rotulo}
+            type="button"
+            onClick={aoClicar}
+            className="rounded-lg border border-outline-soft px-2 py-1.5 text-xs font-medium text-ink-muted transition hover:border-brand-blue hover:text-brand-blue"
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Sem overflow-hidden: ele arredondava o rodapé, mas tesourava
-          o menu de ações que sai da borda do cartão. O arredondamento
-          volta no proprio rodapé. */}
-      <div className="cartao">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div>
-            <h3 className="text-base font-semibold text-brand-ink">
-              Seus vídeos gravados
-            </h3>
-            <p className="text-xs text-ink-muted">
-              Biblioteca de conteúdos e mensagens gravadas
-            </p>
-          </div>
-          {videos.length > 3 && (
-            <label className="flex min-w-[200px] items-center gap-2 rounded-lg bg-surface-soft px-3 py-2">
-              <span aria-hidden className="text-ink-faint">
-                &#8981;
-              </span>
-              <input
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar vídeo..."
-                className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
-              />
-            </label>
-          )}
-        </div>
+      <div className="space-y-4">
+        {videos.length > 3 && (
+          <label className="flex max-w-sm items-center gap-2 rounded-lg bg-surface-soft px-3 py-2">
+            <span aria-hidden className="text-ink-faint">
+              &#8981;
+            </span>
+            <input
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar vídeo..."
+              className="w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
+            />
+          </label>
+        )}
 
-        <ul className="divide-y divide-outline-soft border-t border-outline-soft">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {visiveis.map((video) => {
             const estado = situacao(video);
-            const contas = porVideo[video.id] ?? {};
-            const views = contas.impression ?? 0;
-            const cliques = contas.cta_click ?? 0;
-            const conv = views ? (cliques / views) * 100 : null;
+            const temArquivo = Boolean(
+              video.mp4_url || (video.source_type === "youtube" && video.youtube_id)
+            );
 
             return (
-              <li key={video.id} className="flex items-center gap-4 px-5 py-4">
-                <div className="relative h-14 w-10 shrink-0 overflow-hidden rounded-lg bg-surface-muted">
+              <article
+                key={video.id}
+                className="cartao flex flex-col overflow-visible"
+              >
+                {/* A miniatura é o botão de prévia: numa grade de vídeos,
+                    a imagem é a primeira coisa em que se clica. */}
+                <button
+                  type="button"
+                  onClick={() => temArquivo && setPreviaAberta(video.id)}
+                  disabled={!temArquivo}
+                  aria-label={`Ver prévia de ${videoLabel(video)}`}
+                  className="group relative block aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-surface-muted disabled:cursor-default"
+                >
                   {video.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -263,198 +257,150 @@ export default function VideoList({
                       src={video.mp4_url}
                       className="h-full w-full object-cover"
                       muted
+                      preload="metadata"
                     />
                   ) : null}
+
+                  {temArquivo && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/25">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 opacity-0 shadow transition group-hover:opacity-100">
+                        <svg viewBox="0 0 24 24" className="h-5 w-5 fill-brand-ink">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </span>
+                    </span>
+                  )}
+
+                  <span
+                    className={`absolute left-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-medium ${estado.cor}`}
+                  >
+                    {estado.texto}
+                  </span>
+
                   {formatarDuracao(video.duration_seconds) && (
-                    <span className="absolute bottom-0.5 left-0.5 rounded bg-black/70 px-1 py-0.5 text-[9px] font-medium text-white">
+                    <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                       {formatarDuracao(video.duration_seconds)}
                     </span>
                   )}
-                </div>
+                </button>
 
-                <div className="min-w-0 flex-1">
-                  {renamingId === video.id ? (
-                    <input
-                      autoFocus
-                      value={draftName}
-                      onChange={(e) => setDraftName(e.target.value)}
-                      onBlur={() => saveRename(video)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") e.currentTarget.blur();
-                        if (e.key === "Escape") setRenamingId(null);
-                      }}
-                      placeholder="Nome do vídeo"
-                      className="w-full rounded border border-brand-blue px-2 py-1 text-sm outline-none"
-                    />
-                  ) : (
-                    <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-1 flex-col gap-3 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    {renamingId === video.id ? (
+                      <input
+                        autoFocus
+                        value={draftName}
+                        onChange={(e) => setDraftName(e.target.value)}
+                        onBlur={() => saveRename(video)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                          if (e.key === "Escape") setRenamingId(null);
+                        }}
+                        placeholder="Nome do vídeo"
+                        className="w-full rounded border border-brand-blue px-2 py-1 text-sm outline-none"
+                      />
+                    ) : (
+                      <h3 className="min-w-0 flex-1 truncate text-sm font-semibold text-brand-ink">
+                        {videoLabel(video)}
+                      </h3>
+                    )}
+
+                    {/* O que é raro ou perigoso fica no menu: excluir e os
+                        dois reparos de vídeo antigo. As quatro ações do
+                        dia a dia ficam à vista, abaixo. */}
+                    <div className="relative shrink-0">
                       <button
                         type="button"
-                        onClick={() => startRename(video)}
-                        title="Renomear vídeo"
-                        className="truncate text-sm font-semibold text-brand-ink hover:text-brand-blue"
+                        onClick={() =>
+                          setMenuAberto(menuAberto === video.id ? null : video.id)
+                        }
+                        aria-label={`Mais ações de ${videoLabel(video)}`}
+                        aria-expanded={menuAberto === video.id}
+                        className="rounded-lg px-1.5 py-0.5 text-ink-faint hover:bg-surface-soft"
                       >
-                        {videoLabel(video)}
+                        &#8942;
                       </button>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${estado.cor}`}
-                      >
-                        {estado.texto}
-                      </span>
+
+                      {menuAberto === video.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setMenuAberto(null)}
+                          />
+                          <div className="cartao-flutuante absolute right-0 top-full z-50 mt-1 w-52 p-1.5 text-left">
+                            {!video.thumbnail_url &&
+                              video.mp4_url &&
+                              video.original_file_key && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    gerarMiniatura(video);
+                                    setMenuAberto(null);
+                                  }}
+                                  disabled={gerandoId === video.id}
+                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
+                                >
+                                  {gerandoId === video.id
+                                    ? "Gerando..."
+                                    : "Gerar miniatura"}
+                                </button>
+                              )}
+
+                            {video.source_type === "upload" &&
+                              video.mp4_url &&
+                              video.original_file_key &&
+                              !video.preview_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    gerarPrevia(video);
+                                    setMenuAberto(null);
+                                  }}
+                                  disabled={previaId === video.id}
+                                  title="Versão curta e leve para o balão, que economiza banda"
+                                  className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
+                                >
+                                  {previaId === video.id
+                                    ? "Preparando..."
+                                    : "Gerar prévia leve"}
+                                </button>
+                              )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleDelete(video);
+                                setMenuAberto(null);
+                              }}
+                              disabled={deletingId === video.id}
+                              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            >
+                              {deletingId === video.id
+                                ? "Excluindo..."
+                                : "Excluir vídeo"}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  )}
-                  <p className="mt-0.5 truncate text-xs text-ink-muted">
-                    {tipoDoCta
-                      ? `Botão: ${NOME_DO_CTA[tipoDoCta] ?? tipoDoCta}`
-                      : "Sem botão de ação"}
-                    {" • "}
-                    {estado.texto === "Rascunho"
-                      ? "Não publicado"
-                      : `${views.toLocaleString("pt-BR")} views`}
-                  </p>
+                  </div>
+
+                  <div className="mt-auto">
+                    <Acoes video={video} />
+                  </div>
                 </div>
-
-                <div className="hidden shrink-0 text-right sm:block">
-                  {cliques > 0 ? (
-                    <>
-                      <p className="text-sm font-semibold text-brand-ink">
-                        {cliques.toLocaleString("pt-BR")} cliques CTA
-                      </p>
-                      <p className="text-xs text-ink-faint">
-                        {conv?.toLocaleString("pt-BR", {
-                          maximumFractionDigits: 1,
-                        })}
-                        % conv.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-ink-faint">&mdash;</p>
-                      <p className="text-xs text-ink-faint">Sem dados</p>
-                    </>
-                  )}
-                </div>
-
-                {/* As ações moram num menu: eram três botões por card, e
-                    numa lista isso vira uma parede de texto repetido. */}
-                <div className="relative shrink-0">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setMenuAberto(menuAberto === video.id ? null : video.id)
-                    }
-                    aria-label={`Ações de ${videoLabel(video)}`}
-                    aria-expanded={menuAberto === video.id}
-                    className="rounded-lg px-2 py-1 text-ink-faint hover:bg-surface-soft"
-                  >
-                    &#8942;
-                  </button>
-
-                  {menuAberto === video.id && (
-                    <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setMenuAberto(null)}
-                      />
-                      <div className="cartao-flutuante absolute right-0 top-full z-50 mt-1 w-56 p-1.5 text-left">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setRegrasAbertas(video.id);
-                            setMenuAberto(null);
-                          }}
-                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
-                        >
-                          Onde aparece?
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            startRename(video);
-                            setMenuAberto(null);
-                          }}
-                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
-                        >
-                          Renomear
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleSeeMetrics(video);
-                            setMenuAberto(null);
-                          }}
-                          className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink"
-                        >
-                          Ver métricas
-                        </button>
-
-                        {!video.thumbnail_url &&
-                          video.mp4_url &&
-                          video.original_file_key && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                gerarMiniatura(video);
-                                setMenuAberto(null);
-                              }}
-                              disabled={gerandoId === video.id}
-                              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
-                            >
-                              {gerandoId === video.id
-                                ? "Gerando..."
-                                : "Gerar miniatura"}
-                            </button>
-                          )}
-
-                        {video.source_type === "upload" &&
-                          video.mp4_url &&
-                          video.original_file_key &&
-                          !video.preview_url && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                gerarPrevia(video);
-                                setMenuAberto(null);
-                              }}
-                              disabled={previaId === video.id}
-                              title="Versão curta e leve para o balão, que economiza banda"
-                              className="block w-full rounded-lg px-3 py-2 text-left text-sm text-ink-muted hover:bg-surface-soft hover:text-brand-ink disabled:opacity-50"
-                            >
-                              {previaId === video.id
-                                ? "Preparando..."
-                                : "Gerar prévia leve"}
-                            </button>
-                          )}
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleDelete(video);
-                            setMenuAberto(null);
-                          }}
-                          disabled={deletingId === video.id}
-                          className="mt-1 block w-full rounded-lg border-t border-outline-soft px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          {deletingId === video.id
-                            ? "Excluindo..."
-                            : "Excluir vídeo"}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </li>
+              </article>
             );
           })}
+        </div>
 
-          {visiveis.length === 0 && (
-            <li className="px-5 py-8 text-center text-sm text-ink-muted">
-              Nenhum vídeo com esse nome.
-            </li>
-          )}
-        </ul>
+        {visiveis.length === 0 && (
+          <p className="cartao px-5 py-8 text-center text-sm text-ink-muted">
+            Nenhum vídeo com esse nome.
+          </p>
+        )}
 
-        <div className="flex items-center justify-between gap-3 rounded-b-2xl border-t border-outline-soft bg-surface-soft px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-ink-muted">
             {videos.length} {videos.length === 1 ? "vídeo" : "vídeos"} neste
             site &middot; sem limite de quantidade
@@ -473,6 +419,13 @@ export default function VideoList({
         </div>
       </div>
 
+      {videoEmPrevia && (
+        <ModalDePreview
+          video={videoEmPrevia}
+          aoFechar={() => setPreviaAberta(null)}
+        />
+      )}
+
       {/* Modal fora da grade: dentro do card os campos ficavam espremidos
           em um terço da largura, e o card crescia empurrando a lista. */}
       {videoAberto && (
@@ -483,15 +436,15 @@ export default function VideoList({
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={`Onde aparece: ${videoLabel(videoAberto)}`}
+          aria-label={`Regras de URL: ${videoLabel(videoAberto)}`}
         >
-          <div className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-neutral-200 px-5 py-3">
+          <div className="cartao max-h-[85vh] w-full max-w-lg overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-outline-soft px-5 py-3">
               <div>
                 <p className="text-sm font-semibold text-brand-ink">
-                  Onde aparece?
+                  Regras de URL
                 </p>
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-ink-muted">
                   {videoLabel(videoAberto)}
                 </p>
               </div>
@@ -499,7 +452,7 @@ export default function VideoList({
                 type="button"
                 onClick={() => setRegrasAbertas(null)}
                 aria-label="Fechar"
-                className="rounded-md px-2 py-1 text-lg leading-none text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                className="rounded-md px-2 py-1 text-lg leading-none text-ink-faint hover:bg-surface-soft hover:text-brand-ink"
               >
                 &times;
               </button>

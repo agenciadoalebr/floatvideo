@@ -2,16 +2,6 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PainelDeUpload from "@/components/PainelDeUpload";
 import PainelDeVideos from "@/components/PainelDeVideos";
-import {
-  IconeVideos,
-  IconeUpload,
-  IconeWidget,
-  IconeBotao,
-  IconeCodigo,
-  IconeAnalytics,
-  IconeLeads,
-  IconeMetricas,
-} from "@/components/IconesDoMenu";
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
 import AnalyticsPanel, { type Metricas } from "@/components/AnalyticsPanel";
@@ -152,13 +142,8 @@ export default async function ProjectPage({
         videos: ((videos ?? []).length > 0 ? (
                 <PainelDeVideos
                   videos={videos ?? []}
-                  projectId={project.id}
                   widget={widget}
-                  cta={cta}
                   pageRules={pageRules}
-                  leads={leads}
-                  eventos={eventCounts}
-                  porVideo={eventCountsByVideo}
                   dominio={project.domain}
                 />
               ) : (
