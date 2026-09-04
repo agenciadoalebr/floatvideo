@@ -37,6 +37,11 @@
   --color-ink: #0e193c;
   --color-ink-muted: #414754;
   --color-ink-faint: #717786;
+
+  /* A caixa de código é escura nos dois temas: ela imita um terminal, e
+     terminal claro com texto branco não existe. Antes usava brand-ink,
+     que no escuro passou a ser quase branco — e o bloco sumia. */
+  --color-codigo: #00092d;
 }
 
 @theme inline {
@@ -100,6 +105,10 @@
   --color-brand-blue: #4da3ff;
   --color-brand-violet: #7c5cff;
   --color-brand-deep: #5f7dff;
+
+  /* Um degrau abaixo do fundo da página, para o bloco continuar sendo
+     um bloco e não se fundir com o painel. */
+  --color-codigo: #05091a;
 
   /* Sombra some no escuro; quem separa as camadas passa a ser a borda,
      com um respiro de preto por baixo para o cartão não colar no fundo. */
