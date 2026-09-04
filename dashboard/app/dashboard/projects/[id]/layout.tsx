@@ -59,7 +59,13 @@ export default async function LayoutDoSite({
   const noAr = ativo && (videos ?? 0) > 0 && (regras ?? 0) > 0;
 
   return (
-    <div className="lg:flex lg:items-start">
+    /* Sem items-start: com ele a coluna do menu encolhia até a altura
+       dos próprios botões, e um elemento sticky só gruda enquanto o pai
+       dele ainda está passando pela tela. Numa página longa como a de
+       instalação, o pai acabava logo no topo e o menu ia embora junto.
+       Esticado, o menu acompanha a rolagem até o fim — e a borda da
+       direita passa a descer a página inteira. */
+    <div className="lg:flex">
       {/* useSearchParams precisa de fronteira de Suspense: sem ela, a
           página inteira deixaria de ser renderizada no servidor. */}
       <Suspense fallback={<div className="hidden w-[260px] shrink-0 lg:block" />}>
