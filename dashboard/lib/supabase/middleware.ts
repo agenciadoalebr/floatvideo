@@ -44,6 +44,14 @@ export async function updateSession(request: NextRequest) {
     // token do link e que faz as vezes de credencial.
     request.nextUrl.pathname.startsWith("/convite") ||
     request.nextUrl.pathname.startsWith("/api/convite") ||
+    // O envio pelo celular: quem abre o QR code nao tem sessao naquele
+    // aparelho, e o token do link e que autoriza mandar o arquivo. A
+    // rota que LISTA o que chegou fica de fora desta lista de proposito
+    // — ela exige login, porque ver o que ja veio e outra coisa.
+    request.nextUrl.pathname.startsWith("/enviar") ||
+    /^\/api\/envio-celular\/[^/]+\/(presign|registrar)$/.test(
+      request.nextUrl.pathname
+    ) ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/setup") ||

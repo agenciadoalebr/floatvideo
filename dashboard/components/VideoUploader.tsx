@@ -12,6 +12,9 @@ import RegrasDoNovoVideo, {
   salvarRegras,
   type RegraNova,
 } from "@/components/RegrasDoNovoVideo";
+import ModalDoCelular, {
+  type ArquivoDoCelular,
+} from "@/components/ModalDoCelular";
 
 // Duas guardas de bom senso na compressão: vídeo pequeno não compensa
 // (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
@@ -102,6 +105,10 @@ export default function VideoUploader({
   const [name, setName] = useState("");
   const [regras, setRegras] = useState<RegraNova[]>([]);
   const [arquivo, setArquivo] = useState<File | null>(null);
+  // Vídeo que chegou pelo celular: já está no R2, então aqui não há
+  // arquivo local nenhum para comprimir ou enviar.
+  const [doCelular, setDoCelular] = useState<ArquivoDoCelular | null>(null);
+  const [celularAberto, setCelularAberto] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -119,13 +126,86 @@ export default function VideoUploader({
       return;
     }
     setArquivo(file);
+    setDoCelular(null);
   }, []);
 
   async function salvar() {
-    if (!arquivo || !liberado) return;
+    if (!liberado) return;
 
     setError("");
     setSalvando(true);
+
+    const supabaseCel = createClient();
+
+    // Vindo do celular o arquivo já está no R2: não há o que comprimir
+    // nem o que subir de novo. Só falta registrar e gerar o acabamento.
+    if (doCelular) {
+      setProgresso("Registrando vídeo...");
+
+      const { data: criado, error: insertError } = await supabaseCel
+        .from("videos")
+        .insert({
+          project_id: projectId,
+          name: name.trim(),
+          source_type: "upload",
+          original_file_key: caminhoDaUrl(doCelular.url),
+          mp4_url: doCelular.url,
+          status: "ready",
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !criado) {
+        setSalvando(false);
+        setError(insertError?.message ?? "Erro ao registrar o vídeo.");
+        return;
+      }
+
+      if (widgetId) {
+        const erroDasRegras = await salvarRegras(
+          supabaseCel,
+          widgetId,
+          criado.id,
+          regras
+        );
+        if (erroDasRegras) {
+          setSalvando(false);
+          setError(
+            `O vídeo entrou, mas as regras não foram salvas: ${erroDasRegras.message}. Ajuste em "Onde aparece?" na lista de vídeos.`
+          );
+          router.refresh();
+          return;
+        }
+      }
+
+      // A miniatura sai do próprio endereço do vídeo — o <video> do
+      // navegador lê do CDN sem precisar baixar o arquivo inteiro.
+      setProgresso("Gerando miniatura...");
+      const base = caminhoDaUrl(doCelular.url);
+      await gerarEsalvarMiniatura(supabaseCel, criado.id, doCelular.url, base);
+
+      // Já a prévia precisa dos bytes, porque passa pelo ffmpeg. Se o
+      // download falhar, o widget usa o arquivo cheio como sempre usou —
+      // por isso isto não derruba o cadastro.
+      setProgresso("Preparando a prévia do balão...");
+      try {
+        const resposta = await fetch(doCelular.url);
+        const blob = await resposta.blob();
+        await gerarEsalvarPrevia(supabaseCel, criado.id, blob, base);
+      } catch (err) {
+        console.warn("[celular] prévia não gerada:", err);
+      }
+
+      setSalvando(false);
+      setName("");
+      setRegras([]);
+      setDoCelular(null);
+      setProgresso("");
+      router.refresh();
+      return;
+    }
+
+    if (!arquivo) return;
 
     let paraEnviar: File = arquivo;
     if (
@@ -238,13 +318,22 @@ export default function VideoUploader({
     router.refresh();
   }
 
+  /** "https://cdn/celular/abc/1.mp4" -> "celular/abc/1.mp4" */
+  function caminhoDaUrl(url: string) {
+    try {
+      return new URL(url).pathname.replace(/^\//, "");
+    } catch {
+      return url;
+    }
+  }
+
   // O que falta, dito por extenso. Um vídeo sem nome vira uma linha vazia
   // na lista e um vídeo sem regra não aparece em lugar nenhum — os dois só
   // dão as caras bem depois, quando já não é óbvio o que deu errado.
   const faltando: string[] = [];
   if (!name.trim()) faltando.push("o nome do vídeo");
   if (regras.length === 0) faltando.push("onde ele vai aparecer");
-  if (!arquivo) faltando.push("o arquivo");
+  if (!arquivo && !doCelular) faltando.push("o arquivo");
   const liberado = faltando.length === 0;
 
   return (
@@ -275,7 +364,26 @@ export default function VideoUploader({
       <div>
         <span className="text-xs font-medium text-ink-muted">3. O arquivo</span>
 
-        {arquivo ? (
+        {doCelular ? (
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-soft bg-surface-soft px-4 py-3">
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-brand-ink">
+                {doCelular.nome}
+              </span>
+              <span className="text-xs text-ink-faint">
+                Veio do celular · já está guardado
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setDoCelular(null)}
+              disabled={salvando}
+              className="text-xs font-medium text-brand-blue hover:underline disabled:opacity-50"
+            >
+              Trocar arquivo
+            </button>
+          </div>
+        ) : arquivo ? (
           <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-soft bg-surface-soft px-4 py-3">
             <span className="min-w-0">
               <span className="block truncate text-sm font-medium text-brand-ink">
@@ -345,9 +453,34 @@ export default function VideoUploader({
             <p className="mt-1 text-sm text-ink-muted">
               ou clique para escolher um arquivo no computador
             </p>
+            {/* O vídeo quase sempre foi gravado no celular. Sem esta
+                saída, a pessoa teria que passar o arquivo para o
+                computador antes de continuar. */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCelularAberto(true);
+              }}
+              className="mt-4 rounded-lg border border-outline-soft bg-surface-card px-4 py-2 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue"
+            >
+              O vídeo está no meu celular
+            </button>
           </div>
         )}
       </div>
+
+      {celularAberto && (
+        <ModalDoCelular
+          projectId={projectId}
+          aoEscolher={(a) => {
+            setDoCelular(a);
+            setArquivo(null);
+            setCelularAberto(false);
+          }}
+          aoFechar={() => setCelularAberto(false)}
+        />
+      )}
 
       <div className="flex flex-wrap items-center justify-end gap-3 border-t border-outline-soft pt-4">
         {/* Diz o que falta, e não só que está bloqueado: um botão apagado
