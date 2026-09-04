@@ -35,22 +35,7 @@ export default async function ContasPage() {
 
   return (
     <Conteudo>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-semibold text-brand-ink">Contas</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Clientes do FloatVideo e o plano de cada um.
-          </p>
-        </div>
-
-        <ContasList contas={lista} planos={planos ?? []} />
-
-        <p className="text-xs text-neutral-400">
-          Trocar o plano aqui vale na hora: o limite de sites passa a ser o do
-          plano novo. Para abrir exceção a um cliente sem mudar o plano dele, o
-          campo é <code>max_projects</code> na organização.
-        </p>
-      </div>
+      <ContasList contas={lista} planos={planos ?? []} />
     </Conteudo>
   );
 }
