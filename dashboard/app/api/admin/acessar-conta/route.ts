@@ -59,17 +59,28 @@ export async function POST(request: Request) {
   }
 
   // Entra como o dono: é quem enxerga tudo dentro da conta.
+  // Duas consultas, e não um join: a chave de organization_members
+  // aponta para auth.users, não para profiles, então o PostgREST não
+  // traz o perfil junto — e falha em silêncio, o que aqui virava
+  // "esta conta não tem dono" numa conta que tem.
   const { data: dono } = await admin
     .from("organization_members")
-    .select("user_id, profiles(email)")
+    .select("user_id")
     .eq("organization_id", organizationId)
     .eq("role", "owner")
     .order("created_at")
     .limit(1)
     .maybeSingle();
 
-  const perfil = dono?.profiles as { email: string } | { email: string }[] | null;
-  const email = Array.isArray(perfil) ? perfil[0]?.email : perfil?.email;
+  const { data: perfil } = dono
+    ? await admin
+        .from("profiles")
+        .select("email")
+        .eq("id", dono.user_id)
+        .maybeSingle()
+    : { data: null };
+
+  const email = perfil?.email;
 
   if (!email) {
     return NextResponse.json(

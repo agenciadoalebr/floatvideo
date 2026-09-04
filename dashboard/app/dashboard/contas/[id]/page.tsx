@@ -74,11 +74,23 @@ export default async function ContaPage({
     .eq("organization_id", id)
     .maybeSingle();
 
+  // Duas consultas, e não um join: a chave estrangeira de
+  // organization_members aponta para auth.users, não para profiles —
+  // então o PostgREST não consegue trazer o perfil junto, e falha calada.
+  // Era isto que fazia a ficha dizer "Pessoas (0)" numa conta com dono.
   const { data: membros } = await admin
     .from("organization_members")
-    .select("role, created_at, profiles(email)")
+    .select("user_id, role, created_at")
     .eq("organization_id", id)
     .order("created_at");
+
+  const { data: perfis } = await admin
+    .from("profiles")
+    .select("id, email")
+    .in(
+      "id",
+      (membros ?? []).map((m) => m.user_id)
+    );
 
   const { data: projetos } = await admin
     .from("projects")
@@ -104,12 +116,19 @@ export default async function ContaPage({
     .order("ordem")
     .returns<Plano[]>();
 
+  // O e-mail do dono é o login da conta: aparece nos dados cadastrais.
+  const emailDoDono =
+    perfis?.find(
+      (p) => p.id === (membros ?? []).find((m) => m.role === "owner")?.user_id
+    )?.email ?? null;
+
   const conta: ContaCompleta = {
     id: org.id,
     nome: org.name,
     plano: org.plan,
     criada_em: org.created_at,
     max_projects: org.max_projects,
+    email_do_dono: emailDoDono,
     observacoes: org.observacoes_internas,
     bloqueio_manual: org.bloqueio_manual,
     limite_do_plano:
@@ -118,12 +137,11 @@ export default async function ContaPage({
   };
 
   const pessoas: Pessoa[] = (membros ?? []).map((m) => ({
-    email:
-      primeiro(m.profiles as { email: string } | { email: string }[] | null)
-        ?.email ?? "—",
+    email: perfis?.find((p) => p.id === m.user_id)?.email ?? "—",
     role: m.role as string,
     desde: m.created_at as string,
   }));
+
 
   const sites: Site[] = (projetos ?? []).map((p) => ({
     nome: p.name,

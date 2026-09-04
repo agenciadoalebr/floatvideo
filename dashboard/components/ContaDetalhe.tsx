@@ -17,6 +17,7 @@ export type ContaCompleta = {
   criada_em: string;
   max_projects: number | null;
   limite_do_plano: number | null;
+  email_do_dono: string | null;
   observacoes: string | null;
   bloqueio_manual: boolean;
 };
@@ -286,6 +287,19 @@ export default function ContaDetalhe({
                   onChange={(e) => setNome(e.target.value)}
                   className={campo}
                 />
+              </label>
+
+              <label className="block">
+                <span className={rotulo}>E-mail de acesso</span>
+                <input
+                  value={conta.email_do_dono ?? "sem dono"}
+                  readOnly
+                  className={campo + " bg-surface-soft text-ink-muted"}
+                />
+                <span className="mt-1 block text-xs text-ink-faint">
+                  É o login do cliente. Trocar exige o Supabase — não é
+                  cadastro, é autenticação.
+                </span>
               </label>
 
               <label className="block">
