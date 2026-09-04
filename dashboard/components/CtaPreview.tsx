@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { CtaType } from "@/lib/types";
+import type { CtaType, Video } from "@/lib/types";
 import { corDeTextoPara } from "@/lib/contraste";
 
 type Props = {
@@ -10,6 +10,12 @@ type Props = {
   rotulo: string;
   subRotulo: string;
   cor: string;
+  /**
+   * O vídeo que serve de fundo. É o mesmo que o visitante veria — sobre
+   * um degradê cinza não dá para julgar se o cartão translúcido continua
+   * legível quando por trás dele passa um rosto em movimento.
+   */
+  fundo?: Video | null;
 };
 
 /** Os mesmos desenhos do player.js — ver ICONES lá. */
@@ -55,6 +61,7 @@ export default function CtaPreview({
   rotulo,
   subRotulo,
   cor,
+  fundo = null,
 }: Props) {
   useEffect(() => {
     if (document.getElementById("fvw-styles")) return;
@@ -66,6 +73,11 @@ export default function CtaPreview({
   }, []);
 
   const cartao = estilo === "card";
+
+  // A prévia leve não serve aqui: ela é a versão curta do balão
+  // recolhido, e o que se está julgando é o vídeo aberto.
+  const arquivo = fundo?.mp4_url ?? null;
+  const imagem = arquivo ? null : (fundo?.thumbnail_url ?? null);
   const vars = {
     "--fvw-cta-bg": cor,
     "--fvw-cta-fg": corDeTextoPara(cor),
@@ -82,13 +94,37 @@ export default function CtaPreview({
 
       <div
         className="relative mt-3 h-56 overflow-hidden rounded-xl"
-        // Um "vídeo" de mentira só pra dar no que o cartão translúcido
-        // pousar: sobre branco chapado não dá pra julgar a transparência.
+        // O degradê continua embaixo como último recurso: conta sem
+        // vídeo nenhum, ou vídeo do YouTube sem miniatura, ainda precisa
+        // de algo escuro para o cartão translúcido pousar.
         style={{
           background:
             "radial-gradient(120% 90% at 20% 15%, #6d7f92 0%, #38445280 45%, #1f2937 100%), linear-gradient(160deg, #c2937a 0%, #3f4a56 60%, #111827 100%)",
         }}
       >
+        {arquivo ? (
+          <video
+            src={arquivo}
+            autoPlay
+            muted
+            loop
+            playsInline
+            aria-hidden
+            // Como na hero: o atributo autoplay não dispara em elemento
+            // criado depois do carregamento da página.
+            onCanPlay={(e) => {
+              void e.currentTarget.play().catch(() => {});
+            }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : imagem ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imagem}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
         <div className="fvw-cta" style={{ ...vars, display: "flex" }}>
           <span className={"fvw-cta-btn" + (cartao ? " fvw-cta-card" : "")}>
             {cartao ? (

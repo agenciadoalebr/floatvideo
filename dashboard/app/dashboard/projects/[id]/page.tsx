@@ -122,6 +122,17 @@ export default async function ProjectPage({
 
   const readyVideos = (videos ?? []).filter((v) => v.status === "ready");
 
+  // Para a prévia do botão de ação: de preferência um vídeo que está
+  // mesmo no ar — é o que o visitante veria por trás do botão. Sem
+  // nenhum com regra, serve qualquer um ligado e pronto.
+  const prontos = (videos ?? []).filter(
+    (v) => v.status === "ready" && v.ativo !== false
+  );
+  const videoDaPrevia =
+    prontos.find((v) => pageRules.some((r) => r.video_id === v.id)) ??
+    prontos[0] ??
+    null;
+
   return (
     <div className="space-y-6">
       {/* Guia do primeiro acesso. Some sozinho quando o widget registra a
@@ -175,7 +186,9 @@ export default async function ProjectPage({
                 widget={widget}
               />
             )),
-        cta: (<CtaPanel widget={widget} cta={cta} />),
+        cta: (
+          <CtaPanel widget={widget} cta={cta} videoDeFundo={videoDaPrevia} />
+        ),
         instalacao: (
           <div className="space-y-4">
             <div className="cartao p-4">

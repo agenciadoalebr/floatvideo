@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Widget, WidgetCta, CtaType, BuyPlatform } from "@/lib/types";
+import type { Widget, WidgetCta, CtaType, BuyPlatform, Video } from "@/lib/types";
 import { PLATAFORMAS } from "@/lib/ecommerce";
 import CtaPreview from "@/components/CtaPreview";
 import { formatarTelefone, telefoneParaWhatsApp } from "@/lib/domain";
@@ -11,6 +11,8 @@ import { formatarTelefone, telefoneParaWhatsApp } from "@/lib/domain";
 type Props = {
   widget: Widget | null;
   cta: WidgetCta | null;
+  /** Vídeo que aparece por trás da prévia — de preferência um no ar. */
+  videoDeFundo?: Video | null;
 };
 
 /** Tipos que levam a algum lugar e portanto precisam de destino. */
@@ -51,7 +53,7 @@ const AJUDA: Record<CtaType, string> = {
  * edição do vídeo, porque a configuração é uma só para todos os vídeos —
  * dentro do painel do widget parecia que cada vídeo tinha o seu.
  */
-export default function CtaPanel({ widget, cta }: Props) {
+export default function CtaPanel({ widget, cta, videoDeFundo = null }: Props) {
   const router = useRouter();
   const [tipo, setTipo] = useState<CtaType>(cta?.type ?? "whatsapp");
   const [rotulo, setRotulo] = useState(cta?.label ?? "Quer saber mais?");
@@ -537,6 +539,7 @@ export default function CtaPanel({ widget, cta }: Props) {
                   rotulo={rotulo}
                   subRotulo={estilo === "card" ? subRotulo : ""}
                   cor={cor}
+                  fundo={videoDeFundo}
                 />
               ) : (
                 <p className="py-6 text-center text-sm text-ink-muted">
