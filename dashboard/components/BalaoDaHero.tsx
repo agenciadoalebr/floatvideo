@@ -30,6 +30,9 @@ function useMedia(consulta: string) {
 /**
  * O balão da ilustração, com o vídeo de verdade rodando dentro.
  *
+ * É só figura: não abre, não expande e não reage a clique. Quem faz
+ * isso é o widget de verdade, no site do cliente.
+ *
  * É o produto se explicando sozinho: um retângulo cinza escrito "vídeo"
  * pede um esforço de imaginação que a pessoa não vai fazer no primeiro
  * segundo da página.
@@ -56,7 +59,7 @@ function useMedia(consulta: string) {
  * Para ligar: colocar o arquivo em `public/` e trocar esta linha por
  * "/hero-balao.mp4".
  */
-const FONTE: string | null = null;
+const FONTE: string | null = "/hero-balao.mp4";
 
 export default function BalaoDaHero({
   tamanho = 100,
@@ -86,8 +89,21 @@ export default function BalaoDaHero({
           playsInline
           preload="metadata"
           aria-hidden
+          // O atributo autoPlay sozinho não basta: este <video> nasce
+          // depois do carregamento da página (só existe em tela grande),
+          // e nesse caso o navegador não dispara a reprodução — o
+          // elemento fica parado no primeiro quadro, sem erro nenhum.
+          // Pedir play() quando há dado suficiente resolve; se a
+          // política de autoplay recusar, o catch deixa o quadro parado,
+          // que ainda é melhor que um buraco.
+          onCanPlay={(e) => {
+            void e.currentTarget.play().catch(() => {});
+          }}
           onError={() => setFalhou(true)}
-          className="absolute inset-0 h-full w-full object-cover"
+          // Sem eventos de ponteiro: isto é ilustração, não o widget.
+          // Não abre, não expande, não tem controle nenhum — clicar aqui
+          // não deve fazer nada além de clicar na página.
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
         />
       )}
 

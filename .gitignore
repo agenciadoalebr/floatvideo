@@ -38,3 +38,7 @@ dashboard/.git-backup-createnextapp/
 design/extraido/
 design/faltantes/
 design/novas/
+
+# O original do video da hero fica fora do repositorio: o que serve a
+# pagina e a copia comprimida em dashboard/public.
+video/
