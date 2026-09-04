@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import ContaDetalhe, {
   type ContaCompleta,
+  type Registro,
   type AssinaturaAdmin,
   type Pessoa,
   type Site,
@@ -57,7 +58,9 @@ export default async function ContaPage({
 
   const { data: org } = await admin
     .from("organizations")
-    .select("id, name, plan, created_at, max_projects, plans(max_projects)")
+    .select(
+      "id, name, plan, created_at, max_projects, observacoes_internas, bloqueio_manual, plans(max_projects)"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -88,6 +91,13 @@ export default async function ContaPage({
     .select("project_id")
     .in("project_id", (projetos ?? []).map((p) => p.id));
 
+  const { data: auditoria } = await admin
+    .from("admin_audit_log")
+    .select("id, acao, ator_email, detalhe, ip, created_at")
+    .eq("organization_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
   const { data: planos } = await admin
     .from("plans")
     .select("id, nome, preco_centavos, max_projects")
@@ -100,6 +110,8 @@ export default async function ContaPage({
     plano: org.plan,
     criada_em: org.created_at,
     max_projects: org.max_projects,
+    observacoes: org.observacoes_internas,
+    bloqueio_manual: org.bloqueio_manual,
     limite_do_plano:
       primeiro(org.plans as { max_projects: number | null } | { max_projects: number | null }[] | null)
         ?.max_projects ?? null,
@@ -129,11 +141,6 @@ export default async function ContaPage({
           >
             ← Contas
           </Link>
-          <h1 className="mt-1 text-xl font-semibold text-brand-ink">{org.name}</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            Cliente desde{" "}
-            {new Date(org.created_at).toLocaleDateString("pt-BR")}
-          </p>
         </div>
 
         <ContaDetalhe
@@ -142,6 +149,7 @@ export default async function ContaPage({
           pessoas={pessoas}
           sites={sites}
           planos={planos ?? []}
+          auditoria={(auditoria ?? []) as Registro[]}
         />
       </div>
     </Conteudo>

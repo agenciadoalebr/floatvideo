@@ -205,7 +205,30 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>7. Este site</h2>
+        <h2>7. Acesso da nossa equipe à sua conta</h2>
+        <p>
+          Para resolver um problema que você nos relatou, uma pessoa da nossa
+          administração pode <strong>entrar no painel como você</strong> —
+          enxergando o que você enxerga, inclusive os leads recebidos.
+        </p>
+        <p>
+          Todo acesso desse tipo é <strong>registrado antes de acontecer</strong>,
+          com o e-mail de quem entrou, a data, o endereço de rede e o motivo
+          declarado. Esse registro fica guardado e pode ser solicitado por você
+          a qualquer momento pelo e-mail{" "}
+          <a href="mailto:contato@floatvideo.com.br">contato@floatvideo.com.br</a>.
+        </p>
+        <p>
+          A administração também pode bloquear o acesso de uma conta —
+          por falta de pagamento, seguindo a régua descrita nos termos de uso,
+          ou por uso que viole esses termos. O bloqueio interrompe a exibição
+          do vídeo nos sites, mas <strong>não apaga nada</strong>: vídeos,
+          métricas e leads continuam guardados.
+        </p>
+      </section>
+
+      <section>
+        <h2>8. Este site</h2>
         <p>
           As páginas públicas do floatvideo.com.br (esta inclusive) usam o
           Google Tag Manager e ferramentas de medição de audiência, que podem
@@ -217,7 +240,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>8. Por quanto tempo guardamos</h2>
+        <h2>9. Por quanto tempo guardamos</h2>
         <ul>
           <li>
             Dados da conta e conteúdos: enquanto a conta existir. Encerrada a
@@ -236,7 +259,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>9. Seus direitos</h2>
+        <h2>10. Seus direitos</h2>
         <p>
           A LGPD garante a você confirmar se tratamos seus dados, acessá-los,
           corrigi-los, pedir a eliminação, a portabilidade e informações sobre
@@ -256,7 +279,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>10. Segurança</h2>
+        <h2>11. Segurança</h2>
         <p>
           O acesso aos dados é restrito por regras no próprio banco, de modo que
           cada conta só enxerga o que é dela. As senhas são cifradas, o tráfego
@@ -271,7 +294,7 @@ export default function PrivacidadePage() {
       </section>
 
       <section>
-        <h2>11. Mudanças nesta política</h2>
+        <h2>12. Mudanças nesta política</h2>
         <p>
           Se algo mudar de forma significativa, avisaremos por e-mail ou pelo
           painel antes de valer. A data no topo indica a última revisão.

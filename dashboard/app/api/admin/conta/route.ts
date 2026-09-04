@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { documentoValido, limparDocumento, limparNumeros } from "@/lib/documentos";
+import { registrarAuditoria } from "@/lib/auditoria";
 
 /**
  * Edição dos dados de uma conta pela administração da plataforma.
@@ -39,6 +40,8 @@ export async function POST(request: Request) {
     cpfCnpj,
     telefone,
     fimDoTeste,
+    observacoes,
+    bloqueioManual,
   } = await request.json();
 
   if (!organizationId || typeof organizationId !== "string") {
@@ -87,7 +90,24 @@ export async function POST(request: Request) {
     daConta.max_projects = n;
   }
 
+  if (typeof observacoes === "string") {
+    daConta.observacoes_internas = observacoes.trim() || null;
+  }
+
+  // Bloqueio decidido pela administração, em coluna própria: escrever
+  // "suspended" na assinatura seria apagado pela próxima notificação do
+  // Asaas, sem ninguém perceber.
+  if (typeof bloqueioManual === "boolean") {
+    daConta.bloqueio_manual = bloqueioManual;
+  }
+
   if (Object.keys(daConta).length > 0) {
+    const { data: antes } = await admin
+      .from("organizations")
+      .select("name, bloqueio_manual")
+      .eq("id", organizationId)
+      .maybeSingle();
+
     const { error } = await admin
       .from("organizations")
       .update(daConta)
@@ -95,6 +115,23 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // Cortar o acesso de um cliente é a única ação daqui que ele sente na
+    // hora: fica registrada à parte, com quem fez.
+    if (
+      typeof bloqueioManual === "boolean" &&
+      antes &&
+      antes.bloqueio_manual !== bloqueioManual
+    ) {
+      await registrarAuditoria({
+        ator: user.id,
+        atorEmail: user.email ?? "",
+        acao: bloqueioManual ? "bloqueou_conta" : "desbloqueou_conta",
+        organizationId,
+        contaNome: antes.name,
+        request,
+      });
     }
   }
 
