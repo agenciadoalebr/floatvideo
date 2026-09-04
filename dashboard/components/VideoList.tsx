@@ -174,8 +174,12 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
   // Troca para a aba de métricas já filtrada neste vídeo. Os dois
   // componentes não têm relação de pai/filho, e o evento de janela evita
   // erguer esse estado até a página inteira só pra ligar um botão.
-  function handleSeeMetrics() {
-    window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "metricas" }));
+  function handleSeeMetrics(video: Video) {
+    window.dispatchEvent(
+      new CustomEvent("fvw-goto-tab", {
+        detail: { secao: "metricas", video: video.id },
+      })
+    );
   }
 
   if (videos.length === 0) return null;
@@ -216,7 +220,7 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
       ["Preview", () => setPreviaAberta(video.id)],
       ["Regras de URL", () => setRegrasAbertas(video.id)],
       ["Renomear", () => startRename(video)],
-      ["Métricas", () => handleSeeMetrics()],
+      ["Métricas", () => handleSeeMetrics(video)],
     ];
 
     return (

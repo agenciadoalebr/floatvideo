@@ -37,9 +37,17 @@ export default function MenuDoSite({
   // como o menu funciona.
   useEffect(() => {
     function aoPedir(e: Event) {
-      const id = (e as CustomEvent<string>).detail;
+      // O pedido pode ser só a seção (string) ou a seção com um recorte
+      // junto — hoje, o vídeo cujas métricas se quer ver. Aceitar as duas
+      // formas evita mexer em cada botão que já usa a antiga.
+      const pedido = (e as CustomEvent<string | { secao: string; video?: string }>)
+        .detail;
+      const id = typeof pedido === "string" ? pedido : pedido?.secao;
+      const video = typeof pedido === "string" ? null : pedido?.video;
+
       if (id && SECOES.some((s) => s.id === id)) {
-        router.push(`${caminho}?secao=${id}`, { scroll: false });
+        const extra = video ? `&video=${encodeURIComponent(video)}` : "";
+        router.push(`${caminho}?secao=${id}${extra}`, { scroll: false });
       }
     }
     window.addEventListener("fvw-goto-tab", aoPedir);

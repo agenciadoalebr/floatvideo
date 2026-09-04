@@ -64,16 +64,20 @@ export default function AnalyticsPanel({
   projectId,
   inicial,
   videos = [],
+  videoInicial = null,
 }: {
   projectId: string;
   inicial: Metricas | null;
   /** Para o seletor, que só some em site sem vídeo nenhum. */
   videos?: Video[];
+  /** Vídeo pedido na URL — é assim que o botão "Métricas" do card chega
+   *  aqui já com o recorte feito. */
+  videoInicial?: string | null;
 }) {
   const [dias, setDias] = useState(inicial?.dias ?? 30);
   // null é "todos os vídeos", que é como a tela abre: a pergunta comum é
   // sobre o site, e o recorte por vídeo é a segunda pergunta.
-  const [videoId, setVideoId] = useState<string | null>(null);
+  const [videoId, setVideoId] = useState<string | null>(videoInicial);
   const [dados, setDados] = useState<Metricas | null>(inicial);
   const [carregando, setCarregando] = useState(false);
   // Cada busca leva um número; só a resposta da última vale. Sem isso,

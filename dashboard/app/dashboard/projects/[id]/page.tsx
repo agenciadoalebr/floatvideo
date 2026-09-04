@@ -19,10 +19,10 @@ export default async function ProjectPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ secao?: string }>;
+  searchParams: Promise<{ secao?: string; video?: string }>;
 }) {
   const { id } = await params;
-  const { secao } = await searchParams;
+  const { secao, video } = await searchParams;
   const ativa = secaoValida(secao);
   const supabase = await createClient();
 
@@ -113,10 +113,17 @@ export default async function ProjectPage({
 
   // O primeiro período das Métricas vem pronto do servidor; a troca de
   // período depois disso acontece no navegador.
+  // O vídeo pedido na URL entra já na primeira busca: filtrar só depois,
+  // no navegador, faria a tela abrir com os números de todos os vídeos e
+  // trocar um instante depois — parecendo erro.
+  const videoDaUrl =
+    video && (videos ?? []).some((v) => v.id === video) ? video : null;
+
   const { data: metricas } = widget
     ? await supabase.rpc("metricas_do_site", {
         p_project_id: id,
         p_dias: 30,
+        p_video_id: videoDaUrl,
       })
     : { data: null };
 
@@ -217,6 +224,7 @@ export default async function ProjectPage({
         metricas: (widget ? (
           <AnalyticsPanel
             videos={(videos ?? []).filter((v) => v.status === "ready")}
+            videoInicial={videoDaUrl}
             projectId={project.id}
             inicial={(metricas ?? null) as unknown as Metricas | null}
           />
