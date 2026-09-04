@@ -16,17 +16,17 @@ export default function PendingInvites({ invites }: { invites: Invite[] }) {
   if (invites.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-neutral-700">Convites pendentes</h2>
+    <div className="cartao p-5">
+      <h2 className="text-sm font-semibold text-brand-ink">Convites pendentes</h2>
       <div className="mt-3 space-y-2">
         {invites.map((invite) => (
           <div
             key={invite.id}
-            className="flex items-center justify-between rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2 text-sm"
+            className="flex items-center justify-between rounded-lg border border-neutral-100 bg-surface-soft px-3 py-2 text-sm"
           >
             <div>
-              <span className="font-medium text-neutral-800">{invite.email}</span>
-              <span className="ml-2 text-xs text-neutral-400">{invite.role}</span>
+              <span className="font-medium text-brand-ink">{invite.email}</span>
+              <span className="ml-2 text-xs text-ink-faint">{invite.role}</span>
             </div>
             <button
               onClick={() => handleCancel(invite.id)}

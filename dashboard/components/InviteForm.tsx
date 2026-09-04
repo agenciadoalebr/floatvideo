@@ -60,33 +60,33 @@ export default function InviteForm({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-neutral-700">Convidar alguém</h2>
+    <div className="cartao p-5">
+      <h2 className="text-sm font-semibold text-brand-ink">Convidar alguém</h2>
       {!podeEscolherPapel && (
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-ink-faint">
           Quem entrar por aqui vira <strong>editor</strong>: mexe nos vídeos e
           nos widgets, mas não convida nem remove ninguém.
         </p>
       )}
       <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex-1">
-          <label className="block text-xs font-medium text-neutral-600">E-mail</label>
+          <label className="block text-xs font-medium text-ink-muted">E-mail</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="colega@agenciadoale.com.br"
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+            className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
           />
         </div>
         {podeEscolherPapel && (
           <div>
-            <label className="block text-xs font-medium text-neutral-600">Papel</label>
+            <label className="block text-xs font-medium text-ink-muted">Papel</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as OrgRole)}
-              className="mt-1 rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="mt-1 rounded-lg border border-outline-soft px-3 py-2 text-sm"
             >
               <option value="editor">Editor</option>
               <option value="admin">Administrador</option>
@@ -104,7 +104,7 @@ export default function InviteForm({
       </form>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
       {inviteLink && (
-        <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+        <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
           <p className="mb-2">
             Convite criado. Envie este link pra pessoa (WhatsApp, e-mail etc.) — ela vai
             escolher a própria senha ao abrir:

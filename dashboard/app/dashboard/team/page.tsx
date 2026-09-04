@@ -23,7 +23,7 @@ export default async function TeamPage() {
 
   if (!myMembership || !["owner", "admin"].includes(myMembership.role)) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="cartao p-6 text-sm text-ink-faint">
         Você não tem permissão para gerenciar usuários. Fale com um administrador.
       </div>
     );
@@ -63,14 +63,38 @@ export default async function TeamPage() {
     <Conteudo>
       <div className="space-y-8">
         <div>
-          <h1 className="text-xl font-semibold text-neutral-900">
-            {ehAdminDaPlataforma ? "Usuários" : "Minha equipe"}
+          <h1 className="text-2xl font-semibold tracking-tight text-brand-ink">
+            {ehAdminDaPlataforma ? "Usuários e permissões" : "Minha equipe"}
           </h1>
-          <p className="text-sm text-neutral-500">
+          <p className="mt-1 text-sm text-ink-muted">
             {ehAdminDaPlataforma
-              ? "Gerencie quem tem acesso ao painel."
-              : "Convide quem trabalha com você nesta conta."}
+              ? "Quem tem acesso ao painel e o que cada pessoa pode fazer."
+              : "Convide quem trabalha com você nesta conta. Todo mundo entra como editor."}
           </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            ["Pessoas com acesso", members.length, "contas ativas"],
+            [
+              "Convites pendentes",
+              (invites ?? []).length,
+              "aguardando aceite",
+            ],
+            [
+              "Proprietários",
+              members.filter((m) => m.role === "owner").length,
+              "podem mexer no plano",
+            ],
+          ].map(([rotulo, valor, nota]) => (
+            <div key={rotulo as string} className="cartao p-4">
+              <p className="rotulo-metrica">{rotulo as string}</p>
+              <p className="mt-1.5 text-2xl font-semibold text-brand-ink">
+                {valor as number}
+              </p>
+              <p className="mt-1 text-xs text-ink-faint">{nota as string}</p>
+            </div>
+          ))}
         </div>
 
         <InviteForm
@@ -85,6 +109,13 @@ export default async function TeamPage() {
           currentUserId={user.id}
           podeMudarPapel={!!ehAdminDaPlataforma}
         />
+
+        <p className="cartao p-4 text-xs text-ink-muted">
+          <strong className="text-brand-ink">O que cada papel pode:</strong>{" "}
+          proprietário mexe no plano e na cobrança; administrador convida
+          pessoas e opera tudo; editor envia vídeos e configura o widget, mas
+          não vê o plano.
+        </p>
       </div>
     </Conteudo>
   );

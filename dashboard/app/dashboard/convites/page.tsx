@@ -21,7 +21,7 @@ export default async function ConvitesPage() {
 
   if (!ehAdmin) {
     return (
-      <div className="rounded-lg border border-neutral-200 bg-white p-6 text-sm text-neutral-500">
+      <div className="cartao p-6 text-sm text-ink-faint">
         Esta área é da administração da plataforma.
       </div>
     );
@@ -38,7 +38,7 @@ export default async function ConvitesPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-xl font-semibold text-brand-ink">Convites</h1>
-          <p className="mt-1 text-sm text-neutral-500">
+          <p className="mt-1 text-sm text-ink-faint">
             Códigos para novos clientes criarem conta no FloatVideo.
           </p>
         </div>

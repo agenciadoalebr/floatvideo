@@ -65,10 +65,10 @@ export default function MembersList({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-5">
-      <h2 className="text-sm font-semibold text-neutral-700">Time</h2>
+    <div className="cartao p-5">
+      <h2 className="text-sm font-semibold text-brand-ink">Time</h2>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-      <div className="mt-3 divide-y divide-neutral-100">
+      <div className="mt-3 divide-y divide-outline-soft">
         {members.map((member) => {
           const isSelf = member.user_id === currentUserId;
           const isLastOwner = member.role === "owner" && ownerCount <= 1;
@@ -76,8 +76,8 @@ export default function MembersList({
           return (
             <div key={member.user_id} className="flex items-center justify-between py-2">
               <div>
-                <p className="text-sm text-neutral-800">
-                  {member.email} {isSelf && <span className="text-xs text-neutral-400">(você)</span>}
+                <p className="text-sm text-brand-ink">
+                  {member.email} {isSelf && <span className="text-xs text-ink-faint">(você)</span>}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export default function MembersList({
                     value={member.role}
                     disabled={isLastOwner}
                     onChange={(e) => handleRoleChange(member.user_id, e.target.value as OrgRole)}
-                    className="rounded-md border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                    className="rounded-lg border border-outline-soft px-2 py-1 text-xs disabled:opacity-50"
                   >
                     <option value="editor">Editor</option>
                     <option value="admin">Administrador</option>
@@ -96,7 +96,7 @@ export default function MembersList({
                   // Sem seletor: na conta do cliente todo mundo entra como
                   // editor, e promover alguem a dono nao e decisao que a
                   // tela deva oferecer de graca.
-                  <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600">
+                  <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-ink-muted">
                     {PAPEIS[member.role] ?? member.role}
                   </span>
                 )}
