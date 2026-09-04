@@ -106,9 +106,16 @@ export async function POST(request: Request) {
     request,
   });
 
+  // Sem dizer para onde voltar, o Supabase usa a Site URL do projeto — que
+  // pode estar apontando para o ambiente local e joga quem clicou num
+  // localhost que não existe. A origem do próprio pedido é o destino
+  // certo: é o endereço em que a administração já está.
+  const destino = new URL("/dashboard", request.url).toString();
+
   const { data: link, error } = await admin.auth.admin.generateLink({
     type: "magiclink",
     email,
+    options: { redirectTo: destino },
   });
 
   if (error || !link?.properties?.action_link) {
