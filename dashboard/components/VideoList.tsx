@@ -213,7 +213,10 @@ export default function VideoList({
 
   return (
     <>
-      <div className="cartao overflow-hidden">
+      {/* Sem overflow-hidden: ele arredondava o rodapé, mas tesourava
+          o menu de ações que sai da borda do cartão. O arredondamento
+          volta no proprio rodapé. */}
+      <div className="cartao">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div>
             <h3 className="text-base font-semibold text-brand-ink">
@@ -452,7 +455,7 @@ export default function VideoList({
           )}
         </ul>
 
-        <div className="flex items-center justify-between gap-3 border-t border-outline-soft bg-surface-soft px-5 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-b-2xl border-t border-outline-soft bg-surface-soft px-5 py-3">
           <p className="text-xs text-ink-muted">
             {videos.length} {videos.length === 1 ? "vídeo" : "vídeos"} neste
             site &middot; sem limite de quantidade

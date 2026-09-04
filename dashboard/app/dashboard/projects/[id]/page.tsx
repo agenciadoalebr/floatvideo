@@ -103,21 +103,26 @@ export default async function ProjectPage({
       .returns<Lead[]>();
     leads = leadsData ?? [];
 
-    const { data: eventsData } = await supabase
-      .from("widget_events")
-      .select("event_type, video_id")
-      .in("widget_id", widgetIds)
-      .limit(20000);
+    // Contagem feita no banco. Ler linha a linha para somar aqui
+    // parava no teto de linhas do PostgREST, e a soma saía errada sem
+    // nenhum aviso — um site com 2.981 aparições mostrava 673.
+    const { data: contagens } = await supabase.rpc("contar_eventos_do_site", {
+      p_project_id: id,
+    });
 
-    for (const e of eventsData ?? []) {
-      eventCounts[e.event_type] = (eventCounts[e.event_type] ?? 0) + 1;
-      if (e.video_id) {
-        const perVideo = (eventCountsByVideo[e.video_id] ??= {});
-        perVideo[e.event_type] = (perVideo[e.event_type] ?? 0) + 1;
+    for (const c of (contagens ?? []) as unknown as {
+      video_id: string | null;
+      event_type: string;
+      total: number;
+    }[]) {
+      eventCounts[c.event_type] = (eventCounts[c.event_type] ?? 0) + c.total;
+      if (c.video_id) {
+        const perVideo = (eventCountsByVideo[c.video_id] ??= {});
+        perVideo[c.event_type] = (perVideo[c.event_type] ?? 0) + c.total;
       } else {
         // Eventos anteriores à coluna video_id: contam no total, mas não
         // dá pra dizer honestamente de qual vídeo vieram.
-        unattributedEvents += 1;
+        unattributedEvents += c.total;
       }
     }
   }
