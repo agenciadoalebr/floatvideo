@@ -89,15 +89,22 @@ export default function CtaPreview({
         Prévia do botão
       </h3>
       <p className="mt-1 text-xs text-neutral-500">
-        É assim que ele aparece quando alguém abre o vídeo.
+        É assim que ele aparece quando alguém abre o vídeo — no tamanho de
+        verdade, 380 × 680 pixels.
       </p>
 
+      {/* O tamanho do vídeo aberto, tirado do CSS de produção:
+          min(92vw, 380px) por min(85vh, 680px). A proporção é fixa e a
+          largura só encolhe se a coluna for mais estreita que 380 —
+          assim a prévia é a coisa em si, e não uma faixa recortada onde
+          o cartão parecia maior do que é. */}
       <div
-        className="relative mt-3 h-56 overflow-hidden rounded-xl"
-        // O degradê continua embaixo como último recurso: conta sem
-        // vídeo nenhum, ou vídeo do YouTube sem miniatura, ainda precisa
-        // de algo escuro para o cartão translúcido pousar.
+        className="relative mx-auto mt-3 w-full max-w-[380px] overflow-hidden rounded-[20px]"
+        // O degradê fica embaixo como último recurso: conta sem vídeo
+        // nenhum, ou vídeo do YouTube sem miniatura, ainda precisa de
+        // algo escuro para o cartão translúcido pousar.
         style={{
+          aspectRatio: "380 / 680",
           background:
             "radial-gradient(120% 90% at 20% 15%, #6d7f92 0%, #38445280 45%, #1f2937 100%), linear-gradient(160deg, #c2937a 0%, #3f4a56 60%, #111827 100%)",
         }}
