@@ -2,6 +2,7 @@
 
 import VideoUploader from "@/components/VideoUploader";
 import YouTubeForm from "@/components/YouTubeForm";
+import MarcaYouTube from "@/components/MarcaYouTube";
 
 /**
  * A tela de envio.
@@ -80,13 +81,7 @@ export default function PainelDeUpload({
         <section className="cartao p-6">
           <p className="rotulo-metrica">Alternativa</p>
           <h2 className="mt-1 flex items-center gap-2 text-base font-semibold text-brand-ink">
-            {/* A marca do YouTube desenhada aqui, e não baixada: um
-                arquivo a menos para carregar, e nada some se o endereço
-                de fora mudar. */}
-            <svg viewBox="0 0 28 20" aria-hidden className="h-5 w-auto shrink-0">
-              <rect width="28" height="20" rx="5" fill="#FF0000" />
-              <path d="M11.2 5.8v8.4L18.5 10z" fill="#fff" />
-            </svg>
+            <MarcaYouTube />
             Importar do YouTube
           </h2>
           <p className="mt-1 text-sm text-ink-muted">

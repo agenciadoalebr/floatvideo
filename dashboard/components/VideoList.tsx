@@ -13,6 +13,7 @@ import {
 } from "@/lib/miniatura";
 import PageRules from "@/components/PageRules";
 import ModalDePreview from "@/components/ModalDePreview";
+import MarcaYouTube from "@/components/MarcaYouTube";
 
 type Props = {
   videos: Video[];
@@ -310,6 +311,19 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
                   {formatarDuracao(video.duration_seconds) && (
                     <span className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-medium text-white">
                       {formatarDuracao(video.duration_seconds)}
+                    </span>
+                  )}
+
+                  {/* De onde o vídeo veio muda o que ele faz no balão: o
+                      do YouTube roda no player deles, sem prévia leve nem
+                      miniatura própria. Saber isso de relance evita
+                      procurar num card o que só existe no outro. */}
+                  {video.source_type === "youtube" && (
+                    <span
+                      title="Vídeo do YouTube"
+                      className="absolute bottom-2 left-2 flex items-center rounded bg-white/90 p-1 shadow"
+                    >
+                      <MarcaYouTube className="h-3.5 w-auto" />
                     </span>
                   )}
                 </button>
