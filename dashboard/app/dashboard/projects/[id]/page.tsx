@@ -208,7 +208,7 @@ export default async function ProjectPage({
               <AnalyticsSettings widget={widget} />
             )),
         leads: (widget ? (
-              <LeadsPanel leads={leads} />
+              <LeadsPanel leads={leads} videos={videos ?? []} />
             ) : (
               <VazioSemWidget />
             )),
