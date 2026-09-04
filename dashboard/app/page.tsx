@@ -1,4 +1,5 @@
 import Link from "next/link";
+import BalaoDaHero from "@/components/BalaoDaHero";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import GoogleTagManager from "@/components/GoogleTagManager";
@@ -240,14 +241,12 @@ export default async function LandingPage() {
                     — no widget de verdade ele só aparece por cima do
                     vídeo depois que a pessoa toca e o balão abre. */}
                 <div className="absolute bottom-6 right-6">
-                  <div className="relative h-[100px] w-[100px] rounded-full border-[3px] border-black bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
-                    <span className="absolute inset-0 flex items-center justify-center">
-                      <svg viewBox="0 0 24 24" className="h-7 w-7 fill-white/85">
-                        <path d="M8 5v14l11-7z" />
-                      </svg>
-                    </span>
+                  <div className="relative">
+                    <BalaoDaHero tamanho={100} />
+                    {/* O x fica meio pra fora do canto, como no widget: por
+                        isso mora aqui e nao dentro do balao, que recorta. */}
                     <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-black/75 text-sm leading-none text-white">
-                      ×
+                      &times;
                     </span>
                   </div>
                 </div>

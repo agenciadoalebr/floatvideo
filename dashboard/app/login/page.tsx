@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import BalaoDaHero from "@/components/BalaoDaHero";
 import { createClient } from "@/lib/supabase/client";
 import BotaoGoogle from "@/components/BotaoGoogle";
 
@@ -206,14 +207,12 @@ function LoginForm() {
                   3px e o × meio pra fora. Sem cartão de ação embaixo — no
                   widget real ele aparece dentro do vídeo aberto. */}
               <div className="absolute bottom-5 right-5">
-                <div className="relative h-[92px] w-[92px] rounded-full border-[3px] border-black bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
-                  <span className="absolute inset-0 flex items-center justify-center">
-                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white/85">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </span>
+                <div className="relative">
+                  <BalaoDaHero tamanho={92} />
+                  {/* O x fica meio pra fora do canto, como no widget: por
+                      isso mora aqui e nao dentro do balao, que recorta. */}
                   <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-black/75 text-sm leading-none text-white">
-                    ×
+                    &times;
                   </span>
                 </div>
               </div>
