@@ -110,7 +110,7 @@ export default async function ContaPage() {
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-brand-ink">
-            Minha conta
+            Configurações da conta
           </h1>
           <p className="mt-1 text-sm text-ink-muted">
             {org?.name ? `${org.name} · ` : ""}
@@ -118,37 +118,49 @@ export default async function ContaPage() {
           </p>
         </div>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-          <div className="space-y-5">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+          <div className="space-y-6">
             {ehDono && asaasConfigurado() && (
-              <Assinatura
-                planos={(planosPublicos ?? []) as Plano[]}
-                atual={(assinatura ?? null) as AssinaturaAtual}
-                nomeDaConta={org?.name ?? ""}
-              />
+              <section>
+                <h2 className="text-base font-semibold text-brand-ink">
+                  Assinatura e cobrança
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  O que você paga, quando, e como parar de pagar.
+                </p>
+                <div className="mt-3">
+                  <Assinatura
+                    planos={(planosPublicos ?? []) as Plano[]}
+                    atual={(assinatura ?? null) as AssinaturaAtual}
+                    nomeDaConta={org?.name ?? ""}
+                  />
+                </div>
+              </section>
             )}
 
             {ehDono && (
-              <section id="plano" className="cartao p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h2 className="text-base font-semibold text-brand-ink">
-                      Uso do plano
-                    </h2>
-                    <p className="mt-1 text-sm text-ink-muted">
+              <section id="plano">
+                <h2 className="text-base font-semibold text-brand-ink">
+                  Uso do plano
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Quanto do seu plano você está usando hoje.
+                </p>
+
+                <div className="cartao mt-3 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <p className="text-sm text-ink-muted">
                       Cliente desde {data(org?.created_at)}
                       {tempoDeCasa(org?.created_at)
                         ? ` · ${tempoDeCasa(org?.created_at)}`
                         : ""}
                     </p>
+                    <span className="rounded-full bg-surface-strong px-3 py-1 text-xs font-medium text-brand-blue">
+                      {plano?.nome ?? "—"}
+                    </span>
                   </div>
-                  <span className="rounded-full bg-surface-strong px-3 py-1 text-xs font-medium text-brand-blue">
-                    {plano?.nome ?? "—"}
-                  </span>
-                </div>
 
-                <div className="mt-5 space-y-4">
-                  <div>
+                  <div className="mt-5">
                     <p className="flex items-baseline justify-between text-sm">
                       <span className="text-ink-muted">Sites cadastrados</span>
                       <span className="font-medium text-brand-ink">
@@ -169,9 +181,9 @@ export default async function ContaPage() {
                   </div>
 
                   {/* Vídeos e visualizações não têm barra porque não têm
-                      teto: mostrar uma barra vazia sugeriria um limite
-                      que a gente não cobra. */}
-                  <div className="grid gap-3 sm:grid-cols-2">
+                      teto: barra vazia sugeriria um limite que a gente não
+                      cobra, e o ilimitado é argumento de venda. */}
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     {[
                       ["Vídeos", "sem limite"],
                       ["Visualizações", "sem limite"],
@@ -187,37 +199,37 @@ export default async function ContaPage() {
                       </div>
                     ))}
                   </div>
-                </div>
 
-                <p className="mt-5 border-t border-outline-soft pt-4 text-sm text-ink-muted">
-                  Precisa de mais sites? Fale com a gente em{" "}
-                  <a
-                    href="mailto:contato@floatvideo.com.br"
-                    className="font-medium text-brand-blue hover:underline"
-                  >
-                    contato@floatvideo.com.br
-                  </a>
-                  .
-                </p>
+                  <p className="mt-5 border-t border-outline-soft pt-4 text-sm text-ink-muted">
+                    Precisa de mais sites? Fale com a gente em{" "}
+                    <a
+                      href="mailto:contato@floatvideo.com.br"
+                      className="font-medium text-brand-blue hover:underline"
+                    >
+                      contato@floatvideo.com.br
+                    </a>
+                    .
+                  </p>
+                </div>
               </section>
             )}
 
-            <section className="cartao p-5">
+            <section id="senha">
               <h2 className="text-base font-semibold text-brand-ink">
-                Segurança
+                Senha e acesso
               </h2>
               <p className="mt-1 text-sm text-ink-muted">
                 Ao menos 8 caracteres. Você continua conectado nos aparelhos
                 onde já entrou.
               </p>
-              <div className="mt-4">
+              <div className="cartao mt-3 p-5">
                 <PasswordForm />
               </div>
             </section>
           </div>
 
           <div className="space-y-5">
-            <section className="cartao p-5">
+            <section id="equipe" className="cartao p-5">
               <h2 className="text-base font-semibold text-brand-ink">Equipe</h2>
               <p className="mt-1 text-sm text-ink-muted">
                 {pessoas === 1

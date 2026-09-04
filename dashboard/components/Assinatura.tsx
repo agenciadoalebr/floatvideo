@@ -32,7 +32,7 @@ const ROTULO: Record<string, { texto: string; cor: string }> = {
   active: { texto: "Assinatura em dia", cor: "bg-emerald-100 text-emerald-800" },
   overdue: { texto: "Pagamento pendente", cor: "bg-amber-100 text-amber-900" },
   suspended: { texto: "Conta pausada", cor: "bg-red-100 text-red-800" },
-  canceled: { texto: "Assinatura encerrada", cor: "bg-neutral-200 text-neutral-700" },
+  canceled: { texto: "Assinatura encerrada", cor: "bg-surface-muted text-ink-muted" },
 };
 
 // Dias de tolerância antes de pausar. O corte de verdade é no banco; aqui
@@ -150,17 +150,17 @@ export default function Assinatura({
 
   if (cancelada !== null) {
     return (
-      <div className="max-w-md rounded-lg border border-neutral-200 bg-white p-5">
-        <p className="text-sm font-semibold text-neutral-700">
+      <div className="cartao p-5">
+        <p className="text-sm font-semibold text-brand-ink">
           Assinatura cancelada
         </p>
-        <p className="mt-2 text-xs text-neutral-600">
+        <p className="mt-2 text-xs text-ink-muted">
           Não haverá novas cobranças.{" "}
           {data(cancelada)
             ? `Seu acesso continua até ${data(cancelada)}, que é o fim do período já pago.`
             : "Seu acesso continua até o fim do período já pago."}
         </p>
-        <p className="mt-2 text-xs text-neutral-500">
+        <p className="mt-2 text-xs text-ink-faint">
           Mudou de ideia? Basta assinar de novo por esta mesma tela — seus
           vídeos, métricas e leads continuam aqui.
         </p>
@@ -170,7 +170,7 @@ export default function Assinatura({
 
   if (feito) {
     return (
-      <div className="max-w-md rounded-lg border border-emerald-200 bg-emerald-50 p-5">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
         <p className="text-sm font-semibold text-emerald-900">
           {feito.diasDeTeste > 0
             ? `Pronto! Você tem ${feito.diasDeTeste} dias grátis.`
@@ -186,7 +186,7 @@ export default function Assinatura({
             href={feito.fatura}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-brand mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium"
+            className="btn-brand mt-4 inline-block rounded-lg px-4 py-2.5 text-sm font-medium"
           >
             Ver a fatura (Pix, boleto ou cartão)
           </a>
@@ -199,9 +199,8 @@ export default function Assinatura({
   const rotulo = atual ? ROTULO[atual.status] : null;
 
   return (
-    <div className="max-w-md space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
+    <div className="cartao space-y-4 p-5">
       <div>
-        <h2 className="text-sm font-semibold text-neutral-700">Assinatura</h2>
         {emAndamento && rotulo && (
           <p className="mt-2">
             <span
@@ -212,13 +211,13 @@ export default function Assinatura({
           </p>
         )}
         {atual?.status === "trialing" && atual.trial_ends_at && (
-          <p className="mt-2 text-xs text-neutral-600">
+          <p className="mt-2 text-xs text-ink-muted">
             Seu teste vai até <strong>{data(atual.trial_ends_at)}</strong>. A
             primeira cobrança acontece nessa data.
           </p>
         )}
         {atual?.status === "active" && atual.current_period_end && (
-          <p className="mt-2 text-xs text-neutral-600">
+          <p className="mt-2 text-xs text-ink-muted">
             Próxima cobrança prevista para{" "}
             <strong>{data(atual.current_period_end)}</strong>.
           </p>
@@ -239,7 +238,7 @@ export default function Assinatura({
                 href={atual.invoice_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-brand inline-block rounded-md px-4 py-2 text-sm font-medium"
+                className="btn-brand inline-block rounded-lg px-4 py-2.5 text-sm font-medium"
               >
                 Pagar agora
               </a>
@@ -259,7 +258,7 @@ export default function Assinatura({
                 href={atual.invoice_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-brand inline-block rounded-md px-4 py-2 text-sm font-medium"
+                className="btn-brand inline-block rounded-lg px-4 py-2.5 text-sm font-medium"
               >
                 Pagar e reativar
               </a>
@@ -271,11 +270,11 @@ export default function Assinatura({
       {!emAndamento && (
         <form onSubmit={assinar} className="space-y-3">
           <label className="block">
-            <span className="text-xs text-neutral-600">Plano</span>
+            <span className="text-xs text-ink-muted">Plano</span>
             <select
               value={escolhido}
               onChange={(e) => setEscolhido(e.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm"
             >
               {planos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -287,34 +286,34 @@ export default function Assinatura({
           </label>
 
           <label className="block">
-            <span className="text-xs text-neutral-600">Nome ou razão social</span>
+            <span className="text-xs text-ink-muted">Nome ou razão social</span>
             <input
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+              className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm outline-none focus:border-brand-blue"
             />
           </label>
 
           <label className="block">
-            <span className="text-xs text-neutral-600">Telefone com DDD</span>
+            <span className="text-xs text-ink-muted">Telefone com DDD</span>
             <input
               value={telefone}
               onChange={(e) => setTelefone(mascararTelefone(e.target.value))}
               inputMode="tel"
               placeholder="(11) 90000-0000"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+              className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm outline-none focus:border-brand-blue"
             />
           </label>
 
           <label className="block">
-            <span className="text-xs text-neutral-600">CPF ou CNPJ</span>
+            <span className="text-xs text-ink-muted">CPF ou CNPJ</span>
             <input
               value={documento}
               onChange={(e) => setDocumento(mascararDocumento(e.target.value))}
               placeholder="000.000.000-00"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+              className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm outline-none focus:border-brand-blue"
             />
-            <span className="mt-1 block text-xs text-neutral-500">
+            <span className="mt-1 block text-xs text-ink-faint">
               Exigido para emitir a cobrança. Fica no Asaas, nosso meio de
               pagamento — não guardamos cartão nem dado bancário.
             </span>
@@ -323,13 +322,13 @@ export default function Assinatura({
           <button
             type="submit"
             disabled={enviando || !documento.trim() || !telefone.trim()}
-            className="btn-brand w-full rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+            className="btn-brand w-full rounded-lg px-4 py-2.5 text-sm font-medium disabled:opacity-50"
           >
             {enviando ? "Criando..." : "Assinar"}
           </button>
           {erro && <p className="text-xs text-red-600">{erro}</p>}
 
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-ink-faint">
             Pague por Pix, boleto ou cartão — a escolha é na hora de pagar.
             Cancele quando quiser, sem multa.
           </p>
@@ -337,8 +336,8 @@ export default function Assinatura({
       )}
 
       {emAndamento && (
-        <div className="space-y-3 border-t border-neutral-100 pt-3">
-          <p className="text-xs text-neutral-500">
+        <div className="space-y-3 border-t border-outline-soft pt-3">
+          <p className="text-xs text-ink-faint">
             Para trocar de plano, fale com a gente em{" "}
             <a
               href="mailto:contato@floatvideo.com.br"
@@ -357,7 +356,7 @@ export default function Assinatura({
             >
               {cancelando ? "Cancelando..." : "Cancelar assinatura"}
             </button>
-            <p className="mt-1 text-xs text-neutral-500">
+            <p className="mt-1 text-xs text-ink-faint">
               Sem multa e sem fidelidade. O acesso continua até o fim do
               período já pago.
             </p>
