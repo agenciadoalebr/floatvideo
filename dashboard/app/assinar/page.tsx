@@ -51,8 +51,8 @@ export default async function AssinarPage({
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+      <header className="border-b border-outline-soft bg-surface-card">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -61,25 +61,33 @@ export default async function AssinarPage({
               className="h-8 w-auto"
             />
           </Link>
-          <Link
-            href="/login"
-            className="text-sm text-neutral-600 hover:text-brand-blue"
-          >
-            Já tenho conta
-          </Link>
+          <p className="text-sm text-ink-muted">
+            Já tem uma conta?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-brand-blue hover:underline"
+            >
+              Entrar
+            </Link>
+          </p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="text-2xl font-semibold text-brand-ink">
-          Criar sua conta
-        </h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Você só é cobrado depois do período grátis. Cancele quando quiser,
-          pelo próprio painel.
-        </p>
+      <main className="mx-auto max-w-6xl px-4 py-10 lg:py-14">
+        <div className="max-w-2xl">
+          <p className="inline-flex rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-brand-blue">
+            Comece com 7 dias grátis
+          </p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-brand-ink">
+            Coloque seu vídeo para vender no seu site
+          </h1>
+          <p className="mt-2 text-ink-muted">
+            Configure em poucos minutos, sem programador. Nada é cobrado hoje
+            e você cancela quando quiser, pelo próprio painel.
+          </p>
+        </div>
 
-        <div className="mt-6">
+        <div className="mt-8">
           {asaasConfigurado() ? (
             <Checkout
               planos={planos ?? []}
@@ -88,7 +96,7 @@ export default async function AssinarPage({
               jaLogado={Boolean(user)}
             />
           ) : (
-            <p className="rounded-xl border border-neutral-200 bg-white p-6 text-sm text-neutral-600">
+            <p className="cartao p-6 text-sm text-ink-muted">
               A assinatura on-line está temporariamente indisponível. Fale com a
               gente em{" "}
               <a
@@ -102,6 +110,20 @@ export default async function AssinarPage({
           )}
         </div>
       </main>
+
+      <footer className="mt-8 border-t border-outline-soft">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-ink-faint sm:flex-row">
+          <span>© {new Date().getFullYear()} FloatVideo — Agência do Alê</span>
+          <span className="flex gap-4">
+            <Link href="/termos" className="hover:text-brand-blue">
+              Termos de uso
+            </Link>
+            <Link href="/privacidade" className="hover:text-brand-blue">
+              Privacidade
+            </Link>
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }
