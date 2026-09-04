@@ -197,6 +197,7 @@ export default async function ProjectPage({
               embedKey={project.embed_key}
               projectId={project.id}
               gtmDisponivel={gtmConfigurado()}
+              sinais={eventCounts.impression ?? 0}
             />
           </div>
         ),
