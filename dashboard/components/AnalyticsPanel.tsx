@@ -67,7 +67,7 @@ export default function AnalyticsPanel({
 }: {
   projectId: string;
   inicial: Metricas | null;
-  /** Para o seletor. Vazio esconde o seletor: um site só, um vídeo só. */
+  /** Para o seletor, que só some em site sem vídeo nenhum. */
   videos?: Video[];
 }) {
   const [dias, setDias] = useState(inicial?.dias ?? 30);
@@ -168,7 +168,12 @@ export default function AnalyticsPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {videos.length > 1 && (
+          {/* Aparece já com um vídeo. Escondê-lo nesse caso parecia
+              limpeza — dois itens que dão o mesmo número —, mas deixava
+              a funcionalidade invisível justamente em metade dos sites,
+              e quem abre não tem como saber que ela existe. Com um vídeo
+              só, o seletor ao menos diz de quem são os números. */}
+          {videos.length > 0 && (
             <label className="flex items-center gap-2">
               <span className="sr-only">Vídeo</span>
               <select
