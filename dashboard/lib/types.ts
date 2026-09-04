@@ -19,6 +19,8 @@ export type Video = {
   mp4_url: string | null;
   /** Versão curta e leve, usada no balão recolhido. */
   preview_url: string | null;
+  /** Desligado pelo cliente: as regras ficam, o vídeo sai do ar. */
+  ativo: boolean;
   webm_url: string | null;
   thumbnail_url: string | null;
   duration_seconds: number | null;

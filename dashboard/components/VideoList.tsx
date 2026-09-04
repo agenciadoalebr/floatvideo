@@ -32,6 +32,30 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
   // cards abertos lado a lado deixariam a lista alta e confusa.
   const [regrasAbertas, setRegrasAbertas] = useState<string | null>(null);
   const [previaAberta, setPreviaAberta] = useState<string | null>(null);
+  // A chave responde na hora e o banco vem atrás: esperar a ida e volta
+  // deixaria o controle parecendo quebrado no clique.
+  const [ligadoLocal, setLigadoLocal] = useState<Record<string, boolean>>({});
+
+  async function alternarAtivo(video: Video) {
+    const novo = !(ligadoLocal[video.id] ?? video.ativo);
+    setLigadoLocal((antes) => ({ ...antes, [video.id]: novo }));
+
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("videos")
+      .update({ ativo: novo })
+      .eq("id", video.id);
+
+    if (error) {
+      console.error("[VideoList] falha ao mudar ativo:", error);
+      // Desfaz o que a tela já tinha mostrado: uma chave que diz "ligado"
+      // com o vídeo fora do ar é pior do que um erro.
+      setLigadoLocal((antes) => ({ ...antes, [video.id]: !novo }));
+      alert("Não foi possível mudar o estado deste vídeo. Tente de novo.");
+      return;
+    }
+    router.refresh();
+  }
   const [draftName, setDraftName] = useState("");
 
   // Esc fecha o modal de regras. Fica aqui, e não no modal, pra o
@@ -171,6 +195,9 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
     if (video.status === "error") {
       return { texto: "Erro", cor: "bg-red-100 text-red-700" };
     }
+    if (!(ligadoLocal[video.id] ?? video.ativo)) {
+      return { texto: "Desligado", cor: "bg-surface-muted text-ink-muted" };
+    }
     const temRegra = pageRules.some((r) => r.video_id === video.id);
     if (!temRegra) {
       return { texto: "Rascunho", cor: "bg-surface-muted text-ink-muted" };
@@ -227,6 +254,7 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {visiveis.map((video) => {
             const estado = situacao(video);
+            const ligado = ligadoLocal[video.id] ?? video.ativo;
             const temArquivo = Boolean(
               video.mp4_url || (video.source_type === "youtube" && video.youtube_id)
             );
@@ -243,7 +271,9 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
                   onClick={() => temArquivo && setPreviaAberta(video.id)}
                   disabled={!temArquivo}
                   aria-label={`Ver prévia de ${videoLabel(video)}`}
-                  className="group relative block aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-surface-muted disabled:cursor-default"
+                  className={`group relative block aspect-[3/4] w-full overflow-hidden rounded-t-2xl bg-surface-muted transition disabled:cursor-default ${
+                    ligado ? "" : "opacity-50 grayscale"
+                  }`}
                 >
                   {video.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -385,7 +415,32 @@ export default function VideoList({ videos, widget, pageRules }: Props) {
                     </div>
                   </div>
 
-                  <div className="mt-auto">
+                  {/* A chave fica acima das acoes e separada por uma
+                      linha: ela e a unica coisa ali que muda o que o
+                      visitante do site enxerga agora. */}
+                  <div className="mt-auto space-y-3">
+                    <div className="flex items-center justify-between gap-2 border-t border-outline-soft pt-3">
+                      <span className="text-xs font-medium text-brand-ink">
+                        {ligado ? "Vídeo ativo" : "Vídeo desligado"}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={ligado}
+                        aria-label={`${ligado ? "Desligar" : "Ligar"} ${videoLabel(video)}`}
+                        onClick={() => alternarAtivo(video)}
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                          ligado ? "bg-brand-blue" : "bg-surface-muted"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                            ligado ? "left-[22px]" : "left-0.5"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
                     <Acoes video={video} />
                   </div>
                 </div>
