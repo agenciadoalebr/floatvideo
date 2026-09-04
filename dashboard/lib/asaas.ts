@@ -137,6 +137,46 @@ export async function primeiraFatura(assinaturaId: string) {
   };
 }
 
+/**
+ * Troca o valor da assinatura já existente — o que acontece quando o
+ * cliente sobe de plano ou desce.
+ *
+ * updatePendingPayments alcança a fatura que já foi gerada e ainda não
+ * foi paga. Sem ele, quem sobe de plano no meio do ciclo receberia mais
+ * um mês pelo preço antigo; quem desce pagaria o preço antigo mais uma
+ * vez. Vencimento e ciclo não mudam: a data da próxima cobrança é a
+ * mesma de antes.
+ *
+ * A referência do Asaas documenta PUT, mas a API também responde a POST
+ * neste caminho e parte dos SDKs usa POST. Como o erro de método viria
+ * como uma falha genérica na frente do cliente, aqui tenta os dois.
+ */
+export async function atualizarAssinatura(dados: {
+  assinaturaId: string;
+  valorCentavos: number;
+  descricao: string;
+}) {
+  const corpo = JSON.stringify({
+    value: dados.valorCentavos / 100,
+    description: dados.descricao,
+    updatePendingPayments: true,
+  });
+
+  try {
+    return await chamar<AssinaturaAsaas>(`/subscriptions/${dados.assinaturaId}`, {
+      method: "PUT",
+      body: corpo,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (!/40[45]/.test(msg)) throw err;
+    return chamar<AssinaturaAsaas>(`/subscriptions/${dados.assinaturaId}`, {
+      method: "POST",
+      body: corpo,
+    });
+  }
+}
+
 export async function cancelarAssinatura(assinaturaId: string) {
   await chamar(`/subscriptions/${assinaturaId}`, { method: "DELETE" });
 }

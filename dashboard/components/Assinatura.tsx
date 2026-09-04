@@ -45,6 +45,13 @@ function diasDesde(iso: string | null) {
   return Math.max(0, Math.floor(passou / 86400000));
 }
 
+/** "R$ 49" — sem centavos, que é como os planos são anunciados. */
+function reais(centavos: number) {
+  return `R$ ${(centavos / 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 0,
+  })}`;
+}
+
 function data(iso: string | null) {
   return iso ? new Date(iso).toLocaleDateString("pt-BR") : null;
 }
@@ -79,6 +86,50 @@ export default function Assinatura({
   } | null>(null);
   const [cancelando, setCancelando] = useState(false);
   const [cancelada, setCancelada] = useState<string | null>(null);
+  // Já nasce no primeiro plano diferente do atual: com string vazia, o
+  // select mostraria a primeira opção mas o botão ficaria desabilitado.
+  const [destino, setDestino] = useState(
+    planos.find((p) => p.id !== atual?.plan)?.id ?? ""
+  );
+  const [trocandoPlano, setTrocandoPlano] = useState(false);
+  const [trocado, setTrocado] = useState<{
+    plano: string;
+    valorCentavos: number;
+  } | null>(null);
+
+  async function trocar() {
+    const alvo = planos.find((p) => p.id === destino);
+    if (!alvo) return;
+
+    if (
+      !confirm(
+        `Mudar para o plano ${alvo.nome}, por ${reais(alvo.preco_centavos)}/mês? O novo valor vale a partir da próxima cobrança.`
+      )
+    ) {
+      return;
+    }
+
+    setErro("");
+    setTrocandoPlano(true);
+    try {
+      const resposta = await fetch("/api/assinatura/trocar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plano: destino }),
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) {
+        setErro(dados.error ?? "Não foi possível trocar o plano agora.");
+        return;
+      }
+      setTrocado(dados);
+      router.refresh();
+    } catch {
+      setErro("Não foi possível falar com o servidor. Tente de novo.");
+    } finally {
+      setTrocandoPlano(false);
+    }
+  }
 
   async function assinar(e: React.FormEvent) {
     e.preventDefault();
@@ -197,6 +248,12 @@ export default function Assinatura({
 
   const emAndamento = atual && atual.status !== "canceled";
   const rotulo = atual ? ROTULO[atual.status] : null;
+  const planoAtual = planos.find((p) => p.id === atual?.plan) ?? null;
+  const outros = planos.filter((p) => p.id !== atual?.plan);
+  // Em teste, a "próxima cobrança" é a primeira: a data do fim do teste.
+  const proximaCobranca =
+    data(atual?.current_period_end ?? null) ??
+    data(atual?.trial_ends_at ?? null);
 
   return (
     <div className="cartao space-y-4 p-5">
@@ -336,18 +393,62 @@ export default function Assinatura({
       )}
 
       {emAndamento && (
-        <div className="space-y-3 border-t border-outline-soft pt-3">
-          <p className="text-xs text-ink-faint">
-            Para trocar de plano, fale com a gente em{" "}
-            <a
-              href="mailto:contato@floatvideo.com.br"
-              className="font-medium text-brand-blue hover:underline"
-            >
-              contato@floatvideo.com.br
-            </a>
-            .
-          </p>
+        <div className="space-y-4 border-t border-outline-soft pt-4">
           <div>
+            <p className="text-sm font-medium text-brand-ink">
+              Seu plano: {planoAtual?.nome ?? "—"}
+              {planoAtual && ` — ${reais(planoAtual.preco_centavos)}/mês`}
+            </p>
+            {trocado ? (
+              <p className="mt-2 rounded-lg bg-surface-soft px-3 py-2 text-xs text-ink-muted">
+                Plano trocado para <strong>{trocado.plano}</strong>. A partir da
+                próxima cobrança o valor passa a ser{" "}
+                <strong>{reais(trocado.valorCentavos)}/mês</strong>. O limite de
+                sites já vale agora.
+              </p>
+            ) : (
+              outros.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <label className="block">
+                    <span className="text-xs text-ink-muted">Mudar para</span>
+                    <select
+                      value={destino}
+                      onChange={(e) => setDestino(e.target.value)}
+                      className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm"
+                    >
+                      {outros.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.nome} — {reais(p.preco_centavos)}/mês
+                          {p.max_projects
+                            ? ` · ${p.max_projects} ${p.max_projects === 1 ? "site" : "sites"}`
+                            : " · sites ilimitados"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={trocar}
+                    disabled={trocandoPlano || !destino}
+                    className="w-full rounded-lg border border-outline-soft px-4 py-2.5 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
+                  >
+                    {trocandoPlano ? "Trocando..." : "Trocar de plano"}
+                  </button>
+                  {/* Dito antes de clicar, e não depois: o Asaas não faz
+                      rateio, e descobrir isso na fatura seria uma surpresa
+                      ruim. */}
+                  <p className="text-xs text-ink-faint">
+                    O novo valor vale a partir da próxima cobrança
+                    {proximaCobranca ? ` (${proximaCobranca})` : ""} — e da
+                    fatura em aberto, se houver. Não há cobrança proporcional
+                    pelos dias que faltam do mês atual, nem devolução.
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+
+          <div className="border-t border-outline-soft pt-3">
             <button
               type="button"
               onClick={cancelar}
