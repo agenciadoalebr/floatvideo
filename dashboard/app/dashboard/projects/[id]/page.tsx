@@ -170,6 +170,7 @@ export default async function ProjectPage({
         upload: (
           <PainelDeUpload
             projectId={project.id}
+            widgetId={widget?.id ?? null}
             totalDeVideos={(videos ?? []).length}
           />
         ),

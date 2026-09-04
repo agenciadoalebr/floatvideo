@@ -8,6 +8,10 @@ import { gerarEsalvarMiniatura, gerarEsalvarPrevia } from "@/lib/miniatura";
 // próprio carregador baixariam o wasm duas vezes.
 import { loadFFmpeg } from "@/lib/ffmpeg";
 import { enviarArquivo } from "@/lib/upload";
+import RegrasDoNovoVideo, {
+  salvarRegras,
+  type RegraNova,
+} from "@/components/RegrasDoNovoVideo";
 
 // Duas guardas de bom senso na compressão: vídeo pequeno não compensa
 // (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
@@ -70,12 +74,19 @@ async function compressVideo(file: File, onProgress: (pct: number) => void): Pro
   }
 }
 
-export default function VideoUploader({ projectId }: { projectId: string }) {
+export default function VideoUploader({
+  projectId,
+  widgetId,
+}: {
+  projectId: string;
+  widgetId: string | null;
+}) {
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState("");
   const [name, setName] = useState("");
+  const [regras, setRegras] = useState<RegraNova[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -85,6 +96,8 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
   // durante o render — escrever nele no corpo do componente quebra o
   // modelo de renderização concorrente do React.
   const nameRef = useRef("");
+  // As regras seguem o mesmo caminho do nome, e pelo mesmo motivo.
+  const regrasRef = useRef<RegraNova[]>([]);
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -154,7 +167,7 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
         .from("videos")
         .insert({
           project_id: projectId,
-          name: nameRef.current.trim() || null,
+          name: nameRef.current.trim(),
           source_type: "upload",
           original_file_key: path,
           mp4_url: publicUrl,
@@ -167,6 +180,26 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
         setUploading(false);
         setError(insertError?.message ?? "Erro ao registrar o vídeo.");
         return;
+      }
+
+      // As regras vêm antes da miniatura: é o que decide se o vídeo
+      // aparece em algum lugar. Se falhar, a pessoa precisa saber agora,
+      // e não descobrir olhando um site sem balão.
+      if (widgetId) {
+        const erroDasRegras = await salvarRegras(
+          supabase,
+          widgetId,
+          criado.id,
+          regrasRef.current
+        );
+        if (erroDasRegras) {
+          setUploading(false);
+          setError(
+            `O vídeo subiu, mas as regras não foram salvas: ${erroDasRegras.message}. Ajuste em "Onde aparece?" na lista de vídeos.`
+          );
+          router.refresh();
+          return;
+        }
       }
 
       // Miniatura a partir do arquivo que está aqui na máquina, não do
@@ -185,77 +218,127 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
 
       setName("");
       nameRef.current = "";
+      setRegras([]);
+      regrasRef.current = [];
       router.refresh();
     },
-    [projectId, router]
+    [projectId, router, widgetId]
   );
 
+  // O que falta para o envio ser liberado. Um vídeo sem nome vira uma
+  // linha vazia na lista, e um vídeo sem regra não aparece em lugar
+  // nenhum — os dois só dão as caras bem depois, quando já não é óbvio
+  // o que deu errado.
+  const faltando: string[] = [];
+  if (!name.trim()) faltando.push("o nome do vídeo");
+  if (regras.length === 0) faltando.push("onde ele vai aparecer");
+  const liberado = faltando.length === 0;
+
   return (
-    <div className="space-y-2">
-      <input
-        value={name}
-        onChange={(e) => {
-          setName(e.target.value);
-          nameRef.current = e.target.value;
-        }}
-        placeholder="Nome do vídeo (opcional)"
-        className="w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
-      />
-      <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) handleFile(file);
-      }}
-      onClick={() => inputRef.current?.click()}
-      className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
-        dragOver
-          ? "border-brand-blue bg-brand-blue/5"
-          : "border-outline bg-surface-soft hover:border-brand-blue"
-      }`}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept="video/*"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleFile(file);
-        }}
-      />
-      {/* Seta para cima em traço: o mesmo desenho do menu lateral, para
-          a tela inteira parecer feita pela mesma mão. */}
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-        className="h-10 w-10 text-brand-blue"
-      >
-        <path d="M12 16V4m0 0L7 9m5-5l5 5" />
-        <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
-      </svg>
-      <p className="mt-4 text-base font-medium text-brand-ink">
-        {uploading
-          ? progressLabel
-          : "Arraste o seu vídeo aqui"}
-      </p>
-      <p className="mt-1 text-sm text-ink-muted">
-        {uploading
-          ? "Não feche esta aba enquanto o envio termina."
-          : "ou clique para escolher um arquivo no computador"}
-      </p>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+    <div className="space-y-4">
+      <label className="block">
+        <span className="text-xs font-medium text-ink-muted">
+          1. Nome do vídeo
+        </span>
+        <input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            nameRef.current = e.target.value;
+          }}
+          placeholder="Ex.: Apresentação da loja"
+          className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
+        />
+      </label>
+
+      <div>
+        <span className="text-xs font-medium text-ink-muted">
+          2. Onde ele vai aparecer
+        </span>
+        <p className="mt-0.5 mb-2 text-xs text-ink-faint">
+          Em quais páginas do site o balão entra. Sem ao menos uma regra, o
+          vídeo fica guardado aqui e não aparece para ninguém.
+        </p>
+        <RegrasDoNovoVideo
+          regras={regras}
+          aoMudar={(r) => {
+            setRegras(r);
+            regrasRef.current = r;
+          }}
+        />
+      </div>
+
+      <div>
+        <span className="text-xs font-medium text-ink-muted">
+          3. O arquivo
+        </span>
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            if (liberado) setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setDragOver(false);
+            if (!liberado) return;
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleFile(file);
+          }}
+          onClick={() => {
+            if (liberado) inputRef.current?.click();
+          }}
+          aria-disabled={!liberado}
+          className={`mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
+            !liberado
+              ? "cursor-not-allowed border-outline bg-surface-soft opacity-60"
+              : dragOver
+                ? "cursor-pointer border-brand-blue bg-brand-blue/5"
+                : "cursor-pointer border-outline bg-surface-soft hover:border-brand-blue"
+          }`}
+        >
+          <input
+            ref={inputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleFile(file);
+            }}
+          />
+          {/* Seta para cima em traço: o mesmo desenho do menu lateral, para
+              a tela inteira parecer feita pela mesma mão. */}
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className={`h-10 w-10 ${liberado ? "text-brand-blue" : "text-ink-faint"}`}
+          >
+            <path d="M12 16V4m0 0L7 9m5-5l5 5" />
+            <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
+          </svg>
+          <p className="mt-4 text-base font-medium text-brand-ink">
+            {uploading ? progressLabel : "Arraste o seu vídeo aqui"}
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {uploading
+              ? "Não feche esta aba enquanto o envio termina."
+              : "ou clique para escolher um arquivo no computador"}
+          </p>
+          {/* Diz o que falta, e não só que está bloqueado: um botão apagado
+              sem explicação é o tipo de coisa que vira chamado de suporte. */}
+          {!liberado && !uploading && (
+            <p className="mt-3 rounded-lg bg-surface-card px-3 py-2 text-xs text-ink-muted">
+              Antes de enviar, preencha {faltando.join(" e ")}.
+            </p>
+          )}
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        </div>
       </div>
     </div>
   );
