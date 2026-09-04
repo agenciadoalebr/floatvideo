@@ -180,7 +180,6 @@ export default function VideoList({
   // componentes não têm relação de pai/filho, e o evento de janela evita
   // erguer esse estado até a página inteira só pra ligar um botão.
   function handleSeeMetrics(video: Video) {
-    window.dispatchEvent(new CustomEvent("fvw-show-metrics", { detail: video.id }));
     window.dispatchEvent(new CustomEvent("fvw-goto-tab", { detail: "metricas" }));
   }
 

@@ -15,7 +15,7 @@ import {
 } from "@/components/IconesDoMenu";
 import WidgetPanel from "@/components/WidgetPanel";
 import LeadsPanel from "@/components/LeadsPanel";
-import AnalyticsPanel from "@/components/AnalyticsPanel";
+import AnalyticsPanel, { type Metricas } from "@/components/AnalyticsPanel";
 import { secaoValida } from "@/components/secoes";
 import ProjectDomainField from "@/components/ProjectDomainField";
 import CtaPanel from "@/components/CtaPanel";
@@ -65,7 +65,6 @@ export default async function ProjectPage({
   let leads: Lead[] = [];
   const eventCounts: Record<string, number> = {};
   const eventCountsByVideo: Record<string, Record<string, number>> = {};
-  let unattributedEvents = 0;
 
   if (widget) {
     const { data } = await supabase
@@ -119,13 +118,18 @@ export default async function ProjectPage({
       if (c.video_id) {
         const perVideo = (eventCountsByVideo[c.video_id] ??= {});
         perVideo[c.event_type] = (perVideo[c.event_type] ?? 0) + c.total;
-      } else {
-        // Eventos anteriores à coluna video_id: contam no total, mas não
-        // dá pra dizer honestamente de qual vídeo vieram.
-        unattributedEvents += c.total;
       }
     }
   }
+
+  // O primeiro período das Métricas vem pronto do servidor; a troca de
+  // período depois disso acontece no navegador.
+  const { data: metricas } = widget
+    ? await supabase.rpc("metricas_do_site", {
+        p_project_id: id,
+        p_dias: 30,
+      })
+    : { data: null };
 
   const readyVideos = (videos ?? []).filter((v) => v.status === "ready");
 
@@ -210,15 +214,13 @@ export default async function ProjectPage({
               <VazioSemWidget />
             )),
         metricas: (widget ? (
-              <AnalyticsPanel
-                totals={eventCounts}
-                byVideo={eventCountsByVideo}
-                videos={videos ?? []}
-                unattributed={unattributedEvents}
-              />
-            ) : (
-              <VazioSemWidget />
-            )),
+          <AnalyticsPanel
+            projectId={project.id}
+            inicial={(metricas ?? null) as unknown as Metricas | null}
+          />
+        ) : (
+          <VazioSemWidget />
+        )),
         } as Record<string, React.ReactNode>)[ativa]
       }
     </div>

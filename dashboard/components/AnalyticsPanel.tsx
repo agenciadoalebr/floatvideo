@@ -1,169 +1,371 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Video } from "@/lib/types";
-import { videoLabel } from "@/lib/video";
+import { createClient } from "@/lib/supabase/client";
 
-type Props = {
-  /** Contagem por tipo de evento somando todos os vídeos do site. */
-  totals: Record<string, number>;
-  /** Contagem por tipo de evento, separada por vídeo. */
-  byVideo: Record<string, Record<string, number>>;
-  videos: Video[];
-  /** Eventos gravados antes de passarmos a registrar o vídeo. */
-  unattributed: number;
+export type Metricas = {
+  dias: number;
+  totais: Record<string, number>;
+  anterior: Record<string, number>;
+  leads: number;
+  leads_anterior: number;
+  paginas: {
+    pagina: string;
+    impressoes: number;
+    aberturas: number;
+    cliques: number;
+  }[];
 };
 
-const LABELS: Record<string, string> = {
-  impression: "Impressões (balão apareceu)",
-  expand: "Cliques para abrir o vídeo",
-  play: "Assistiu de fato (vídeo aberto)",
-  complete: "Vídeo assistido até o fim",
-  cta_click: "Cliques no botão de ação",
-  close: "Fechamentos",
-};
+function numero(n: number) {
+  return n.toLocaleString("pt-BR");
+}
 
-const ORDER = ["impression", "expand", "play", "complete", "cta_click", "close"];
+function pct(parte: number, todo: number) {
+  if (!todo) return null;
+  return ((parte / todo) * 100).toLocaleString("pt-BR", {
+    maximumFractionDigits: 1,
+  });
+}
+
+/** Variação contra o mesmo número do período anterior. */
+function variacao(agora: number, antes: number) {
+  if (!antes) return null;
+  const v = ((agora - antes) / antes) * 100;
+  return {
+    texto: `${v >= 0 ? "+" : ""}${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`,
+    subiu: v >= 0,
+  };
+}
+
+const PERIODOS = [
+  [7, "7 dias"],
+  [30, "30 dias"],
+  [90, "90 dias"],
+] as const;
 
 /**
- * A escada de retenção. Fica num quadro separado, e não junto do funil
- * acima, porque a base de comparação é outra: aqui tudo é medido contra
- * quem abriu o vídeo, não contra quem viu o balão.
+ * A escada de retenção, medida contra quem abriu o vídeo — e não contra
+ * quem viu o balão passar na tela. São perguntas diferentes: uma é sobre
+ * atrair o clique, a outra é sobre segurar quem já clicou.
  */
 const RETENCAO = [
-  { key: "play", label: "Abriram o vídeo" },
-  { key: "progress_3s", label: "Passaram dos 3 segundos" },
-  { key: "progress_25", label: "Passaram de 25%" },
-  { key: "progress_50", label: "Passaram da metade" },
-  { key: "progress_75", label: "Passaram de 75%" },
-  { key: "complete", label: "Assistiram até o fim" },
+  { key: "play", rotulo: "Abriram", detalhe: "clicaram e o vídeo começou" },
+  { key: "progress_3s", rotulo: "3 segundos", detalhe: "passaram do gancho" },
+  { key: "progress_25", rotulo: "25%", detalhe: "primeiro quarto" },
+  { key: "progress_50", rotulo: "Metade", detalhe: "chegaram ao meio" },
+  { key: "progress_75", rotulo: "75%", detalhe: "reta final" },
+  { key: "complete", rotulo: "Fim", detalhe: "assistiram inteiro" },
 ];
 
-const ALL = "__all__";
+export default function AnalyticsPanel({
+  projectId,
+  inicial,
+}: {
+  projectId: string;
+  inicial: Metricas | null;
+}) {
+  const [dias, setDias] = useState(inicial?.dias ?? 30);
+  const [dados, setDados] = useState<Metricas | null>(inicial);
+  const [carregando, setCarregando] = useState(false);
 
-export default function AnalyticsPanel({ totals, byVideo, videos, unattributed }: Props) {
-  const [selected, setSelected] = useState<string>(ALL);
-
-  // O botão "Ver métricas" de cada vídeo (lá em cima, no card) avisa por
-  // um evento de janela qual vídeo abrir aqui — os dois componentes não
-  // têm relação de pai/filho, e um evento simples resolve sem precisar
-  // arrastar estado pela página inteira.
   useEffect(() => {
-    function handle(e: Event) {
-      const videoId = (e as CustomEvent<string>).detail;
-      setSelected(videoId || ALL);
-    }
-    window.addEventListener("fvw-show-metrics", handle);
-    return () => window.removeEventListener("fvw-show-metrics", handle);
-  }, []);
+    // O primeiro período já veio pronto do servidor; só as trocas
+    // seguintes vão buscar de novo.
+    if (dias === (inicial?.dias ?? 30) && dados === inicial) return;
 
-  const counts = selected === ALL ? totals : (byVideo[selected] ?? {});
-  const impressions = counts.impression ?? 0;
-  // A retenção se mede contra quem abriu o vídeo, não contra quem viu
-  // o balão passar na tela.
-  const aberturas = counts.play ?? 0;
-  const max = Math.max(1, ...ORDER.map((k) => counts[k] ?? 0));
+    let cancelado = false;
+    setCarregando(true);
+    const supabase = createClient();
+    supabase
+      .rpc("metricas_do_site", { p_project_id: projectId, p_dias: dias })
+      .then(({ data }) => {
+        if (cancelado) return;
+        setDados((data ?? null) as unknown as Metricas | null);
+        setCarregando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dias, projectId]);
 
-  const tabs = [
-    { id: ALL, label: "Todos os vídeos" },
-    ...videos.map((v) => ({ id: v.id, label: videoLabel(v) })),
+  const t = dados?.totais ?? {};
+  const a = dados?.anterior ?? {};
+  const impressoes = t.impression ?? 0;
+  const aberturas = t.expand ?? 0;
+  const cliques = t.cta_click ?? 0;
+  const leads = dados?.leads ?? 0;
+  const play = t.play ?? 0;
+
+  const cartoes = [
+    {
+      rotulo: "Aparições do balão",
+      valor: impressoes,
+      variacao: variacao(impressoes, a.impression ?? 0),
+      texto: "Quantas vezes o vídeo apareceu no canto da página.",
+      extra: null as string | null,
+    },
+    {
+      rotulo: "Cliques para expandir",
+      valor: aberturas,
+      variacao: variacao(aberturas, a.expand ?? 0),
+      texto: "Visitantes que clicaram e assistiram em tela cheia.",
+      extra: pct(aberturas, impressoes)
+        ? `${pct(aberturas, impressoes)}% de quem viu`
+        : null,
+    },
+    {
+      rotulo: "Cliques no botão de ação",
+      valor: cliques,
+      variacao: variacao(cliques, a.cta_click ?? 0),
+      texto: "Quem seguiu para o WhatsApp, o formulário ou a compra.",
+      extra: pct(cliques, aberturas)
+        ? `${pct(cliques, aberturas)}% de quem abriu`
+        : null,
+    },
+    {
+      rotulo: "Contatos gerados",
+      valor: leads,
+      variacao: variacao(leads, dados?.leads_anterior ?? 0),
+      texto: "Pessoas que deixaram contato ou foram para o WhatsApp.",
+      extra: pct(leads, impressoes)
+        ? `${pct(leads, impressoes)}% de quem viu`
+        : null,
+    },
   ];
 
+  const totalPaginas = (dados?.paginas ?? []).reduce(
+    (s, p) => s + p.impressoes,
+    0
+  );
+
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setSelected(tab.id)}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
-              selected === tab.id
-                ? "btn-brand"
-                : "border border-neutral-300 text-neutral-600 hover:bg-neutral-100"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-brand-ink">
+            Métricas
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-ink-muted">
+            Quantas pessoas viram o vídeo, quantas abriram, onde elas param
+            de assistir e quantas viraram contato.
+          </p>
+        </div>
+
+        <div className="flex gap-1 rounded-lg bg-surface-soft p-1">
+          {PERIODOS.map(([valor, nome]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => setDias(valor)}
+              className={`rounded-md px-3 py-1.5 text-sm transition ${
+                dias === valor
+                  ? "bg-surface-card font-medium text-brand-ink shadow-sm"
+                  : "text-ink-muted hover:text-brand-ink"
+              }`}
+            >
+              {nome}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {impressions === 0 ? (
-        <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
-          {selected === ALL
-            ? "Ainda não há dados suficientes. As métricas aparecem aqui assim que o widget começar a receber visitas."
-            : "Este vídeo ainda não registrou visitas enquanto esteve no widget."}
+      {impressoes === 0 && !carregando ? (
+        <p className="cartao p-6 text-sm text-ink-muted">
+          Ainda não há dados neste período. Os números aparecem assim que o
+          widget começar a ser exibido no site.
         </p>
       ) : (
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          {ORDER.map((key) => {
-            const value = counts[key] ?? 0;
-            const pct = Math.round((value / impressions) * 100);
-            return (
-              <div key={key}>
-                <div className="flex items-center justify-between text-xs text-neutral-600">
-                  <span>{LABELS[key]}</span>
-                  <span className="font-medium text-neutral-900">
-                    {value}
-                    {key !== "impression" && ` · ${pct}%`}
+        <>
+          <div
+            className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-4 ${
+              carregando ? "opacity-50" : ""
+            }`}
+          >
+            {cartoes.map((c) => (
+              <div key={c.rotulo} className="cartao p-5">
+                <p className="rotulo-metrica">{c.rotulo}</p>
+                <p className="mt-2 flex flex-wrap items-baseline gap-2">
+                  <span className="text-3xl font-semibold text-brand-ink">
+                    {numero(c.valor)}
                   </span>
-                </div>
-                <div className="mt-1 h-2 rounded-full bg-neutral-100">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-brand-blue to-brand-violet"
-                    style={{ width: `${Math.max(2, (value / max) * 100)}%` }}
-                  />
-                </div>
+                  {c.variacao && (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                        c.variacao.subiu
+                          ? "bg-emerald-50 text-emerald-800"
+                          : "bg-amber-50 text-amber-900"
+                      }`}
+                    >
+                      {c.variacao.texto}
+                    </span>
+                  )}
+                </p>
+                <p className="mt-2 text-xs text-ink-muted">{c.texto}</p>
+                {c.extra && (
+                  <p className="mt-2 border-t border-outline-soft pt-2 text-xs text-brand-blue">
+                    {c.extra}
+                  </p>
+                )}
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {aberturas > 0 && (
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Retenção do vídeo
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              De cada 100 pessoas que abriram o vídeo, quantas chegaram a cada
-              ponto. O degrau mais fundo é onde elas desistem.
-            </p>
+            ))}
           </div>
-          {RETENCAO.map((etapa) => {
-            const value = counts[etapa.key] ?? 0;
-            const pct = Math.round((value / aberturas) * 100);
-            return (
-              <div key={etapa.key}>
-                <div className="flex items-center justify-between text-xs text-neutral-600">
-                  <span>{etapa.label}</span>
-                  <span className="font-medium text-neutral-900">
-                    {value} · {pct}%
-                  </span>
-                </div>
-                <div className="mt-1 h-2 rounded-full bg-neutral-100">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-brand-blue to-brand-violet"
-                    style={{ width: `${Math.max(2, pct)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-          {(counts.progress_25 ?? 0) === 0 && (
-            <p className="text-xs text-neutral-400">
-              Os marcos de retenção passaram a ser medidos agora — as
-              aberturas anteriores a isso aparecem só na primeira linha.
-            </p>
-          )}
-        </div>
-      )}
 
-      {selected === ALL && unattributed > 0 && (
-        <p className="text-xs text-neutral-400">
-          {unattributed} evento(s) foram registrados antes da separação por vídeo —
-          entram no total, mas não em nenhum vídeo específico.
-        </p>
+          {/* A variação compara com os mesmos dias imediatamente
+              anteriores. Sem dizer isso, "+18%" é um número sem régua. */}
+          <p className="text-xs text-ink-faint">
+            A variação compara com os {dias} dias anteriores a este período.
+          </p>
+
+          {play > 0 && (
+            <section className="cartao p-5">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <div>
+                  <h2 className="text-base font-semibold text-brand-ink">
+                    Onde as pessoas param de assistir
+                  </h2>
+                  <p className="mt-1 text-sm text-ink-muted">
+                    De cada 100 que abriram o vídeo, quantas chegaram a cada
+                    ponto. O degrau mais fundo é onde elas desistem.
+                  </p>
+                </div>
+                <span className="text-xs text-ink-faint">
+                  base: {numero(play)} aberturas
+                </span>
+              </div>
+
+              <ol className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+                {RETENCAO.map((etapa, i) => {
+                  const valor = t[etapa.key] ?? 0;
+                  const p = (valor / play) * 100;
+                  const anterior =
+                    i === 0 ? null : (t[RETENCAO[i - 1].key] ?? 0);
+                  const queda =
+                    anterior && anterior > 0
+                      ? ((anterior - valor) / play) * 100
+                      : null;
+                  return (
+                    <li
+                      key={etapa.key}
+                      className="rounded-xl border border-outline-soft p-3"
+                    >
+                      <p className="flex items-baseline justify-between gap-2">
+                        <span className="text-xs font-medium text-ink-muted">
+                          {etapa.rotulo}
+                        </span>
+                        <span className="text-sm font-semibold text-brand-ink">
+                          {p.toLocaleString("pt-BR", {
+                            maximumFractionDigits: 0,
+                          })}
+                          %
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-ink-faint">
+                        {etapa.detalhe}
+                      </p>
+                      <div className="mt-2 h-1.5 rounded-full bg-surface-muted">
+                        <div
+                          className="h-1.5 rounded-full bg-gradient-to-r from-brand-blue to-brand-violet"
+                          style={{ width: `${Math.max(2, p)}%` }}
+                        />
+                      </div>
+                      <p className="mt-2 text-[11px] text-ink-faint">
+                        {numero(valor)} pessoas
+                        {queda && queda > 0.5 && (
+                          <span className="ml-1 text-amber-700">
+                            · saíram{" "}
+                            {queda.toLocaleString("pt-BR", {
+                              maximumFractionDigits: 0,
+                            })}
+                            %
+                          </span>
+                        )}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ol>
+
+              {(t.progress_25 ?? 0) === 0 && (
+                <p className="mt-3 text-xs text-ink-faint">
+                  Os marcos de retenção passaram a ser medidos depois de
+                  algumas aberturas antigas — elas contam só na primeira
+                  coluna.
+                </p>
+              )}
+            </section>
+          )}
+
+          {(dados?.paginas ?? []).length > 0 && (
+            <section className="cartao">
+              <div className="px-5 py-4">
+                <h2 className="text-base font-semibold text-brand-ink">
+                  Páginas que mais exibiram
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Onde o vídeo apareceu, e o que ele rendeu em cada lugar.
+                </p>
+              </div>
+              <div className="overflow-x-auto border-t border-outline-soft">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-surface-soft">
+                    <tr className="text-ink-faint">
+                      <th className="px-5 py-2 font-medium">Página</th>
+                      <th className="px-3 py-2 text-right font-medium">
+                        Aparições
+                      </th>
+                      <th className="px-3 py-2 text-right font-medium">
+                        Aberturas
+                      </th>
+                      <th className="px-5 py-2 text-right font-medium">
+                        Cliques
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-soft">
+                    {(dados?.paginas ?? []).map((p) => (
+                      <tr key={p.pagina}>
+                        <td className="max-w-0 px-5 py-3">
+                          <span className="block truncate text-brand-ink">
+                            {p.pagina}
+                          </span>
+                          <span className="text-xs text-ink-faint">
+                            {pct(p.impressoes, totalPaginas)}% do total
+                          </span>
+                        </td>
+                        <td className="px-3 py-3 text-right text-brand-ink">
+                          {numero(p.impressoes)}
+                        </td>
+                        <td className="px-3 py-3 text-right">
+                          <span className="text-brand-ink">
+                            {numero(p.aberturas)}
+                          </span>
+                          <span className="block text-xs text-ink-faint">
+                            {pct(p.aberturas, p.impressoes) ?? "0"}%
+                          </span>
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <span className="text-brand-ink">
+                            {numero(p.cliques)}
+                          </span>
+                          <span className="block text-xs text-ink-faint">
+                            {pct(p.cliques, p.aberturas) ?? "0"}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="border-t border-outline-soft px-5 py-3 text-xs text-ink-faint">
+                As 20 páginas com mais aparições no período. O endereço vem
+                sem os parâmetros de campanha, senão a mesma página viraria
+                dez linhas diferentes.
+              </p>
+            </section>
+          )}
+        </>
       )}
     </div>
   );
