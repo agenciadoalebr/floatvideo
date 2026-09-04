@@ -216,6 +216,7 @@ export default async function ProjectPage({
             )),
         metricas: (widget ? (
           <AnalyticsPanel
+            videos={(videos ?? []).filter((v) => v.status === "ready")}
             projectId={project.id}
             inicial={(metricas ?? null) as unknown as Metricas | null}
           />

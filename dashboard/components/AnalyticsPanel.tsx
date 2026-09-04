@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import type { Video } from "@/lib/types";
+import { videoLabel } from "@/lib/video";
 
 export type Metricas = {
   dias: number;
@@ -61,34 +63,46 @@ const RETENCAO = [
 export default function AnalyticsPanel({
   projectId,
   inicial,
+  videos = [],
 }: {
   projectId: string;
   inicial: Metricas | null;
+  /** Para o seletor. Vazio esconde o seletor: um site só, um vídeo só. */
+  videos?: Video[];
 }) {
   const [dias, setDias] = useState(inicial?.dias ?? 30);
+  // null é "todos os vídeos", que é como a tela abre: a pergunta comum é
+  // sobre o site, e o recorte por vídeo é a segunda pergunta.
+  const [videoId, setVideoId] = useState<string | null>(null);
   const [dados, setDados] = useState<Metricas | null>(inicial);
   const [carregando, setCarregando] = useState(false);
+  // Cada busca leva um número; só a resposta da última vale. Sem isso,
+  // trocar de vídeo duas vezes rápido pode fazer a resposta antiga
+  // chegar depois e sobrescrever a nova.
+  const pedido = useRef(0);
 
-  useEffect(() => {
-    // O primeiro período já veio pronto do servidor; só as trocas
-    // seguintes vão buscar de novo.
-    if (dias === (inicial?.dias ?? 30) && dados === inicial) return;
-
-    let cancelado = false;
+  // A busca acontece no clique, e não num efeito: quem dispara é a
+  // pessoa trocando o período ou o vídeo, e o primeiro conjunto já veio
+  // pronto do servidor.
+  async function carregar(novosDias: number, novoVideo: string | null) {
+    setDias(novosDias);
+    setVideoId(novoVideo);
     setCarregando(true);
+
+    const meu = ++pedido.current;
+
     const supabase = createClient();
-    supabase
-      .rpc("metricas_do_site", { p_project_id: projectId, p_dias: dias })
-      .then(({ data }) => {
-        if (cancelado) return;
-        setDados((data ?? null) as unknown as Metricas | null);
-        setCarregando(false);
-      });
-    return () => {
-      cancelado = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dias, projectId]);
+    const { data } = await supabase.rpc("metricas_do_site", {
+      p_project_id: projectId,
+      p_dias: novosDias,
+      p_video_id: novoVideo,
+    });
+
+    if (meu !== pedido.current) return;
+
+    setDados((data ?? null) as unknown as Metricas | null);
+    setCarregando(false);
+  }
 
   const t = dados?.totais ?? {};
   const a = dados?.anterior ?? {};
@@ -153,12 +167,31 @@ export default function AnalyticsPanel({
           </p>
         </div>
 
+        <div className="flex flex-wrap items-center gap-2">
+          {videos.length > 1 && (
+            <label className="flex items-center gap-2">
+              <span className="sr-only">Vídeo</span>
+              <select
+                value={videoId ?? ""}
+                onChange={(e) => carregar(dias, e.target.value || null)}
+                className="rounded-lg border border-outline-soft bg-surface-card px-3 py-2 text-sm text-ink-muted"
+              >
+                <option value="">Todos os vídeos</option>
+                {videos.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {videoLabel(v)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
         <div className="flex gap-1 rounded-lg bg-surface-soft p-1">
           {PERIODOS.map(([valor, nome]) => (
             <button
               key={valor}
               type="button"
-              onClick={() => setDias(valor)}
+              onClick={() => carregar(valor, videoId)}
               className={`rounded-md px-3 py-1.5 text-sm transition ${
                 dias === valor
                   ? "bg-surface-card font-medium text-brand-ink shadow-sm"
@@ -169,12 +202,14 @@ export default function AnalyticsPanel({
             </button>
           ))}
         </div>
+        </div>
       </div>
 
       {impressoes === 0 && !carregando ? (
         <p className="cartao p-6 text-sm text-ink-muted">
-          Ainda não há dados neste período. Os números aparecem assim que o
-          widget começar a ser exibido no site.
+          {videoId
+            ? "Este vídeo não teve nenhuma exibição no período escolhido. Ele pode não estar no ar, ou não ter caído em nenhuma página visitada."
+            : "Ainda não há dados neste período. Os números aparecem assim que o widget começar a ser exibido no site."}
         </p>
       ) : (
         <>
