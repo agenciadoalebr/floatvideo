@@ -78,6 +78,8 @@ export default function CtaPanel({ widget, cta }: Props) {
 
   const ehWhatsApp = tipo === "whatsapp" || tipo === "whatsapp_form";
   const ehComprar = tipo === "buy";
+  // E-mail e webhook so aparecem em quem gera lead no painel.
+  const recebeLead = tipo === "form" || tipo === "whatsapp_form";
   const ehFormulario = tipo === "form" || tipo === "whatsapp_form";
 
   // Trocar de tipo troca tambem o texto do botao, desde que ele ainda
@@ -178,268 +180,456 @@ export default function CtaPanel({ widget, cta }: Props) {
     );
   }
 
+  const TIPOS: { valor: CtaType; nome: string; nota: string }[] = [
+    {
+      valor: "whatsapp",
+      nome: "WhatsApp direto",
+      nota: "Abre a conversa com a mensagem já escrita",
+    },
+    {
+      valor: "whatsapp_form",
+      nome: "WhatsApp + contato",
+      nota: "Pede nome e telefone antes de abrir o chat",
+    },
+    {
+      valor: "form",
+      nome: "Formulário de contato",
+      nota: "O lead fica no painel e vai para o seu e-mail",
+    },
+    {
+      valor: "buy",
+      nome: "Comprar (e-commerce)",
+      nota: "Leva a pessoa até o botão de compra da página",
+    },
+    {
+      valor: "link",
+      nome: "Link personalizado",
+      nota: "Abre qualquer endereço numa aba nova",
+    },
+    {
+      valor: "none",
+      nome: "Sem botão",
+      nota: "O vídeo aparece sozinho, sem nada por cima",
+    },
+  ];
+
+  const CORES = [
+    ["#25d366", "Verde WhatsApp"],
+    ["#007fff", "Azul da marca"],
+    ["#3f1afb", "Violeta da marca"],
+    ["#f97316", "Laranja"],
+    ["#00092d", "Escuro"],
+  ] as const;
+
   return (
-    // Mesmo desenho da seção Widget: o que se edita fica à esquerda e a
-    // prévia acompanha à direita, parada na tela enquanto se rola.
-    <form onSubmit={salvar} className="grid gap-6 lg:grid-cols-2">
-      <div className="space-y-4">
-      <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
+    <form onSubmit={salvar} className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h3 className="text-sm font-semibold text-neutral-700">Botão de ação</h3>
-          <p className="mt-1 text-xs text-neutral-500">
-            Vale para <strong>todos os vídeos</strong> deste site. Aparece
-            quando alguém abre o vídeo.
+          <h1 className="text-2xl font-semibold tracking-tight text-brand-ink">
+            Botão de ação
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-ink-muted">
+            O que acontece quando o visitante clica. Vale para todos os
+            vídeos deste site.
           </p>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-neutral-600">
-            O que aparece no fim do vídeo
-          </label>
-          <select
-            value={tipo}
-            onChange={(e) => trocarTipo(e.target.value as CtaType)}
-            className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-          >
-            <option value="whatsapp">Clique de WhatsApp</option>
-            <option value="whatsapp_form">
-              Formulário de WhatsApp (nome e telefone)
-            </option>
-            <option value="form">
-              Formulário completo (nome, telefone, e-mail, assunto, mensagem)
-            </option>
-            <option value="buy">Botão Comprar (e-commerce)</option>
-            <option value="link">Link personalizado</option>
-            <option value="none">Sem botão de ação</option>
-          </select>
-          <p className="mt-1 text-xs text-neutral-500">{AJUDA[tipo]}</p>
-        </div>
-
-        {tipo !== "none" && (
-          <>
-            <div>
-              <label className="block text-xs font-medium text-neutral-600">
-                Formato do botão
-              </label>
-              <select
-                value={estilo}
-                onChange={(e) => setEstilo(e.target.value as "card" | "solid")}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-              >
-                <option value="card">Cartão com ícone (duas linhas)</option>
-                <option value="solid">Barra colorida (uma linha)</option>
-              </select>
-            </div>
-
-            <label className="block">
-              <span className="text-xs text-neutral-600">
-                {estilo === "card" ? "Primeira linha" : "Texto do botão"}
-              </span>
-              <input
-                value={rotulo}
-                onChange={(e) => setRotulo(e.target.value)}
-                placeholder="Quer saber mais?"
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-              />
-            </label>
-
-            {estilo === "card" && (
-              <label className="block">
-                <span className="text-xs text-neutral-600">
-                  Segunda linha (opcional)
-                </span>
-                <input
-                  value={subRotulo}
-                  onChange={(e) => setSubRotulo(e.target.value)}
-                  placeholder="Chame pelo WhatsApp"
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-                />
-              </label>
-            )}
-          </>
-        )}
-
-        {tipo !== "none" && (
-          <div>
-            <label className="block text-xs font-medium text-neutral-600">
-              Cor do botão
-            </label>
-            <div className="mt-1 flex items-center gap-3">
-              <input
-                type="color"
-                value={cor}
-                onChange={(e) => setCor(e.target.value)}
-                className="h-9 w-16 rounded-md border border-neutral-300"
-              />
-              <button
-                type="button"
-                onClick={() => setCor("#25d366")}
-                className="text-xs text-neutral-500 underline hover:text-brand-blue"
-              >
-                voltar ao verde
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-neutral-500">
-              Vale para qualquer tipo de botão. O texto vira branco ou preto
-              sozinho, conforme a cor escolhida.
-            </p>
-          </div>
-        )}
-
-        {ehComprar && (
-          <>
-            <label className="block">
-              <span className="text-xs text-neutral-600">
-                Plataforma da loja
-              </span>
-              <select
-                value={plataforma}
-                onChange={(e) => setPlataforma(e.target.value as BuyPlatform)}
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
-              >
-                {PLATAFORMAS.map((p) => (
-                  <option key={p.valor} value={p.valor}>
-                    {p.nome}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-neutral-500">
-                {PLATAFORMAS.find((p) => p.valor === plataforma)?.ajuda}
-              </p>
-            </label>
-
-            {plataforma === "custom" && (
-              <label className="block">
-                <span className="text-xs text-neutral-600">
-                  Seletor CSS do botão de compra
-                </span>
-                <input
-                  value={seletor}
-                  onChange={(e) => setSeletor(e.target.value)}
-                  placeholder="#comprar, .botao-comprar"
-                  className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 font-mono text-sm outline-none focus:border-brand-blue"
-                />
-                <p className="mt-1 text-xs text-neutral-500">
-                  Na loja, clique com o botão direito no botão de compra →
-                  Inspecionar. Vale o id (<code>#comprar</code>) ou a classe
-                  (<code>.botao-comprar</code>) que aparecer nele.
-                </p>
-              </label>
-            )}
-
-            <label className="block">
-              <span className="text-xs text-neutral-600">
-                Link de reserva (opcional)
-              </span>
-              <input
-                type="url"
-                value={destino}
-                onChange={(e) => setDestino(e.target.value)}
-                placeholder="https://loja.com.br/produto"
-                className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-              />
-              <p className="mt-1 text-xs text-neutral-500">
-                Usado só se o botão de compra não for encontrado na página —
-                em vez de não acontecer nada, abre este endereço.
-              </p>
-            </label>
-          </>
-        )}
-
-        {PRECISA_DESTINO.includes(tipo) && (
-          <label className="block">
-            <span className="text-xs text-neutral-600">
-              {ehWhatsApp ? "Número do WhatsApp" : "Endereço de destino"}
+        <div className="flex items-center gap-2">
+          {salvo && !erro && (
+            <span role="status" className="text-xs font-medium text-emerald-700">
+              Salvo — já vale no site
             </span>
-            <input
-              value={destino}
-              onChange={(e) => {
-                const acao = (e.nativeEvent as InputEvent).inputType ?? "";
-                setDestino(
-                  ehWhatsApp
-                    ? formatarTelefone(e.target.value, acao.startsWith("delete"))
-                    : e.target.value
-                );
-              }}
-              placeholder={ehWhatsApp ? "+55 (11) 96713-6667" : "https://..."}
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-            />
-          </label>
-        )}
+          )}
+          <button
+            type="submit"
+            disabled={salvando}
+            className="btn-brand rounded-lg px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+          >
+            {salvando ? "Salvando..." : "Salvar alterações"}
+          </button>
+        </div>
       </div>
 
-      {/* Aviso só existe onde alguém deixou dados esperando retorno. No
-          clique direto a pessoa já caiu na conversa. */}
-      {ehFormulario && (
-        <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-5">
-          <div>
-            <h3 className="text-sm font-semibold text-neutral-700">
-              Avisar quando chegar um lead
-            </h3>
-            <p className="mt-1 text-xs text-neutral-500">
-              Só para os formulários. O clique direto no WhatsApp não dispara
-              aviso — quem clica já está na conversa.
+      {erro && <p className="text-sm text-red-600">{erro}</p>}
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:items-start">
+        <div className="space-y-5">
+          <Etapa
+            numero={1}
+            titulo="Tipo de ação"
+            descricao="O que acontece quando o visitante clica no botão"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              {TIPOS.map((t) => (
+                <button
+                  key={t.valor}
+                  type="button"
+                  onClick={() => trocarTipo(t.valor)}
+                  className={`relative rounded-xl border p-4 text-left transition ${
+                    tipo === t.valor
+                      ? "border-brand-blue bg-surface-soft"
+                      : "border-outline-soft hover:border-outline"
+                  }`}
+                >
+                  {tipo === t.valor && (
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-brand-blue text-[11px] text-white">
+                      ✓
+                    </span>
+                  )}
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-strong">
+                    <IconeDoTipo tipo={t.valor} />
+                  </span>
+                  <span className="mt-3 block text-sm font-medium text-brand-ink">
+                    {t.nome}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-faint">
+                    {t.nota}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-ink-muted">{AJUDA[tipo]}</p>
+          </Etapa>
+
+          {tipo !== "none" && (
+            <>
+              <Etapa
+                numero={2}
+                titulo="Destino"
+                descricao="Para onde a pessoa vai, e o que chega até você"
+              >
+                {PRECISA_DESTINO.includes(tipo) && (
+                  <label className="block">
+                    <span className="text-xs font-medium text-ink-muted">
+                      {ehWhatsApp
+                        ? "Número do WhatsApp com DDD"
+                        : "Endereço de destino"}
+                    </span>
+                    <input
+                      value={destino}
+                      onChange={(e) => setDestino(e.target.value)}
+                      placeholder={
+                        ehWhatsApp ? "(11) 96713-6667" : "https://..."
+                      }
+                      className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
+                    />
+                    {ehWhatsApp && (
+                      <span className="mt-1 block text-xs text-ink-faint">
+                        Com DDD. O +55 entra sozinho.
+                      </span>
+                    )}
+                  </label>
+                )}
+
+                {ehComprar && (
+                  <>
+                    <label className="block">
+                      <span className="text-xs font-medium text-ink-muted">
+                        Plataforma da loja
+                      </span>
+                      <select
+                        value={plataforma}
+                        onChange={(e) =>
+                          setPlataforma(e.target.value as BuyPlatform)
+                        }
+                        className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm"
+                      >
+                        {PLATAFORMAS.map((p) => (
+                          <option key={p.valor} value={p.valor}>
+                            {p.nome}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="mt-1 block text-xs text-ink-faint">
+                        {PLATAFORMAS.find((p) => p.valor === plataforma)?.ajuda}
+                      </span>
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-medium text-ink-muted">
+                        Seletor do botão de comprar (opcional)
+                      </span>
+                      <input
+                        value={seletor}
+                        onChange={(e) => setSeletor(e.target.value)}
+                        placeholder="#comprar, .botao-comprar"
+                        className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 font-mono text-sm outline-none focus:border-brand-blue"
+                      />
+                      <span className="mt-1 block text-xs text-ink-faint">
+                        Só se a busca automática não achar o botão da sua loja.
+                      </span>
+                    </label>
+                  </>
+                )}
+
+                {recebeLead && (
+                  <>
+                    <label className="block">
+                      <span className="text-xs font-medium text-ink-muted">
+                        Avisar por e-mail quando chegar um lead
+                      </span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="voce@suaempresa.com.br"
+                        className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="text-xs font-medium text-ink-muted">
+                        Enviar para um sistema (opcional)
+                      </span>
+                      <input
+                        value={webhook}
+                        onChange={(e) => setWebhook(e.target.value)}
+                        placeholder="https://hook.make.com/..."
+                        className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 font-mono text-sm outline-none focus:border-brand-blue"
+                      />
+                      <span className="mt-1 block text-xs text-ink-faint">
+                        Recebe um POST com os dados do lead — Make, Zapier, n8n
+                        ou o CRM do cliente.
+                      </span>
+                    </label>
+                  </>
+                )}
+
+                {!PRECISA_DESTINO.includes(tipo) &&
+                  !ehComprar &&
+                  !recebeLead && (
+                    <p className="text-sm text-ink-muted">
+                      Este tipo não precisa de destino.
+                    </p>
+                  )}
+              </Etapa>
+
+              <Etapa
+                numero={3}
+                titulo="Aparência e textos"
+                descricao="As duas linhas que aparecem ao lado do vídeo"
+              >
+                <div>
+                  <span className="text-xs font-medium text-ink-muted">
+                    Cor do botão
+                  </span>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    {CORES.map(([valor, nome]) => (
+                      <button
+                        key={valor}
+                        type="button"
+                        title={nome}
+                        aria-label={nome}
+                        onClick={() => setCor(valor)}
+                        style={{ background: valor }}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm text-white transition ${
+                          cor.toLowerCase() === valor
+                            ? "ring-2 ring-brand-blue ring-offset-2"
+                            : ""
+                        }`}
+                      >
+                        {cor.toLowerCase() === valor ? "✓" : ""}
+                      </button>
+                    ))}
+                    <span className="flex items-center gap-2 rounded-lg border border-outline-soft px-2 py-1.5">
+                      <input
+                        type="color"
+                        value={cor}
+                        onChange={(e) => setCor(e.target.value)}
+                        className="h-6 w-6 cursor-pointer border-0 bg-transparent p-0"
+                      />
+                      <input
+                        value={cor}
+                        onChange={(e) => setCor(e.target.value)}
+                        className="w-20 bg-transparent font-mono text-xs uppercase outline-none"
+                      />
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-xs font-medium text-ink-muted">
+                    Formato
+                  </span>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        ["card", "Cartão com ícone", "duas linhas"],
+                        ["solid", "Barra colorida", "uma linha"],
+                      ] as const
+                    ).map(([valor, nome, nota]) => (
+                      <button
+                        key={valor}
+                        type="button"
+                        onClick={() => setEstilo(valor)}
+                        className={`rounded-lg border px-3 py-2 text-left text-sm transition ${
+                          estilo === valor
+                            ? "border-brand-blue bg-surface-soft font-medium text-brand-ink"
+                            : "border-outline-soft text-ink-muted hover:border-outline"
+                        }`}
+                      >
+                        {nome}
+                        <span className="block text-[11px] text-ink-faint">
+                          {nota}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <label className="block">
+                  <span className="flex items-baseline justify-between">
+                    <span className="text-xs font-medium text-ink-muted">
+                      Primeira linha{" "}
+                      <span className="text-ink-faint">(em negrito)</span>
+                    </span>
+                    <span className="text-xs text-ink-faint">
+                      {rotulo.length} / 45
+                    </span>
+                  </span>
+                  <input
+                    value={rotulo}
+                    maxLength={45}
+                    onChange={(e) => setRotulo(e.target.value)}
+                    placeholder={ROTULO_PADRAO[tipo] ?? "Quer saber mais?"}
+                    className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
+                  />
+                </label>
+
+                {estilo === "card" && (
+                  <label className="block">
+                    <span className="flex items-baseline justify-between">
+                      <span className="text-xs font-medium text-ink-muted">
+                        Segunda linha{" "}
+                        <span className="text-ink-faint">(texto de apoio)</span>
+                      </span>
+                      <span className="text-xs text-ink-faint">
+                        {subRotulo.length} / 60
+                      </span>
+                    </span>
+                    <input
+                      value={subRotulo}
+                      maxLength={60}
+                      onChange={(e) => setSubRotulo(e.target.value)}
+                      placeholder={SUBROTULO_PADRAO[tipo] ?? ""}
+                      className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
+                    />
+                  </label>
+                )}
+              </Etapa>
+            </>
+          )}
+        </div>
+
+        <div className="xl:sticky xl:top-[85px]">
+          <div className="cartao overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-outline-soft px-4 py-3">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="text-sm font-medium text-brand-ink">
+                Prévia ao vivo
+              </span>
+            </div>
+            <div className="bg-surface-soft p-4">
+              {tipo !== "none" ? (
+                <CtaPreview
+                  tipo={tipo}
+                  estilo={estilo}
+                  rotulo={rotulo}
+                  subRotulo={estilo === "card" ? subRotulo : ""}
+                  cor={cor}
+                />
+              ) : (
+                <p className="py-6 text-center text-sm text-ink-muted">
+                  Sem botão de ação: o vídeo aparece sozinho.
+                </p>
+              )}
+            </div>
+            <p className="border-t border-outline-soft px-4 py-2.5 text-xs text-ink-muted">
+              É o mesmo desenho que o visitante vê — usa o CSS de produção,
+              não uma imitação.
             </p>
           </div>
-          <label className="block">
-            <span className="text-xs text-neutral-600">E-mail (opcional)</span>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@agenciadoale.com.br"
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs text-neutral-600">Webhook (opcional)</span>
-            <input
-              type="url"
-              value={webhook}
-              onChange={(e) => setWebhook(e.target.value)}
-              placeholder="https://hook.make.com/..."
-              className="mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
-            />
-          </label>
-          <p className="text-xs text-neutral-400">
-            O webhook recebe um POST com os dados do lead — dá pra ligar no
-            Make, Zapier, n8n ou no CRM do cliente.
-          </p>
         </div>
-      )}
-
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={salvando}
-          className="btn-brand rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {salvando ? "Salvando..." : "Salvar botão de ação"}
-        </button>
-        {salvo && !erro && (
-          <span role="status" className="text-xs font-medium text-emerald-700">
-            Salvo — já vale no site.
-          </span>
-        )}
-      </div>
-      {erro && <p className="text-xs text-red-600">{erro}</p>}
-      </div>
-
-      <div className="lg:sticky lg:top-4 lg:self-start">
-        {tipo !== "none" ? (
-          <CtaPreview
-            tipo={tipo}
-            estilo={estilo}
-            rotulo={rotulo}
-            subRotulo={estilo === "card" ? subRotulo : ""}
-            cor={cor}
-          />
-        ) : (
-          <p className="rounded-lg border border-neutral-200 bg-white p-5 text-sm text-neutral-500">
-            Sem botão de ação: o vídeo aparece sozinho, sem nada por cima.
-          </p>
-        )}
       </div>
     </form>
+  );
+}
+
+/** Um passo do formulário, numerado. */
+function Etapa({
+  numero,
+  titulo,
+  descricao,
+  children,
+}: {
+  numero: number;
+  titulo: string;
+  descricao: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="cartao p-5">
+      <div className="flex items-start gap-3 border-b border-outline-soft pb-4">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-blue to-brand-violet text-sm font-semibold text-white">
+          {numero}
+        </span>
+        <div>
+          <h2 className="text-base font-semibold text-brand-ink">{titulo}</h2>
+          <p className="text-xs text-ink-muted">{descricao}</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-4">{children}</div>
+    </section>
+  );
+}
+
+/** Desenho de cada tipo, no mesmo traço do menu lateral. */
+function IconeDoTipo({ tipo }: { tipo: CtaType }) {
+  const comum = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className: "h-5 w-5 text-brand-blue",
+    "aria-hidden": true,
+  };
+  if (tipo === "whatsapp" || tipo === "whatsapp_form") {
+    return (
+      <svg {...comum}>
+        <path d="M21 11.5a8.5 8.5 0 01-12.6 7.4L3 20l1.2-5.2A8.5 8.5 0 1121 11.5z" />
+      </svg>
+    );
+  }
+  if (tipo === "form") {
+    return (
+      <svg {...comum}>
+        <rect x="4" y="3" width="16" height="18" rx="2" />
+        <path d="M8 8h8M8 12h8M8 16h4" />
+      </svg>
+    );
+  }
+  if (tipo === "buy") {
+    return (
+      <svg {...comum}>
+        <path d="M6 7h12l-1 12H7L6 7z" />
+        <path d="M9 7a3 3 0 016 0" />
+      </svg>
+    );
+  }
+  if (tipo === "link") {
+    return (
+      <svg {...comum}>
+        <path d="M14 4h6v6M20 4l-8 8" />
+        <path d="M18 14v4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h4" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...comum}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M8 12h8" />
+    </svg>
   );
 }
