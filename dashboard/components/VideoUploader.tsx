@@ -15,6 +15,7 @@ import RegrasDoNovoVideo, {
 import ModalDoCelular, {
   type ArquivoDoCelular,
 } from "@/components/ModalDoCelular";
+import ModalDeEnvio, { type Andamento } from "@/components/ModalDeEnvio";
 
 // Duas guardas de bom senso na compressão: vídeo pequeno não compensa
 // (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
@@ -77,6 +78,19 @@ async function compressVideo(file: File, onProgress: (pct: number) => void): Pro
   }
 }
 
+/**
+ * Onde o arquivo mora no bucket: pasta do usuário, pasta do site, e um
+ * carimbo de tempo para o nome não repetir.
+ *
+ * Fora do componente de propósito — dentro dele, a regra de pureza do
+ * React acusa o Date.now() mesmo estando num manipulador de evento, onde
+ * ele é perfeitamente legítimo.
+ */
+function caminhoNoBucket(userId: string, projectId: string, nome: string) {
+  const ext = nome.split(".").pop() || "mp4";
+  return `${userId}/${projectId}/${Date.now()}.${ext}`;
+}
+
 function tamanhoLegivel(bytes: number) {
   return bytes >= 1024 * 1024
     ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
@@ -100,7 +114,7 @@ export default function VideoUploader({
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [salvando, setSalvando] = useState(false);
-  const [progresso, setProgresso] = useState("");
+  const [andamento, setAndamento] = useState<Andamento | null>(null);
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [regras, setRegras] = useState<RegraNova[]>([]);
@@ -140,7 +154,7 @@ export default function VideoUploader({
     // Vindo do celular o arquivo já está no R2: não há o que comprimir
     // nem o que subir de novo. Só falta registrar e gerar o acabamento.
     if (doCelular) {
-      setProgresso("Registrando vídeo...");
+      setAndamento({ etapa: "registrando", pct: 30, comprimiu: false });
 
       const { data: criado, error: insertError } = await supabaseCel
         .from("videos")
@@ -180,14 +194,14 @@ export default function VideoUploader({
 
       // A miniatura sai do próprio endereço do vídeo — o <video> do
       // navegador lê do CDN sem precisar baixar o arquivo inteiro.
-      setProgresso("Gerando miniatura...");
+      setAndamento({ etapa: "acabamento", pct: 60, comprimiu: false });
       const base = caminhoDaUrl(doCelular.url);
       await gerarEsalvarMiniatura(supabaseCel, criado.id, doCelular.url, base);
 
       // Já a prévia precisa dos bytes, porque passa pelo ffmpeg. Se o
       // download falhar, o widget usa o arquivo cheio como sempre usou —
       // por isso isto não derruba o cadastro.
-      setProgresso("Preparando a prévia do balão...");
+      setAndamento({ etapa: "acabamento", pct: 80, comprimiu: false });
       try {
         const resposta = await fetch(doCelular.url);
         const blob = await resposta.blob();
@@ -200,7 +214,7 @@ export default function VideoUploader({
       setName("");
       setRegras([]);
       setDoCelular(null);
-      setProgresso("");
+      setAndamento(null);
       router.refresh();
       return;
     }
@@ -208,15 +222,23 @@ export default function VideoUploader({
     if (!arquivo) return;
 
     let paraEnviar: File = arquivo;
+    let ganho: Andamento["ganho"] = null;
+    // Vídeo pequeno demais (o ganho não paga a espera) ou grande demais
+    // (o navegador não aguenta) sobe como está — e a janela precisa
+    // saber disso para não anunciar uma etapa que não vai existir.
+    const comprimiu =
+      arquivo.size > MIN_SIZE_TO_COMPRESS &&
+      arquivo.size <= MAX_SIZE_TO_COMPRESS;
     if (
       arquivo.size > MIN_SIZE_TO_COMPRESS &&
       arquivo.size <= MAX_SIZE_TO_COMPRESS
     ) {
       try {
-        setProgresso("Comprimindo vídeo... 0%");
+        setAndamento({ etapa: "comprimindo", pct: 0, comprimiu: true });
         paraEnviar = await compressVideo(arquivo, (pct) =>
-          setProgresso(`Comprimindo vídeo... ${pct}%`)
+          setAndamento({ etapa: "comprimindo", pct, comprimiu: true })
         );
+        ganho = { antes: arquivo.size, depois: paraEnviar.size };
       } catch (err) {
         // Compressão é otimização, não requisito — se falhar (navegador
         // sem suporte, sem memória), segue com o arquivo original.
@@ -228,7 +250,7 @@ export default function VideoUploader({
       }
     }
 
-    setProgresso("Enviando vídeo...");
+    setAndamento({ etapa: "enviando", pct: 0, ganho, comprimiu });
 
     const supabase = createClient();
     const {
@@ -241,8 +263,7 @@ export default function VideoUploader({
       return;
     }
 
-    const ext = paraEnviar.name.split(".").pop() || "mp4";
-    const path = `${user.id}/${projectId}/${Date.now()}.${ext}`;
+    const path = caminhoNoBucket(user.id, projectId, paraEnviar.name);
 
     // O arquivo vai direto do navegador pro R2, com uma autorização
     // temporária gerada pelo nosso servidor. Ele não passa pela Vercel:
@@ -250,7 +271,9 @@ export default function VideoUploader({
     // nossa no caminho.
     let publicUrl: string;
     try {
-      const enviado = await enviarArquivo(paraEnviar, path, "video");
+      const enviado = await enviarArquivo(paraEnviar, path, "video", (pct) =>
+        setAndamento({ etapa: "enviando", pct, ganho, comprimiu })
+      );
       publicUrl = enviado.publicUrl;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao enviar o vídeo.");
@@ -258,7 +281,7 @@ export default function VideoUploader({
       return;
     }
 
-    setProgresso("Registrando vídeo...");
+    setAndamento({ etapa: "registrando", pct: 40, ganho, comprimiu });
 
     const { data: criado, error: insertError } = await supabase
       .from("videos")
@@ -275,6 +298,7 @@ export default function VideoUploader({
 
     if (insertError || !criado) {
       setSalvando(false);
+      setAndamento(null);
       setError(insertError?.message ?? "Erro ao registrar o vídeo.");
       return;
     }
@@ -302,19 +326,19 @@ export default function VideoUploader({
     // Miniatura a partir do arquivo que está aqui na máquina, não do que
     // acabou de subir: é instantâneo e não gasta banda baixando de volta
     // o que acabamos de enviar.
-    setProgresso("Gerando miniatura...");
+    setAndamento({ etapa: "acabamento", pct: 60, ganho, comprimiu });
     await gerarEsalvarMiniatura(supabase, criado.id, paraEnviar, path);
 
     // A prévia é o que roda no balão recolhido. Sai daqui, do arquivo que
     // já está na máquina, e não de um servidor.
-    setProgresso("Preparando a prévia do balão...");
+    setAndamento({ etapa: "acabamento", pct: 85, ganho, comprimiu });
     await gerarEsalvarPrevia(supabase, criado.id, paraEnviar, path);
 
     setSalvando(false);
     setName("");
     setRegras([]);
     setArquivo(null);
-    setProgresso("");
+    setAndamento(null);
     router.refresh();
   }
 
@@ -470,6 +494,10 @@ export default function VideoUploader({
         )}
       </div>
 
+      {/* Enquanto salva, a janela toma a tela: é ela que mostra o
+          andamento e segura a pessoa na página. */}
+      {salvando && andamento && <ModalDeEnvio andamento={andamento} />}
+
       {celularAberto && (
         <ModalDoCelular
           projectId={projectId}
@@ -488,11 +516,6 @@ export default function VideoUploader({
         {!liberado && !salvando && (
           <span className="text-xs text-ink-muted">
             Falta {faltando.join(", ")}.
-          </span>
-        )}
-        {salvando && (
-          <span className="text-xs text-ink-muted">
-            {progresso} Não feche esta aba.
           </span>
         )}
         <button

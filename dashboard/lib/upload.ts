@@ -13,7 +13,13 @@ export type ArquivoEnviado = {
 export async function enviarArquivo(
   arquivo: Blob,
   chave: string,
-  tipo: "video" | "previa" | "miniatura"
+  tipo: "video" | "previa" | "miniatura",
+  /**
+   * Progresso real do envio, de 0 a 100. Sem isto a tela só saberia
+   * dizer "enviando" — e num vídeo de 80 MB isso é uma barra parada por
+   * minutos, que a pessoa lê como travamento.
+   */
+  aoProgredir?: (pct: number) => void
 ): Promise<ArquivoEnviado> {
   const contentType = arquivo.type || "application/octet-stream";
 
@@ -35,19 +41,26 @@ export async function enviarArquivo(
     throw new Error(dados.error ?? "Não foi possível autorizar o envio.");
   }
 
-  const envio = await fetch(dados.url, {
-    method: "PUT",
-    headers: {
-      "Content-Type": contentType,
-      // Precisa ser igual ao que foi assinado, senão o R2 recusa.
-      "Cache-Control": "public, max-age=31536000, immutable",
-    },
-    body: arquivo,
+  // XMLHttpRequest, e não fetch, só por causa do progresso: o fetch não
+  // informa quanto do corpo já subiu.
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", dados.url);
+    xhr.setRequestHeader("Content-Type", contentType);
+    // Precisa ser igual ao que foi assinado, senão o R2 recusa.
+    xhr.setRequestHeader("Cache-Control", "public, max-age=31536000, immutable");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && aoProgredir) {
+        aoProgredir(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new Error("Falha ao enviar o arquivo (" + xhr.status + ")."));
+    xhr.onerror = () => reject(new Error("Falha de conexão ao enviar o arquivo."));
+    xhr.send(arquivo);
   });
-
-  if (!envio.ok) {
-    throw new Error("Falha ao enviar o arquivo (" + envio.status + ").");
-  }
 
   return { chave, publicUrl: dados.publicUrl };
 }
