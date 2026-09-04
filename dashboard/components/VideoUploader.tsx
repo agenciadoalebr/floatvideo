@@ -199,7 +199,7 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
           nameRef.current = e.target.value;
         }}
         placeholder="Nome do vídeo (opcional)"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue"
+        className="w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
       />
       <div
       onDragOver={(e) => {
@@ -214,8 +214,10 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
         if (file) handleFile(file);
       }}
       onClick={() => inputRef.current?.click()}
-      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition ${
-        dragOver ? "border-brand-blue bg-brand-blue/5" : "border-neutral-300 bg-white"
+      className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
+        dragOver
+          ? "border-brand-blue bg-brand-blue/5"
+          : "border-outline bg-surface-soft hover:border-brand-blue"
       }`}
     >
       <input
@@ -228,14 +230,32 @@ export default function VideoUploader({ projectId }: { projectId: string }) {
           if (file) handleFile(file);
         }}
       />
-      <p className="text-sm font-medium text-neutral-700">
-        {uploading ? progressLabel : "Arraste um vídeo aqui ou clique para escolher"}
+      {/* Seta para cima em traço: o mesmo desenho do menu lateral, para
+          a tela inteira parecer feita pela mesma mão. */}
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className="h-10 w-10 text-brand-blue"
+      >
+        <path d="M12 16V4m0 0L7 9m5-5l5 5" />
+        <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
+      </svg>
+      <p className="mt-4 text-base font-medium text-brand-ink">
+        {uploading
+          ? progressLabel
+          : "Arraste o seu vídeo aqui"}
       </p>
-      <p className="mt-1 text-xs text-neutral-400">
-        MP4, WebM ou MOV — até 500MB. Vídeos grandes são comprimidos
-        automaticamente antes do envio.
+      <p className="mt-1 text-sm text-ink-muted">
+        {uploading
+          ? "Não feche esta aba enquanto o envio termina."
+          : "ou clique para escolher um arquivo no computador"}
       </p>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       </div>
     </div>
   );

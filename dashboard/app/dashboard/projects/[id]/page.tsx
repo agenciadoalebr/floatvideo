@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import VideoUploader from "@/components/VideoUploader";
-import YouTubeForm from "@/components/YouTubeForm";
+import PainelDeUpload from "@/components/PainelDeUpload";
 import PainelDeVideos from "@/components/PainelDeVideos";
 import {
   IconeVideos,
@@ -168,12 +167,12 @@ export default async function ProjectPage({
                   lado, para enviar um arquivo ou colar um link do YouTube.
                 </p>
               )),
-        upload: ((
-              <div className="grid max-w-3xl gap-4 sm:grid-cols-2">
-                <VideoUploader projectId={project.id} />
-                <YouTubeForm projectId={project.id} />
-              </div>
-            )),
+        upload: (
+          <PainelDeUpload
+            projectId={project.id}
+            totalDeVideos={(videos ?? []).length}
+          />
+        ),
         widget: ((
               <WidgetPanel
                 // A key remonta o painel quando o vídeo do widget muda no
