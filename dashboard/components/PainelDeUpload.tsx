@@ -36,7 +36,8 @@ export default function PainelDeUpload({
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-ink-muted">
             Vídeo gravado no celular, em pé, funciona melhor: é o formato do
-            balão. Depois de enviar, você diz em quais páginas ele aparece.
+            balão. Você diz o nome e em quais páginas ele aparece antes de
+            enviar — assim ele já entra no ar pronto.
           </p>
         </div>
 
@@ -104,29 +105,6 @@ export default function PainelDeUpload({
         </section>
       </div>
 
-      <section className="cartao p-5">
-        <h2 className="text-base font-semibold text-brand-ink">
-          Depois de enviar
-        </h2>
-        <p className="mt-1 text-sm text-ink-muted">
-          O vídeo entra na lista, mas ainda não aparece no site. Falta dizer
-          onde: em <strong>Vídeos</strong>, no menu do vídeo, use{" "}
-          <strong>&ldquo;Onde aparece?&rdquo;</strong> para escolher as
-          páginas. Sem regra, ele não entra em lugar nenhum — de propósito,
-          para nada ir ao ar sem você mandar.
-        </p>
-        <button
-          type="button"
-          onClick={() =>
-            window.dispatchEvent(
-              new CustomEvent("fvw-goto-tab", { detail: "videos" })
-            )
-          }
-          className="mt-3 rounded-lg border border-outline-soft px-4 py-2 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue"
-        >
-          Ir para os vídeos
-        </button>
-      </section>
     </div>
   );
 }
