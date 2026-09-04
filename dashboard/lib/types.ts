@@ -80,6 +80,9 @@ export type Invite = {
   role: OrgRole;
   created_at: string;
   accepted_at: string | null;
+  /** O que vai no link do e-mail de convite. */
+  token: string;
+  expires_at: string;
 };
 
 export type Lead = {

@@ -51,7 +51,7 @@ export default async function TeamPage() {
 
   const { data: invites } = await supabase
     .from("invites")
-    .select("id, email, role, created_at, accepted_at")
+    .select("id, email, role, created_at, accepted_at, token, expires_at")
     .eq("organization_id", myMembership.organization_id)
     .is("accepted_at", null)
     .order("created_at", { ascending: false })

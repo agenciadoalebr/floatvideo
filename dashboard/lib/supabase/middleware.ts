@@ -40,6 +40,10 @@ export async function updateSession(request: NextRequest) {
     // pra checar, e um redirecionamento pro login seria lido como falha
     // de entrega. Quem autentica ali e o token no cabecalho.
     request.nextUrl.pathname.startsWith("/api/asaas/webhook") ||
+    // O convite de equipe: quem abre o link ainda nao tem conta, e o
+    // token do link e que faz as vezes de credencial.
+    request.nextUrl.pathname.startsWith("/convite") ||
+    request.nextUrl.pathname.startsWith("/api/convite") ||
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/auth") ||
     request.nextUrl.pathname.startsWith("/setup") ||

@@ -17,6 +17,7 @@ export default function InviteForm({
   const [role, setRole] = useState<OrgRole>("editor");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [enviadoPara, setEnviadoPara] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const router = useRouter();
 
@@ -24,6 +25,7 @@ export default function InviteForm({
     e.preventDefault();
     setLoading(true);
     setError("");
+    setEnviadoPara("");
     setInviteLink("");
 
     const supabase = createClient();
@@ -31,12 +33,21 @@ export default function InviteForm({
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { error: insertError } = await supabase.from("invites").insert({
-      organization_id: organizationId,
-      email: email.toLowerCase().trim(),
-      role,
-      invited_by: user?.id,
-    });
+    // O e-mail sai do banco: um gatilho na tabela dispara a mensagem no
+    // mesmo instante em que o convite nasce. Assim nao existe convite
+    // gravado sem aviso enviado, nem aviso enviado sem convite gravado.
+    const destinatario = email.toLowerCase().trim();
+
+    const { data: criado, error: insertError } = await supabase
+      .from("invites")
+      .insert({
+        organization_id: organizationId,
+        email: destinatario,
+        role,
+        invited_by: user?.id,
+      })
+      .select("token")
+      .single();
 
     setLoading(false);
 
@@ -49,8 +60,8 @@ export default function InviteForm({
       return;
     }
 
-    const link = `${window.location.origin}/signup?email=${encodeURIComponent(email)}`;
-    setInviteLink(link);
+    setEnviadoPara(destinatario);
+    setInviteLink(`${window.location.origin}/convite/${criado.token}`);
     setEmail("");
     router.refresh();
   }
@@ -106,8 +117,9 @@ export default function InviteForm({
       {inviteLink && (
         <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
           <p className="mb-2">
-            Convite criado. Envie este link pra pessoa (WhatsApp, e-mail etc.) — ela vai
-            escolher a própria senha ao abrir:
+            Convite enviado por e-mail para <strong>{enviadoPara}</strong>. Ao
+            abrir o link, a pessoa escolhe a própria senha e já entra na conta.
+            Se o e-mail não chegar, mande este link por outro caminho:
           </p>
           <div className="flex items-center gap-2">
             <code className="flex-1 overflow-x-auto rounded bg-white px-2 py-1">
