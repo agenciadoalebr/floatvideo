@@ -25,6 +25,7 @@ export type AssinaturaAtual = {
   current_period_end: string | null;
   overdue_since: string | null;
   invoice_url: string | null;
+  plano_agendado: string | null;
 } | null;
 
 const ROTULO: Record<string, { texto: string; cor: string }> = {
@@ -45,11 +46,40 @@ function diasDesde(iso: string | null) {
   return Math.max(0, Math.floor(passou / 86400000));
 }
 
-/** "R$ 49" — sem centavos, que é como os planos são anunciados. */
+/**
+ * "R$ 49" para o preço redondo do plano, "R$ 66,67" para o acerto
+ * proporcional — esconder os centavos de uma cobrança quebrada faria a
+ * tela discordar da fatura.
+ */
 function reais(centavos: number) {
+  const temCentavos = centavos % 100 !== 0;
   return `R$ ${(centavos / 100).toLocaleString("pt-BR", {
-    maximumFractionDigits: 0,
+    minimumFractionDigits: temCentavos ? 2 : 0,
+    maximumFractionDigits: 2,
   })}`;
+}
+
+/**
+ * A mesma conta que o servidor faz, só para avisar antes. Quem cobra de
+ * verdade é a rota; aqui é estimativa, e por isso vai com "cerca de".
+ */
+function acerto(
+  precoAtual: number,
+  precoNovo: number,
+  fimIso: string | null,
+  agora: number
+) {
+  if (!fimIso) return null;
+  const fim = new Date(fimIso);
+  const inicio = new Date(fim);
+  inicio.setMonth(inicio.getMonth() - 1);
+  const ciclo = Math.max(1, Math.round((fim.getTime() - inicio.getTime()) / 86400000));
+  const dias = Math.max(0, Math.ceil((fim.getTime() - agora) / 86400000));
+  if (dias === 0) return null;
+  return {
+    dias,
+    centavos: Math.round((precoNovo - precoAtual) * Math.min(1, dias / ciclo)),
+  };
 }
 
 function data(iso: string | null) {
@@ -84,6 +114,9 @@ export default function Assinatura({
     fatura: string | null;
     diasDeTeste: number;
   } | null>(null);
+  // A hora lida uma vez, na montagem: ler o relogio a cada render torna
+  // o resultado instavel e o React reclama, com razao.
+  const [agora] = useState(() => Date.now());
   const [cancelando, setCancelando] = useState(false);
   const [cancelada, setCancelada] = useState<string | null>(null);
   // Já nasce no primeiro plano diferente do atual: com string vazia, o
@@ -92,18 +125,26 @@ export default function Assinatura({
     planos.find((p) => p.id !== atual?.plan)?.id ?? ""
   );
   const [trocandoPlano, setTrocandoPlano] = useState(false);
-  const [trocado, setTrocado] = useState<{
+  const [resultado, setResultado] = useState<{
     plano: string;
-    valorCentavos: number;
+    valorCentavos?: number;
+    agendado?: boolean;
+    desfeito?: boolean;
+    valeApartirDe?: string | null;
+    cobranca?: { url: string | null; centavos: number; dias: number } | null;
   } | null>(null);
 
-  async function trocar() {
-    const alvo = planos.find((p) => p.id === destino);
+  async function trocar(alvoId: string) {
+    const alvo = planos.find((p) => p.id === alvoId);
     if (!alvo) return;
+
+    const desfazendo = alvoId === atual?.plan;
 
     if (
       !confirm(
-        `Mudar para o plano ${alvo.nome}, por ${reais(alvo.preco_centavos)}/mês? O novo valor vale a partir da próxima cobrança.`
+        desfazendo
+          ? `Desfazer a mudança e continuar no plano ${alvo.nome}?`
+          : `Mudar para o plano ${alvo.nome}, por ${reais(alvo.preco_centavos)}/mês?`
       )
     ) {
       return;
@@ -115,14 +156,14 @@ export default function Assinatura({
       const resposta = await fetch("/api/assinatura/trocar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plano: destino }),
+        body: JSON.stringify({ plano: alvoId }),
       });
       const dados = await resposta.json();
       if (!resposta.ok) {
         setErro(dados.error ?? "Não foi possível trocar o plano agora.");
         return;
       }
-      setTrocado(dados);
+      setResultado(dados);
       router.refresh();
     } catch {
       setErro("Não foi possível falar com o servidor. Tente de novo.");
@@ -251,9 +292,40 @@ export default function Assinatura({
   const planoAtual = planos.find((p) => p.id === atual?.plan) ?? null;
   const outros = planos.filter((p) => p.id !== atual?.plan);
   // Em teste, a "próxima cobrança" é a primeira: a data do fim do teste.
-  const proximaCobranca =
-    data(atual?.current_period_end ?? null) ??
-    data(atual?.trial_ends_at ?? null);
+  const agendado = planos.find((p) => p.id === atual?.plano_agendado) ?? null;
+  const alvo = planos.find((p) => p.id === destino) ?? null;
+  const periodoPago =
+    atual?.status === "active" &&
+    !!atual.current_period_end &&
+    new Date(atual.current_period_end).getTime() > agora;
+
+  // A frase que aparece embaixo do seletor muda conforme o caso, porque
+  // os casos sao mesmo diferentes: subir cobra a diferenca agora, descer
+  // espera o mes acabar, e quem ainda nao pagou nada nao tem rateio.
+  let oQueVaiAcontecer =
+    "O novo valor vale a partir da próxima cobrança, e da fatura em aberto se houver.";
+
+  if (planoAtual && alvo) {
+    const subindo = alvo.preco_centavos > planoAtual.preco_centavos;
+    const conta = periodoPago
+      ? acerto(
+          planoAtual.preco_centavos,
+          alvo.preco_centavos,
+          atual!.current_period_end,
+          agora
+        )
+      : null;
+
+    if (subindo && periodoPago) {
+      oQueVaiAcontecer = conta
+        ? `Muda na hora. Você paga uma cobrança única de cerca de ${reais(conta.centavos)} pelos ${conta.dias} dias que faltam deste mês, e a mensalidade passa a ser ${reais(alvo.preco_centavos)} a partir de ${data(atual!.current_period_end)}.`
+        : `Muda na hora, e a mensalidade passa a ser ${reais(alvo.preco_centavos)}.`;
+    } else if (!subindo && periodoPago) {
+      oQueVaiAcontecer = `Vale a partir de ${data(atual!.current_period_end)}, quando o mês já pago terminar. Até lá você continua com tudo do plano ${planoAtual.nome} — não há devolução de dias.`;
+    } else {
+      oQueVaiAcontecer = `A mensalidade passa a ser ${reais(alvo.preco_centavos)}. Como o período em curso ainda não foi pago, a fatura em aberto já sai com o valor novo.`;
+    }
+  }
 
   return (
     <div className="cartao space-y-4 p-5">
@@ -399,52 +471,107 @@ export default function Assinatura({
               Seu plano: {planoAtual?.nome ?? "—"}
               {planoAtual && ` — ${reais(planoAtual.preco_centavos)}/mês`}
             </p>
-            {trocado ? (
-              <p className="mt-2 rounded-lg bg-surface-soft px-3 py-2 text-xs text-ink-muted">
-                Plano trocado para <strong>{trocado.plano}</strong>. A partir da
-                próxima cobrança o valor passa a ser{" "}
-                <strong>{reais(trocado.valorCentavos)}/mês</strong>. O limite de
-                sites já vale agora.
-              </p>
-            ) : (
-              outros.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  <label className="block">
-                    <span className="text-xs text-ink-muted">Mudar para</span>
-                    <select
-                      value={destino}
-                      onChange={(e) => setDestino(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm"
-                    >
-                      {outros.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nome} — {reais(p.preco_centavos)}/mês
-                          {p.max_projects
-                            ? ` · ${p.max_projects} ${p.max_projects === 1 ? "site" : "sites"}`
-                            : " · sites ilimitados"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={trocar}
-                    disabled={trocandoPlano || !destino}
-                    className="w-full rounded-lg border border-outline-soft px-4 py-2.5 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
-                  >
-                    {trocandoPlano ? "Trocando..." : "Trocar de plano"}
-                  </button>
-                  {/* Dito antes de clicar, e não depois: o Asaas não faz
-                      rateio, e descobrir isso na fatura seria uma surpresa
-                      ruim. */}
-                  <p className="text-xs text-ink-faint">
-                    O novo valor vale a partir da próxima cobrança
-                    {proximaCobranca ? ` (${proximaCobranca})` : ""} — e da
-                    fatura em aberto, se houver. Não há cobrança proporcional
-                    pelos dias que faltam do mês atual, nem devolução.
+
+            {resultado ? (
+              <div className="mt-2 space-y-2 rounded-lg bg-surface-soft px-3 py-2 text-xs text-ink-muted">
+                {resultado.desfeito ? (
+                  <p>
+                    Mudança desfeita. Você continua no plano{" "}
+                    <strong>{resultado.plano}</strong>.
                   </p>
-                </div>
-              )
+                ) : resultado.agendado ? (
+                  <p>
+                    Plano <strong>{resultado.plano}</strong> agendado para{" "}
+                    <strong>{data(resultado.valeApartirDe ?? null)}</strong>. Até
+                    lá você continua com tudo do plano atual, que já está pago.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      Plano trocado para <strong>{resultado.plano}</strong>. A
+                      mensalidade passa a ser{" "}
+                      <strong>{reais(resultado.valorCentavos ?? 0)}</strong> e o
+                      limite de sites já vale agora.
+                    </p>
+                    {resultado.cobranca && (
+                      <p>
+                        Geramos uma cobrança única de{" "}
+                        <strong>{reais(resultado.cobranca.centavos)}</strong>,
+                        referente aos {resultado.cobranca.dias} dias que faltam
+                        deste mês. Ela não se repete.
+                      </p>
+                    )}
+                    {resultado.cobranca?.url && (
+                      <a
+                        href={resultado.cobranca.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn-brand inline-block rounded-lg px-4 py-2 text-xs font-medium"
+                      >
+                        Pagar o acerto
+                      </a>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {/* Uma descida ja marcada precisa aparecer aqui: sem
+                    isso, a pessoa acha que nao funcionou e faz de novo. */}
+                {agendado && (
+                  <div className="rounded-lg bg-surface-soft px-3 py-2 text-xs text-ink-muted">
+                    <p>
+                      Mudança para <strong>{agendado.nome}</strong> marcada para{" "}
+                      <strong>{data(atual?.current_period_end ?? null)}</strong>.
+                      Até lá nada muda.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => trocar(atual!.plan)}
+                      disabled={trocandoPlano}
+                      className="mt-1 font-medium text-brand-blue underline disabled:opacity-50"
+                    >
+                      Desfazer e continuar no {planoAtual?.nome}
+                    </button>
+                  </div>
+                )}
+
+                {outros.length > 0 && (
+                  <>
+                    <label className="block">
+                      <span className="text-xs text-ink-muted">Mudar para</span>
+                      <select
+                        value={destino}
+                        onChange={(e) => setDestino(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2.5 text-sm"
+                      >
+                        {outros.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.nome} — {reais(p.preco_centavos)}/mês
+                            {p.max_projects
+                              ? ` · ${p.max_projects} ${p.max_projects === 1 ? "site" : "sites"}`
+                              : " · sites ilimitados"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    {/* O que vai acontecer, dito antes de clicar: a conta
+                        proporcional na fatura é o tipo de surpresa que
+                        gera chamado de suporte. */}
+                    <p className="text-xs text-ink-faint">{oQueVaiAcontecer}</p>
+
+                    <button
+                      type="button"
+                      onClick={() => trocar(destino)}
+                      disabled={trocandoPlano || !destino}
+                      className="w-full rounded-lg border border-outline-soft px-4 py-2.5 text-sm font-medium text-ink-muted hover:border-brand-blue hover:text-brand-blue disabled:opacity-50"
+                    >
+                      {trocandoPlano ? "Trocando..." : "Trocar de plano"}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
           </div>
 

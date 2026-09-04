@@ -63,6 +63,16 @@ export async function POST(request: Request) {
 
   if (!filtro.valor) return NextResponse.json({ ok: true, ignorado: true });
 
+  // Precisa do estado atual por causa da descida de plano agendada: ela
+  // espera justamente a renovacao para entrar em vigor. Uma cobranca
+  // avulsa (o acerto de quem sobe de plano) nao chega aqui — vai sem
+  // referencia e sem assinatura, e para no filtro acima.
+  const { data: antes } = await admin
+    .from("subscriptions")
+    .select("organization_id, plano_agendado")
+    .eq(filtro.coluna, filtro.valor)
+    .maybeSingle();
+
   const atualizacao: Record<string, unknown> = {
     ultimo_evento: evento,
     updated_at: new Date().toISOString(),
@@ -84,6 +94,12 @@ export async function POST(request: Request) {
         fim.setMonth(fim.getMonth() + 1);
         fim.setDate(fim.getDate() + 1);
         atualizacao.current_period_end = fim.toISOString();
+      }
+      // Comecou um periodo novo: e agora que o plano menor escolhido
+      // durante o mes passado passa a valer.
+      if (antes?.plano_agendado) {
+        atualizacao.plan = antes.plano_agendado;
+        atualizacao.plano_agendado = null;
       }
       break;
     }
@@ -112,6 +128,15 @@ export async function POST(request: Request) {
     .from("subscriptions")
     .update(atualizacao)
     .eq(filtro.coluna, filtro.valor);
+
+  // O limite de sites e lido da organizacao, entao ela tem de andar
+  // junto — senao o cliente continuaria com o teto do plano antigo.
+  if (atualizacao.plan && antes?.organization_id) {
+    await admin
+      .from("organizations")
+      .update({ plan: atualizacao.plan })
+      .eq("id", antes.organization_id);
+  }
 
   // Resposta curta e imediata: a documentação pede para não segurar o
   // Asaas esperando processamento.

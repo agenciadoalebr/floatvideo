@@ -84,7 +84,7 @@ export default async function ContaPage() {
     ? await supabase
         .from("subscriptions")
         .select(
-          "plan, status, trial_ends_at, current_period_end, overdue_since, invoice_url"
+          "plan, status, trial_ends_at, current_period_end, overdue_since, invoice_url, plano_agendado"
         )
         .eq("organization_id", membership?.organization_id ?? "")
         .maybeSingle()

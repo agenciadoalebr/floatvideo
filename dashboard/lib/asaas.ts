@@ -155,11 +155,18 @@ export async function atualizarAssinatura(dados: {
   assinaturaId: string;
   valorCentavos: number;
   descricao: string;
+  /**
+   * Alcança a fatura já gerada e ainda não paga. Verdadeiro quando o
+   * cliente ainda não pagou o período em curso — assim ele paga o
+   * valor certo. Falso quando o período já está pago e a troca só vale
+   * do próximo vencimento em diante.
+   */
+  atualizarPendentes: boolean;
 }) {
   const corpo = JSON.stringify({
     value: dados.valorCentavos / 100,
     description: dados.descricao,
-    updatePendingPayments: true,
+    updatePendingPayments: dados.atualizarPendentes,
   });
 
   try {
@@ -180,3 +187,38 @@ export async function atualizarAssinatura(dados: {
 export async function cancelarAssinatura(assinaturaId: string) {
   await chamar(`/subscriptions/${assinaturaId}`, { method: "DELETE" });
 }
+
+/**
+ * Cobrança avulsa — uma fatura só, fora da assinatura.
+ *
+ * Serve para o acerto proporcional de quem sobe de plano no meio do
+ * mês. Vai sem externalReference de propósito: o webhook usa esse campo
+ * para achar a conta e empurrar o fim do período pago em um mês, e uma
+ * cobrança de ajuste não é uma renovação.
+ */
+export async function criarCobrancaAvulsa(dados: {
+  clienteId: string;
+  valorCentavos: number;
+  descricao: string;
+  vencimentoEmDias: number;
+}) {
+  const vencimento = new Date();
+  vencimento.setDate(vencimento.getDate() + dados.vencimentoEmDias);
+
+  return chamar<{ id: string; invoiceUrl?: string; dueDate?: string }>(
+    "/payments",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        customer: dados.clienteId,
+        billingType: "UNDEFINED",
+        value: dados.valorCentavos / 100,
+        dueDate: vencimento.toISOString().slice(0, 10),
+        description: dados.descricao,
+      }),
+    }
+  );
+}
+
+/** Valor mínimo que o Asaas aceita numa cobrança. */
+export const MINIMO_COBRANCA_CENTAVOS = 500;
