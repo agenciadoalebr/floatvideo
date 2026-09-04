@@ -171,6 +171,9 @@ export default async function ProjectPage({
           <PainelDeUpload
             projectId={project.id}
             widgetId={widget?.id ?? null}
+            widgetAtivo={!!widget?.is_active}
+            siteConectado={(eventCounts.impression ?? 0) > 0}
+            temCta={!!cta}
             totalDeVideos={(videos ?? []).length}
           />
         ),

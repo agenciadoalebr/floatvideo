@@ -14,11 +14,17 @@ import YouTubeForm from "@/components/YouTubeForm";
 export default function PainelDeUpload({
   projectId,
   widgetId,
+  widgetAtivo,
+  siteConectado,
+  temCta,
   totalDeVideos,
 }: {
   projectId: string;
   /** Dono das regras de página — nasce junto com o site, no banco. */
   widgetId: string | null;
+  widgetAtivo: boolean;
+  siteConectado: boolean;
+  temCta: boolean;
   totalDeVideos: number;
 }) {
   return (
@@ -43,7 +49,13 @@ export default function PainelDeUpload({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
         <section className="cartao p-6">
-          <VideoUploader projectId={projectId} widgetId={widgetId} />
+          <VideoUploader
+            projectId={projectId}
+            widgetId={widgetId}
+            widgetAtivo={widgetAtivo}
+            siteConectado={siteConectado}
+            temCta={temCta}
+          />
 
           <ul className="mt-5 grid gap-2 border-t border-outline-soft pt-4 text-xs text-ink-muted sm:grid-cols-3">
             {[

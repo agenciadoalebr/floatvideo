@@ -16,6 +16,7 @@ import ModalDoCelular, {
   type ArquivoDoCelular,
 } from "@/components/ModalDoCelular";
 import ModalDeEnvio, { type Andamento } from "@/components/ModalDeEnvio";
+import ModalDeSucesso from "@/components/ModalDeSucesso";
 
 // Duas guardas de bom senso na compressão: vídeo pequeno não compensa
 // (o ganho é mínimo e só atrasa o envio) e vídeo enorme pode travar o
@@ -108,9 +109,17 @@ function tamanhoLegivel(bytes: number) {
 export default function VideoUploader({
   projectId,
   widgetId,
+  widgetAtivo,
+  siteConectado,
+  temCta,
 }: {
   projectId: string;
   widgetId: string | null;
+  /** Widget ligado. Desligado, nada aparece por mais certo que esteja. */
+  widgetAtivo: boolean;
+  /** O site já reportou exibição — prova de que o código está instalado. */
+  siteConectado: boolean;
+  temCta: boolean;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -123,6 +132,11 @@ export default function VideoUploader({
   // arquivo local nenhum para comprimir ou enviar.
   const [doCelular, setDoCelular] = useState<ArquivoDoCelular | null>(null);
   const [celularAberto, setCelularAberto] = useState(false);
+  const [concluido, setConcluido] = useState<{
+    nome: string;
+    regras: RegraNova[];
+    ganho: Andamento["ganho"];
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -211,6 +225,7 @@ export default function VideoUploader({
       }
 
       setSalvando(false);
+      setConcluido({ nome: name.trim(), regras, ganho: null });
       setName("");
       setRegras([]);
       setDoCelular(null);
@@ -335,6 +350,7 @@ export default function VideoUploader({
     await gerarEsalvarPrevia(supabase, criado.id, paraEnviar, path);
 
     setSalvando(false);
+    setConcluido({ nome: name.trim(), regras, ganho });
     setName("");
     setRegras([]);
     setArquivo(null);
@@ -497,6 +513,30 @@ export default function VideoUploader({
       {/* Enquanto salva, a janela toma a tela: é ela que mostra o
           andamento e segura a pessoa na página. */}
       {salvando && andamento && <ModalDeEnvio andamento={andamento} />}
+
+      {concluido && (
+        <ModalDeSucesso
+          nome={concluido.nome}
+          regras={concluido.regras}
+          ganho={concluido.ganho}
+          widgetAtivo={widgetAtivo}
+          siteConectado={siteConectado}
+          temCta={temCta}
+          aoFechar={() => setConcluido(null)}
+          aoConfigurarCta={() => {
+            setConcluido(null);
+            window.dispatchEvent(
+              new CustomEvent("fvw-goto-tab", { detail: "cta" })
+            );
+          }}
+          aoVerVideos={() => {
+            setConcluido(null);
+            window.dispatchEvent(
+              new CustomEvent("fvw-goto-tab", { detail: "videos" })
+            );
+          }}
+        />
+      )}
 
       {celularAberto && (
         <ModalDoCelular
