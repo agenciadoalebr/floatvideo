@@ -339,7 +339,9 @@
   right: 0;
   bottom: 0;
   z-index: 2;
-  padding: 12px;
+  /* A folga embaixo e a faixa onde mora a assinatura: sem ela, o cartao
+     do botao cobriria o canto inferior direito. */
+  padding: 12px 12px 34px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.35));
   flex-direction: column;
   gap: 6px;
@@ -694,4 +696,38 @@ textarea.fvw-input {
 @keyframes fvw-pulsa {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.25; }
+}
+
+/* Assinatura no canto inferior direito do video aberto.
+   So aparece expandido: no balao recolhido, de 160px, ela roubaria
+   espaco do que importa e nao seria legivel de todo jeito. A pilula
+   escura com desfoque garante leitura sobre qualquer video — texto
+   claro com sombra some sobre cena clara. */
+.fvw-marca {
+  display: none;
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 4;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.45;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.fvw-wrapper.fvw-expanded .fvw-marca {
+  display: inline-block;
+}
+
+.fvw-marca:hover {
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
 }

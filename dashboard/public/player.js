@@ -15,6 +15,14 @@
   var SUPABASE_ANON_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNobGJsc2x6dXl1Ymh1dHp5cGlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMjI0MDEsImV4cCI6MjEwMjg5ODQwMX0.4x1jByYqrXG-KXkQo3SvAhIzgYpvTOPuS_KNHDz2-wk";
   var YT_API_SRC = "https://www.youtube.com/iframe_api";
+
+  // Assinatura no rodape do video aberto. Quem ve o balao num site de
+  // cliente nao tem como saber de onde ele vem; este link e a unica
+  // resposta a essa pergunta. A campanha separa, no analytics, quem
+  // chegou por aqui de quem chegou por qualquer outro caminho.
+  var SITE_DA_MARCA =
+    "https://floatvideo.com.br/?utm_source=widget&utm_medium=video-flutuante" +
+    "&utm_campaign=clique-inferior-video";
   // Precisa casar com o width/height do iframe recolhido no
   // fvw-styles.css (300%): e o fator que converte "andar 1% do video"
   // em "andar N% da altura do balao".
@@ -292,6 +300,10 @@
       posterMarkup(config.video) +
       '<div class="fvw-progress"><div class="fvw-progress-fill"></div></div>' +
       (config.cta ? buildCTAMarkup(config.cta) : "") +
+      // Depois do CTA de proposito: no empilhamento, quem vem depois
+      // fica por cima — e a assinatura nao pode sumir sob o botao.
+      '<a class="fvw-marca" href="' + SITE_DA_MARCA +
+      '" target="_blank" rel="noopener noreferrer">Float Video</a>' +
       "</div>";
 
     return wrapper;
@@ -814,6 +826,15 @@
   }
 
   function wireCloseButton(el, backdrop, config, embedKey) {
+    // O clique abre o nosso site e para por ai: sem isto ele subiria
+    // ate o slot e recolheria o video no meio da leitura.
+    var marca = el.querySelector(".fvw-marca");
+    if (marca) {
+      marca.addEventListener("click", function (e) {
+        e.stopPropagation();
+      });
+    }
+
     el.querySelector(".fvw-close").addEventListener("click", function (e) {
       e.stopPropagation();
       if (el.classList.contains("fvw-expanded")) {
