@@ -202,21 +202,18 @@ function LoginForm() {
                   <div className="h-24 rounded-lg bg-surface-strong" />
                 </div>
               </div>
+              {/* Mesmo balão da home, um pouco menor: redondo, borda de
+                  3px e o × meio pra fora. Sem cartão de ação embaixo — no
+                  widget real ele aparece dentro do vídeo aberto. */}
               <div className="absolute bottom-5 right-5">
-                <div className="ml-auto h-28 w-16 rounded-2xl bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_-4px_rgba(0,127,255,0.4)]" />
-                <div className="mt-2 flex w-[190px] items-center gap-2 rounded-2xl bg-white/85 p-2 shadow-lg backdrop-blur">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25d366]">
-                    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-white">
-                      <path d="M12.05 21.8h-.01c-1.77 0-3.51-.48-5.03-1.38l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.43 9.9-9.88 9.9" />
+                <div className="relative h-[92px] w-[92px] rounded-full border-[3px] border-black bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" className="h-6 w-6 fill-white/85">
+                      <path d="M8 5v14l11-7z" />
                     </svg>
                   </span>
-                  <span className="min-w-0">
-                    <span className="block text-[12px] font-bold leading-tight text-neutral-900">
-                      Quer saber mais?
-                    </span>
-                    <span className="block text-[11px] leading-tight text-neutral-600">
-                      Chame pelo WhatsApp
-                    </span>
+                  <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-black/75 text-sm leading-none text-white">
+                    ×
                   </span>
                 </div>
               </div>

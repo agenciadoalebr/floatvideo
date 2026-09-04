@@ -210,9 +210,9 @@ export default async function LandingPage() {
               </dl>
             </div>
 
-            {/* Ilustração do balão. Vale mais que uma imagem estática: é o
-                próprio formato do produto, no tamanho e no canto em que ele
-                aparece de verdade. */}
+            {/* Ilustração do balão: formato, borda e canto são os do
+                widget de verdade. O tamanho não é em escala — nesta
+                janela de mentira, 160px reais apareceriam como um ponto. */}
             <div className="relative mx-auto hidden h-[440px] w-full max-w-md rounded-2xl border border-outline-soft bg-surface p-1 shadow-[0_12px_40px_-12px_rgba(0,9,45,0.15)] lg:block">
               <div className="flex items-center gap-2 rounded-t-xl px-3 py-2.5">
                 <span className="flex gap-1.5">
@@ -234,21 +234,20 @@ export default async function LandingPage() {
                   <div className="h-3 w-1/2 rounded bg-surface-muted" />
                 </div>
 
-                <div className="absolute bottom-5 right-5">
-                  <div className="ml-auto h-36 w-[81px] rounded-2xl bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_-4px_rgba(0,127,255,0.4)]" />
-                  <div className="mt-2 flex w-[210px] items-center gap-2 rounded-2xl bg-white/85 p-2 shadow-lg backdrop-blur">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#25d366]">
-                      <svg viewBox="0 0 24 24" className="h-5 w-5 fill-white">
-                        <path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.87 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.7.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.28-.2-.57-.34M12.05 21.8h-.01c-1.77 0-3.51-.48-5.03-1.38l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.43 9.9-9.88 9.9" />
+                {/* O balão como ele é: redondo, com a borda de 3px na cor
+                    escolhida (preto por padrão) e o × meio pra fora do
+                    canto. O cartão de "Chame pelo WhatsApp" não mora aqui
+                    — no widget de verdade ele só aparece por cima do
+                    vídeo depois que a pessoa toca e o balão abre. */}
+                <div className="absolute bottom-6 right-6">
+                  <div className="relative h-[100px] w-[100px] rounded-full border-[3px] border-black bg-gradient-to-br from-brand-blue to-brand-violet shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="h-7 w-7 fill-white/85">
+                        <path d="M8 5v14l11-7z" />
                       </svg>
                     </span>
-                    <span className="min-w-0">
-                      <span className="block text-[13px] font-bold leading-tight text-neutral-900">
-                        Quer saber mais?
-                      </span>
-                      <span className="block text-[12px] leading-tight text-neutral-600">
-                        Chame pelo WhatsApp
-                      </span>
+                    <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-black/75 text-sm leading-none text-white">
+                      ×
                     </span>
                   </div>
                 </div>
