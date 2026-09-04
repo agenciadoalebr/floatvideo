@@ -42,10 +42,10 @@ const SITUACAO: Record<string, { texto: string; cor: string }> = {
   active: { texto: "Ativa", cor: "bg-emerald-100 text-emerald-800" },
   overdue: { texto: "Em atraso", cor: "bg-amber-100 text-amber-900" },
   suspended: { texto: "Suspensa", cor: "bg-red-100 text-red-800" },
-  canceled: { texto: "Cancelada", cor: "bg-neutral-200 text-neutral-700" },
+  canceled: { texto: "Cancelada", cor: "bg-surface-muted text-ink-muted" },
   sem_assinatura: {
     texto: "Sem assinatura",
-    cor: "bg-neutral-100 text-neutral-500",
+    cor: "bg-surface-soft text-ink-faint",
   },
 };
 
@@ -143,20 +143,20 @@ export default function ContaDetalhe({
   }
 
   const campo =
-    "mt-1 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-brand-blue";
-  const rotulo = "text-xs text-neutral-600";
+    "mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue";
+  const rotulo = "text-xs text-ink-muted";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <form
         onSubmit={salvar}
-        className="space-y-5 rounded-lg border border-neutral-200 bg-white p-5"
+        className="cartao space-y-5 p-5"
       >
         <div>
-          <h2 className="text-sm font-semibold text-neutral-700">
+          <h2 className="text-sm font-semibold text-brand-ink">
             Dados cadastrais
           </h2>
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-ink-faint">
             O que está aqui é nosso e pode ser corrigido. O que vem do Asaas
             fica ao lado, só para consulta.
           </p>
@@ -229,7 +229,7 @@ export default function ContaDetalhe({
               placeholder={`padrão do plano: ${conta.limite_do_plano ?? "∞"}`}
               className={campo}
             />
-            <span className="mt-1 block text-xs text-neutral-500">
+            <span className="mt-1 block text-xs text-ink-faint">
               Em branco, vale o limite do plano.
             </span>
           </label>
@@ -243,7 +243,7 @@ export default function ContaDetalhe({
               className={campo}
               disabled={!assinatura}
             />
-            <span className="mt-1 block text-xs text-neutral-500">
+            <span className="mt-1 block text-xs text-ink-faint">
               {assinatura
                 ? "Estender aqui não avisa o Asaas: a cobrança dele segue a data original."
                 : "Esta conta não tem assinatura."}
@@ -265,8 +265,8 @@ export default function ContaDetalhe({
       </form>
 
       <div className="space-y-4">
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="text-sm font-semibold text-neutral-700">Assinatura</h2>
+        <div className="cartao p-5">
+          <h2 className="text-sm font-semibold text-brand-ink">Assinatura</h2>
           <p className="mt-2">
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${situacao.cor}`}
@@ -283,8 +283,8 @@ export default function ContaDetalhe({
               ["Último evento", assinatura?.ultimo_evento ?? "—"],
             ].map(([k, v]) => (
               <div key={k} className="flex justify-between gap-2">
-                <dt className="text-neutral-500">{k}</dt>
-                <dd className="text-right text-neutral-800">{v}</dd>
+                <dt className="text-ink-faint">{k}</dt>
+                <dd className="text-right text-brand-ink">{v}</dd>
               </div>
             ))}
           </dl>
@@ -299,7 +299,7 @@ export default function ContaDetalhe({
             </a>
           )}
           {assinatura?.asaas_subscription_id && (
-            <p className="mt-3 break-all font-mono text-[11px] text-neutral-400">
+            <p className="mt-3 break-all font-mono text-[11px] text-ink-faint">
               {assinatura.asaas_subscription_id}
               <br />
               {assinatura.asaas_customer_id}
@@ -307,34 +307,34 @@ export default function ContaDetalhe({
           )}
         </div>
 
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="text-sm font-semibold text-neutral-700">
+        <div className="cartao p-5">
+          <h2 className="text-sm font-semibold text-brand-ink">
             Pessoas ({pessoas.length})
           </h2>
           <ul className="mt-2 space-y-2 text-xs">
             {pessoas.map((p) => (
               <li key={p.email} className="flex justify-between gap-2">
-                <span className="min-w-0 truncate text-neutral-700">
+                <span className="min-w-0 truncate text-brand-ink">
                   {p.email}
                 </span>
-                <span className="shrink-0 text-neutral-400">{p.role}</span>
+                <span className="shrink-0 text-ink-faint">{p.role}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="rounded-lg border border-neutral-200 bg-white p-5">
-          <h2 className="text-sm font-semibold text-neutral-700">
+        <div className="cartao p-5">
+          <h2 className="text-sm font-semibold text-brand-ink">
             Sites ({sites.length})
           </h2>
           {sites.length === 0 ? (
-            <p className="mt-2 text-xs text-neutral-500">Nenhum site ainda.</p>
+            <p className="mt-2 text-xs text-ink-faint">Nenhum site ainda.</p>
           ) : (
             <ul className="mt-2 space-y-2 text-xs">
               {sites.map((s) => (
                 <li key={s.nome}>
-                  <span className="block text-neutral-800">{s.nome}</span>
-                  <span className="text-neutral-400">
+                  <span className="block text-brand-ink">{s.nome}</span>
+                  <span className="text-ink-faint">
                     {s.dominio ?? "sem domínio"} · {s.videos} vídeo(s)
                   </span>
                 </li>

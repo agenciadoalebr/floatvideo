@@ -28,9 +28,9 @@ const SITUACAO: Record<string, { texto: string; cor: string }> = {
   active: { texto: "Ativa", cor: "bg-emerald-100 text-emerald-800" },
   overdue: { texto: "Em atraso", cor: "bg-amber-100 text-amber-900" },
   suspended: { texto: "Suspensa", cor: "bg-red-100 text-red-800" },
-  canceled: { texto: "Cancelada", cor: "bg-neutral-200 text-neutral-700" },
+  canceled: { texto: "Cancelada", cor: "bg-surface-muted text-ink-muted" },
   // Contas internas e cortesias, que nunca passaram pelo Asaas.
-  sem_assinatura: { texto: "Sem assinatura", cor: "bg-neutral-100 text-neutral-500" },
+  sem_assinatura: { texto: "Sem assinatura", cor: "bg-surface-soft text-ink-faint" },
 };
 
 function data(iso: string | null) {
@@ -134,7 +134,7 @@ Para confirmar, digite o nome da conta:`
 
   if (contas.length === 0) {
     return (
-      <p className="rounded-lg border border-neutral-200 bg-white p-4 text-sm text-neutral-500">
+      <p className="cartao p-4 text-sm text-ink-faint">
         Nenhuma conta ainda.
       </p>
     );
@@ -149,15 +149,15 @@ Para confirmar, digite o nome da conta:`
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           placeholder="Buscar por nome, e-mail, CPF ou CNPJ"
-          className="w-full max-w-sm rounded-md border border-neutral-300 px-3 py-2 text-xs outline-none focus:border-brand-blue"
+          className="w-full max-w-sm rounded-lg border border-outline-soft px-3 py-2 text-xs outline-none focus:border-brand-blue"
         />
-        <span className="whitespace-nowrap text-xs text-neutral-400">
+        <span className="whitespace-nowrap text-xs text-ink-faint">
           {visiveis.length} de {contas.length}
         </span>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white">
+      <div className="overflow-x-auto cartao">
         <table className="w-full text-left text-xs">
-          <thead className="bg-neutral-50 text-neutral-500">
+          <thead className="bg-surface-soft text-ink-faint">
             <tr>
               <th className="px-4 py-2 font-medium">Conta</th>
               <th className="px-4 py-2 font-medium">Dono</th>
@@ -169,10 +169,10 @@ Para confirmar, digite o nome da conta:`
               <th className="px-4 py-2" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
+          <tbody className="divide-y divide-outline-soft">
             {visiveis.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-neutral-500">
+                <td colSpan={8} className="px-4 py-6 text-center text-ink-faint">
                   Nenhuma conta com &ldquo;{busca}&rdquo;.
                 </td>
               </tr>
@@ -187,12 +187,12 @@ Para confirmar, digite o nome da conta:`
                     {c.nome}
                   </Link>
                 </td>
-                <td className="px-4 py-2 text-neutral-600">
+                <td className="px-4 py-2 text-ink-muted">
                   {c.dono ?? "—"}
                   {/* O titular só aparece quando é diferente do e-mail:
                       repetir a mesma informação duas vezes atrapalha. */}
                   {c.titular && c.titular !== c.dono && (
-                    <span className="block text-neutral-400">{c.titular}</span>
+                    <span className="block text-ink-faint">{c.titular}</span>
                   )}
                 </td>
                 <td className="px-4 py-2">
@@ -204,25 +204,25 @@ Para confirmar, digite o nome da conta:`
                     {(SITUACAO[c.situacao] ?? SITUACAO.sem_assinatura).texto}
                   </span>
                   {c.situacao === "trialing" && data(c.vence_em) && (
-                    <span className="block text-[11px] text-neutral-400">
+                    <span className="block text-[11px] text-ink-faint">
                       até {data(c.vence_em)}
                     </span>
                   )}
                   {(c.situacao === "overdue" || c.situacao === "suspended") &&
                     data(c.atrasada_desde) && (
-                      <span className="block text-[11px] text-neutral-400">
+                      <span className="block text-[11px] text-ink-faint">
                         vencida em {data(c.atrasada_desde)}
                       </span>
                     )}
                   {c.situacao === "active" && data(c.vence_em) && (
-                    <span className="block text-[11px] text-neutral-400">
+                    <span className="block text-[11px] text-ink-faint">
                       renova {data(c.vence_em)}
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-600">
+                <td className="px-4 py-2 text-ink-muted">
                   {c.sites}
-                  <span className="text-neutral-400">
+                  <span className="text-ink-faint">
                     {" "}
                     / {c.limite_sites ?? "∞"}
                   </span>
@@ -234,8 +234,8 @@ Para confirmar, digite o nome da conta:`
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2 text-neutral-600">{c.pessoas}</td>
-                <td className="px-4 py-2 text-neutral-500">
+                <td className="px-4 py-2 text-ink-muted">{c.pessoas}</td>
+                <td className="px-4 py-2 text-ink-faint">
                   {new Date(c.criada_em).toLocaleDateString("pt-BR")}
                 </td>
                 <td className="px-4 py-2">
@@ -243,7 +243,7 @@ Para confirmar, digite o nome da conta:`
                     value={c.plano}
                     disabled={salvando === c.id}
                     onChange={(e) => trocarPlano(c.id, e.target.value)}
-                    className="rounded-md border border-neutral-300 px-2 py-1 text-xs disabled:opacity-50"
+                    className="rounded-lg border border-outline-soft px-2 py-1 text-xs disabled:opacity-50"
                   >
                     {planos.map((p) => (
                       <option key={p.id} value={p.id}>
