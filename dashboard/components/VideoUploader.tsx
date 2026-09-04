@@ -74,6 +74,20 @@ async function compressVideo(file: File, onProgress: (pct: number) => void): Pro
   }
 }
 
+function tamanhoLegivel(bytes: number) {
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.round(bytes / 1024)} KB`;
+}
+
+/**
+ * Envio de vídeo em três passos, com a subida disparada por botão.
+ *
+ * Escolher o arquivo só escolhe o arquivo. Antes, soltar o vídeo já
+ * começava a subida na hora — não dava para conferir nada nem voltar
+ * atrás depois de errar o arquivo. Agora o envio é um ato à parte, e o
+ * botão só acende com nome, regras e arquivo os três prontos.
+ */
 export default function VideoUploader({
   projectId,
   widgetId,
@@ -82,156 +96,155 @@ export default function VideoUploader({
   widgetId: string | null;
 }) {
   const [dragOver, setDragOver] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [progressLabel, setProgressLabel] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [progresso, setProgresso] = useState("");
   const [error, setError] = useState("");
   const [name, setName] = useState("");
   const [regras, setRegras] = useState<RegraNova[]>([]);
+  const [arquivo, setArquivo] = useState<File | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // O nome é lido via ref no momento do insert: handleFile é um useCallback
-  // e, se dependesse do state, cada tecla digitada recriaria a função (e
-  // com ela o handler de drop). O ref é atualizado no onChange, nunca
-  // durante o render — escrever nele no corpo do componente quebra o
-  // modelo de renderização concorrente do React.
-  const nameRef = useRef("");
-  // As regras seguem o mesmo caminho do nome, e pelo mesmo motivo.
-  const regrasRef = useRef<RegraNova[]>([]);
+  // Só valida e guarda. Como não dispara mais o envio, esta função não
+  // depende de nada que mude — e some a necessidade dos refs que existiam
+  // apenas para manter o handler de drop estável.
+  const escolher = useCallback((file: File) => {
+    setError("");
+    if (!file.type.startsWith("video/")) {
+      setError("Envie um arquivo de vídeo (MP4, WebM ou MOV).");
+      return;
+    }
+    if (file.size > 500 * 1024 * 1024) {
+      setError("O arquivo excede o limite de 500MB.");
+      return;
+    }
+    setArquivo(file);
+  }, []);
 
-  const handleFile = useCallback(
-    async (file: File) => {
-      setError("");
+  async function salvar() {
+    if (!arquivo || !liberado) return;
 
-      if (!file.type.startsWith("video/")) {
-        setError("Envie um arquivo de vídeo (MP4, WebM ou MOV).");
-        return;
-      }
-      if (file.size > 500 * 1024 * 1024) {
-        setError("O arquivo excede o limite de 500MB.");
-        return;
-      }
+    setError("");
+    setSalvando(true);
 
-      setUploading(true);
-
-      let fileToUpload: File = file;
-      if (file.size > MIN_SIZE_TO_COMPRESS && file.size <= MAX_SIZE_TO_COMPRESS) {
-        try {
-          setProgressLabel("Comprimindo vídeo... 0%");
-          fileToUpload = await compressVideo(file, (pct) =>
-            setProgressLabel(`Comprimindo vídeo... ${pct}%`)
-          );
-        } catch (err) {
-          // Compressão é uma otimização, não um requisito — se falhar (navegador
-          // sem suporte, sem memória, etc.), segue com o arquivo original.
-          console.warn("[VideoUploader] falha ao comprimir, enviando original:", err);
-          fileToUpload = file;
-        }
-      }
-
-      setProgressLabel("Enviando vídeo...");
-
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        setError("Sessão expirada, faça login de novo.");
-        setUploading(false);
-        return;
-      }
-
-      const ext = fileToUpload.name.split(".").pop() || "mp4";
-      const path = `${user.id}/${projectId}/${Date.now()}.${ext}`;
-
-      // O arquivo vai direto do navegador pro R2, com uma autorização
-      // temporária gerada pelo nosso servidor. Ele não passa pela Vercel:
-      // não esbarra no limite de tamanho de requisição nem gasta banda
-      // nossa no caminho.
-      let publicUrl: string;
+    let paraEnviar: File = arquivo;
+    if (
+      arquivo.size > MIN_SIZE_TO_COMPRESS &&
+      arquivo.size <= MAX_SIZE_TO_COMPRESS
+    ) {
       try {
-        const enviado = await enviarArquivo(fileToUpload, path, "video");
-        publicUrl = enviado.publicUrl;
+        setProgresso("Comprimindo vídeo... 0%");
+        paraEnviar = await compressVideo(arquivo, (pct) =>
+          setProgresso(`Comprimindo vídeo... ${pct}%`)
+        );
       } catch (err) {
+        // Compressão é otimização, não requisito — se falhar (navegador
+        // sem suporte, sem memória), segue com o arquivo original.
+        console.warn(
+          "[VideoUploader] falha ao comprimir, enviando original:",
+          err
+        );
+        paraEnviar = arquivo;
+      }
+    }
+
+    setProgresso("Enviando vídeo...");
+
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setError("Sessão expirada, faça login de novo.");
+      setSalvando(false);
+      return;
+    }
+
+    const ext = paraEnviar.name.split(".").pop() || "mp4";
+    const path = `${user.id}/${projectId}/${Date.now()}.${ext}`;
+
+    // O arquivo vai direto do navegador pro R2, com uma autorização
+    // temporária gerada pelo nosso servidor. Ele não passa pela Vercel:
+    // não esbarra no limite de tamanho de requisição nem gasta banda
+    // nossa no caminho.
+    let publicUrl: string;
+    try {
+      const enviado = await enviarArquivo(paraEnviar, path, "video");
+      publicUrl = enviado.publicUrl;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao enviar o vídeo.");
+      setSalvando(false);
+      return;
+    }
+
+    setProgresso("Registrando vídeo...");
+
+    const { data: criado, error: insertError } = await supabase
+      .from("videos")
+      .insert({
+        project_id: projectId,
+        name: name.trim(),
+        source_type: "upload",
+        original_file_key: path,
+        mp4_url: publicUrl,
+        status: "ready",
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !criado) {
+      setSalvando(false);
+      setError(insertError?.message ?? "Erro ao registrar o vídeo.");
+      return;
+    }
+
+    // As regras vêm antes da miniatura: é o que decide se o vídeo aparece
+    // em algum lugar. Se falhar, a pessoa precisa saber agora, e não
+    // descobrir olhando um site sem balão.
+    if (widgetId) {
+      const erroDasRegras = await salvarRegras(
+        supabase,
+        widgetId,
+        criado.id,
+        regras
+      );
+      if (erroDasRegras) {
+        setSalvando(false);
         setError(
-          err instanceof Error ? err.message : "Falha ao enviar o vídeo."
+          `O vídeo subiu, mas as regras não foram salvas: ${erroDasRegras.message}. Ajuste em "Onde aparece?" na lista de vídeos.`
         );
-        setUploading(false);
+        router.refresh();
         return;
       }
+    }
 
-      setProgressLabel("Registrando vídeo...");
+    // Miniatura a partir do arquivo que está aqui na máquina, não do que
+    // acabou de subir: é instantâneo e não gasta banda baixando de volta
+    // o que acabamos de enviar.
+    setProgresso("Gerando miniatura...");
+    await gerarEsalvarMiniatura(supabase, criado.id, paraEnviar, path);
 
-      const { data: criado, error: insertError } = await supabase
-        .from("videos")
-        .insert({
-          project_id: projectId,
-          name: nameRef.current.trim(),
-          source_type: "upload",
-          original_file_key: path,
-          mp4_url: publicUrl,
-          status: "ready",
-        })
-        .select("id")
-        .single();
+    // A prévia é o que roda no balão recolhido. Sai daqui, do arquivo que
+    // já está na máquina, e não de um servidor.
+    setProgresso("Preparando a prévia do balão...");
+    await gerarEsalvarPrevia(supabase, criado.id, paraEnviar, path);
 
-      if (insertError || !criado) {
-        setUploading(false);
-        setError(insertError?.message ?? "Erro ao registrar o vídeo.");
-        return;
-      }
+    setSalvando(false);
+    setName("");
+    setRegras([]);
+    setArquivo(null);
+    setProgresso("");
+    router.refresh();
+  }
 
-      // As regras vêm antes da miniatura: é o que decide se o vídeo
-      // aparece em algum lugar. Se falhar, a pessoa precisa saber agora,
-      // e não descobrir olhando um site sem balão.
-      if (widgetId) {
-        const erroDasRegras = await salvarRegras(
-          supabase,
-          widgetId,
-          criado.id,
-          regrasRef.current
-        );
-        if (erroDasRegras) {
-          setUploading(false);
-          setError(
-            `O vídeo subiu, mas as regras não foram salvas: ${erroDasRegras.message}. Ajuste em "Onde aparece?" na lista de vídeos.`
-          );
-          router.refresh();
-          return;
-        }
-      }
-
-      // Miniatura a partir do arquivo que está aqui na máquina, não do
-      // que acabou de subir: é instantâneo e não gasta banda baixando de
-      // volta o que acabamos de enviar.
-      setProgressLabel("Gerando miniatura...");
-      await gerarEsalvarMiniatura(supabase, criado.id, fileToUpload, path);
-
-      // A prévia é o que roda no balão recolhido. Sai daqui, do arquivo
-      // que já está na máquina, e não de um servidor: o navegador já tem
-      // tudo o que precisa.
-      setProgressLabel("Preparando a prévia do balão...");
-      await gerarEsalvarPrevia(supabase, criado.id, fileToUpload, path);
-
-      setUploading(false);
-
-      setName("");
-      nameRef.current = "";
-      setRegras([]);
-      regrasRef.current = [];
-      router.refresh();
-    },
-    [projectId, router, widgetId]
-  );
-
-  // O que falta para o envio ser liberado. Um vídeo sem nome vira uma
-  // linha vazia na lista, e um vídeo sem regra não aparece em lugar
-  // nenhum — os dois só dão as caras bem depois, quando já não é óbvio
-  // o que deu errado.
+  // O que falta, dito por extenso. Um vídeo sem nome vira uma linha vazia
+  // na lista e um vídeo sem regra não aparece em lugar nenhum — os dois só
+  // dão as caras bem depois, quando já não é óbvio o que deu errado.
   const faltando: string[] = [];
   if (!name.trim()) faltando.push("o nome do vídeo");
   if (regras.length === 0) faltando.push("onde ele vai aparecer");
+  if (!arquivo) faltando.push("o arquivo");
   const liberado = faltando.length === 0;
 
   return (
@@ -242,10 +255,7 @@ export default function VideoUploader({
         </span>
         <input
           value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            nameRef.current = e.target.value;
-          }}
+          onChange={(e) => setName(e.target.value)}
           placeholder="Ex.: Apresentação da loja"
           className="mt-1 w-full rounded-lg border border-outline-soft px-3 py-2 text-sm outline-none focus:border-brand-blue"
         />
@@ -259,87 +269,110 @@ export default function VideoUploader({
           Em quais páginas do site o balão entra. Sem ao menos uma regra, o
           vídeo fica guardado aqui e não aparece para ninguém.
         </p>
-        <RegrasDoNovoVideo
-          regras={regras}
-          aoMudar={(r) => {
-            setRegras(r);
-            regrasRef.current = r;
-          }}
-        />
+        <RegrasDoNovoVideo regras={regras} aoMudar={setRegras} />
       </div>
 
       <div>
-        <span className="text-xs font-medium text-ink-muted">
-          3. O arquivo
-        </span>
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            if (liberado) setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragOver(false);
-            if (!liberado) return;
-            const file = e.dataTransfer.files?.[0];
-            if (file) handleFile(file);
-          }}
-          onClick={() => {
-            if (liberado) inputRef.current?.click();
-          }}
-          aria-disabled={!liberado}
-          className={`mt-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
-            !liberado
-              ? "cursor-not-allowed border-outline bg-surface-soft opacity-60"
-              : dragOver
-                ? "cursor-pointer border-brand-blue bg-brand-blue/5"
-                : "cursor-pointer border-outline bg-surface-soft hover:border-brand-blue"
-          }`}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept="video/*"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFile(file);
+        <span className="text-xs font-medium text-ink-muted">3. O arquivo</span>
+
+        {arquivo ? (
+          <div className="mt-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-outline-soft bg-surface-soft px-4 py-3">
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-medium text-brand-ink">
+                {arquivo.name}
+              </span>
+              <span className="text-xs text-ink-faint">
+                {tamanhoLegivel(arquivo.size)}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setArquivo(null)}
+              disabled={salvando}
+              className="text-xs font-medium text-brand-blue hover:underline disabled:opacity-50"
+            >
+              Trocar arquivo
+            </button>
+          </div>
+        ) : (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
             }}
-          />
-          {/* Seta para cima em traço: o mesmo desenho do menu lateral, para
-              a tela inteira parecer feita pela mesma mão. */}
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className={`h-10 w-10 ${liberado ? "text-brand-blue" : "text-ink-faint"}`}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) escolher(file);
+            }}
+            onClick={() => inputRef.current?.click()}
+            className={`mt-1 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition ${
+              dragOver
+                ? "border-brand-blue bg-brand-blue/5"
+                : "border-outline bg-surface-soft hover:border-brand-blue"
+            }`}
           >
-            <path d="M12 16V4m0 0L7 9m5-5l5 5" />
-            <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
-          </svg>
-          <p className="mt-4 text-base font-medium text-brand-ink">
-            {uploading ? progressLabel : "Arraste o seu vídeo aqui"}
-          </p>
-          <p className="mt-1 text-sm text-ink-muted">
-            {uploading
-              ? "Não feche esta aba enquanto o envio termina."
-              : "ou clique para escolher um arquivo no computador"}
-          </p>
-          {/* Diz o que falta, e não só que está bloqueado: um botão apagado
-              sem explicação é o tipo de coisa que vira chamado de suporte. */}
-          {!liberado && !uploading && (
-            <p className="mt-3 rounded-lg bg-surface-card px-3 py-2 text-xs text-ink-muted">
-              Antes de enviar, preencha {faltando.join(" e ")}.
+            <input
+              ref={inputRef}
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) escolher(file);
+              }}
+            />
+            {/* Seta para cima em traço: o mesmo desenho do menu lateral,
+                para a tela inteira parecer feita pela mesma mão. */}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-10 w-10 text-brand-blue"
+            >
+              <path d="M12 16V4m0 0L7 9m5-5l5 5" />
+              <path d="M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
+            </svg>
+            <p className="mt-4 text-base font-medium text-brand-ink">
+              Arraste o seu vídeo aqui
             </p>
-          )}
-          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        </div>
+            <p className="mt-1 text-sm text-ink-muted">
+              ou clique para escolher um arquivo no computador
+            </p>
+          </div>
+        )}
       </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-outline-soft pt-4">
+        {/* Diz o que falta, e não só que está bloqueado: um botão apagado
+            sem explicação é o tipo de coisa que vira chamado de suporte. */}
+        {!liberado && !salvando && (
+          <span className="text-xs text-ink-muted">
+            Falta {faltando.join(", ")}.
+          </span>
+        )}
+        {salvando && (
+          <span className="text-xs text-ink-muted">
+            {progresso} Não feche esta aba.
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={salvar}
+          disabled={!liberado || salvando}
+          className="btn-brand rounded-lg px-5 py-2.5 text-sm font-medium disabled:opacity-50"
+        >
+          {salvando ? "Salvando..." : "Salvar vídeo"}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }

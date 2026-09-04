@@ -120,7 +120,7 @@ export default function YouTubeForm({
         disabled={loading || faltando.length > 0}
         className="btn-brand rounded-lg px-3 py-2.5 text-sm font-medium disabled:opacity-50"
       >
-        {loading ? "Adicionando..." : "Usar este vídeo"}
+        {loading ? "Salvando..." : "Salvar vídeo"}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
     </form>
