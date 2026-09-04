@@ -54,6 +54,51 @@ function escapeCsvValue(value: string) {
   return value;
 }
 
+/**
+ * Os quatro jeitos de um lead chegar, e como cada um se chama na tela.
+ *
+ * O tipo vem do campo "Ação" que o player grava no clique. Antes a tela
+ * só perguntava se esse campo existia, e chamava tudo que existia de
+ * WhatsApp — então quem usa o botão de comprar de e-commerce via oito
+ * leads marcados como WhatsApp numa loja que não tem WhatsApp nenhum.
+ */
+const ORIGENS = {
+  whatsapp: {
+    rotulo: "WhatsApp",
+    cartao: "Foram para o WhatsApp",
+    texto: "Clicaram e a conversa abriu no aparelho da pessoa.",
+    cor: "bg-emerald-50 text-emerald-800",
+  },
+  compra: {
+    rotulo: "Comprar",
+    cartao: "Foram para a compra",
+    texto: "Clicaram e a página levou até o botão de comprar.",
+    cor: "bg-indigo-50 text-indigo-800",
+  },
+  link: {
+    rotulo: "Link",
+    cartao: "Abriram o link",
+    texto: "Clicaram no botão e seguiram para a página indicada.",
+    cor: "bg-sky-50 text-sky-800",
+  },
+  formulario: {
+    rotulo: "Formulário",
+    cartao: "Preencheram o formulário",
+    texto: "Deixaram nome e contato dentro do vídeo.",
+    cor: "bg-surface-muted text-ink-muted",
+  },
+} as const;
+
+type Origem = keyof typeof ORIGENS;
+
+function classificar(acao: string): Origem {
+  const t = acao.toLowerCase();
+  if (!t) return "formulario";
+  if (t.includes("whatsapp")) return "whatsapp";
+  if (t.includes("comprar") || t.includes("compra")) return "compra";
+  return "link";
+}
+
 /** O que dá para saber de um lead a partir dos campos que ele preencheu. */
 function lerLead(lead: Lead) {
   const d = (lead.data ?? {}) as Record<string, string>;
@@ -65,17 +110,17 @@ function lerLead(lead: Lead) {
   const email = d[chave("mail") ?? ""] ?? "";
   const acao = d["Ação"] ?? d["Acao"] ?? "";
 
-  // Clique direto no WhatsApp não tem formulário: o que existe é a ação
-  // registrada. Chamar isso de "formulário" seria mentir na coluna.
-  const origem: "whatsapp" | "formulario" = acao ? "whatsapp" : "formulario";
-
   return {
-    nome: nome || (acao ? "Clique no botão" : "Contato"),
+    // A própria ação como título: "Clique em Comprar" diz o que
+    // aconteceu, e "Clique no botão" repetido oito vezes não diz nada.
+    nome: nome || acao || "Contato",
     telefone,
     email,
-    origem,
+    origem: classificar(acao),
     outros: Object.entries(d).filter(
       ([k]) =>
+        k !== "Ação" &&
+        k !== "Acao" &&
         !["nome", "telefone", "celular", "mail"].some((p) =>
           k.toLowerCase().includes(p)
         )
@@ -85,10 +130,11 @@ function lerLead(lead: Lead) {
 
 export default function LeadsPanel({ leads, videos }: Props) {
   const [dias, setDias] = useState<number>(30);
+  // Lido uma vez, na montagem: o relógio a cada render deixa o filtro de
+  // período instável, e o React reclama com razão.
+  const [agora] = useState(() => Date.now());
   const [busca, setBusca] = useState("");
-  const [origem, setOrigem] = useState<"todos" | "whatsapp" | "formulario">(
-    "todos"
-  );
+  const [origem, setOrigem] = useState<Origem | "todos">("todos");
   const [copiado, setCopiado] = useState<string | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
 
@@ -100,26 +146,45 @@ export default function LeadsPanel({ leads, videos }: Props) {
 
   const noPeriodo = useMemo(() => {
     if (!dias) return leads;
-    const limite = Date.now() - dias * 86400000;
+    const limite = agora - dias * 86400000;
     return leads.filter((l) => new Date(l.created_at).getTime() >= limite);
-  }, [leads, dias]);
+  }, [leads, dias, agora]);
+
+  // Só os tipos que a conta realmente usa viram cartão e filtro: uma
+  // loja sem WhatsApp não precisa de um cartão zerado de WhatsApp, nem
+  // de um botão de filtro que nunca acha nada.
+  const contagem = useMemo(() => {
+    const mapa = {} as Record<Origem, number>;
+    for (const lead of noPeriodo) {
+      const o = lerLead(lead).origem;
+      mapa[o] = (mapa[o] ?? 0) + 1;
+    }
+    return mapa;
+  }, [noPeriodo]);
+
+  const presentes = (Object.keys(ORIGENS) as Origem[]).filter(
+    (o) => (contagem[o] ?? 0) > 0
+  );
 
   const visiveis = useMemo(() => {
     const alvo = busca.trim().toLowerCase();
     return noPeriodo.filter((lead) => {
       const info = lerLead(lead);
-      if (origem !== "todos" && info.origem !== origem) return false;
+      // Um filtro que sumiu do período em vista deixa de valer: senão a
+      // lista fica vazia sem nenhum botão aceso explicando por quê.
+      if (
+        origem !== "todos" &&
+        presentes.includes(origem) &&
+        info.origem !== origem
+      ) {
+        return false;
+      }
       if (!alvo) return true;
       return JSON.stringify(lead.data ?? {})
         .toLowerCase()
         .includes(alvo);
     });
-  }, [noPeriodo, busca, origem]);
-
-  const porWhatsapp = noPeriodo.filter(
-    (l) => lerLead(l).origem === "whatsapp"
-  ).length;
-  const porFormulario = noPeriodo.length - porWhatsapp;
+  }, [noPeriodo, busca, origem, presentes]);
 
   function copiar(texto: string, id: string) {
     navigator.clipboard.writeText(texto);
@@ -199,30 +264,25 @@ export default function LeadsPanel({ leads, videos }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
-          [
-            "Contatos no período",
-            noPeriodo.length,
-            "Todo mundo que usou o botão de ação.",
-          ],
-          [
-            "Foram para o WhatsApp",
-            porWhatsapp,
-            "Clicaram e a conversa abriu no aparelho da pessoa.",
-          ],
-          [
-            "Preencheram o formulário",
-            porFormulario,
-            "Deixaram nome e contato dentro do vídeo.",
-          ],
-        ].map(([rotulo, valor, texto]) => (
-          <div key={rotulo as string} className="cartao p-5">
-            <p className="rotulo-metrica">{rotulo as string}</p>
+          {
+            rotulo: "Contatos no período",
+            valor: noPeriodo.length,
+            texto: "Todo mundo que usou o botão de ação.",
+          },
+          ...presentes.map((o) => ({
+            rotulo: ORIGENS[o].cartao,
+            valor: contagem[o] ?? 0,
+            texto: ORIGENS[o].texto,
+          })),
+        ].map((c) => (
+          <div key={c.rotulo} className="cartao p-5">
+            <p className="rotulo-metrica">{c.rotulo}</p>
             <p className="mt-2 text-3xl font-semibold text-brand-ink">
-              {(valor as number).toLocaleString("pt-BR")}
+              {c.valor.toLocaleString("pt-BR")}
             </p>
-            <p className="mt-2 text-xs text-ink-muted">{texto as string}</p>
+            <p className="mt-2 text-xs text-ink-muted">{c.texto}</p>
           </div>
         ))}
       </div>
@@ -241,14 +301,11 @@ export default function LeadsPanel({ leads, videos }: Props) {
             />
           </label>
 
-          <div className="flex gap-1">
-            {(
-              [
-                ["todos", "Todos"],
-                ["whatsapp", "WhatsApp"],
-                ["formulario", "Formulário"],
-              ] as const
-            ).map(([valor, nome]) => (
+          <div className="flex flex-wrap gap-1">
+            {presentes.length > 1 &&
+              ([["todos", "Todos"]] as [Origem | "todos", string][])
+                .concat(presentes.map((o) => [o, ORIGENS[o].rotulo]))
+                .map(([valor, nome]) => (
               <button
                 key={valor}
                 type="button"
@@ -325,15 +382,9 @@ export default function LeadsPanel({ leads, videos }: Props) {
                                 {info.nome}
                               </span>
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                                  info.origem === "whatsapp"
-                                    ? "bg-emerald-50 text-emerald-800"
-                                    : "bg-surface-muted text-ink-muted"
-                                }`}
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${ORIGENS[info.origem].cor}`}
                               >
-                                {info.origem === "whatsapp"
-                                  ? "WhatsApp"
-                                  : "Formulário"}
+                                {ORIGENS[info.origem].rotulo}
                               </span>
                             </p>
                             {contato && (
