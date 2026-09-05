@@ -72,6 +72,20 @@ jobs:
             --schema=public \
             --file=db/schema.sql
 
+          # As tarefas agendadas moram no esquema "cron", que é da
+          # extensão e não sai no dump. As funções que elas chamam estão
+          # salvas; o agendamento, não — e sem ele um banco restaurado
+          # pararia de mandar os e-mails de cobrança sem acusar erro
+          # nenhum. Aqui elas viram linhas de SQL no fim do schema.
+          docker run --rm -e PGCONN -v "$PWD:/trabalho" -w /trabalho             postgres:17-alpine psql "$PGCONN" -t -A -o /trabalho/saida/cron.sql             -c "select format('select cron.schedule(%L, %L, %L);', jobname, schedule, command) from cron.job where active order by jobid;"
+
+          {
+            echo ""
+            echo "-- Tarefas agendadas (esquema cron, fora do dump)."
+            echo "-- Rode isto depois de restaurar, com a extensao pg_cron ativa."
+            cat saida/cron.sql
+          } >> db/schema.sql
+
           # O contêiner escreve como root; sem isto o passo do commit não
           # conseguiria mexer no arquivo.
           sudo chown "$(id -u):$(id -g)" saida/floatvideo.dump db/schema.sql
