@@ -100,7 +100,11 @@ jobs:
       - name: Versionar o desenho do banco, se mudou
         run: |
           set -euo pipefail
-          if git diff --quiet -- db/schema.sql; then
+          # git status, e nao git diff: o diff so compara o que ja esta
+          # sob versionamento, entao na primeira vez — com o arquivo
+          # recem-criado — ele responde "nada mudou" e o passo passa em
+          # verde sem commitar nada. Foi o que aconteceu na execucao #2.
+          if [ -z "$(git status --porcelain -- db/schema.sql)" ]; then
             echo "schema sem mudanca nesta semana"
             exit 0
           fi
