@@ -45,3 +45,24 @@ Uploads vão para o bucket **público** `videos` do Supabase Storage, em `{user_
 Vídeos entre 15MB e 150MB são recomprimidos **no navegador** de quem sobe (ffmpeg.wasm, 1280px, CRF 28) antes do upload. Não há worker nem fila.
 
 **Quando migrar para outro storage:** o plano Free do Supabase dá 1GB de storage e 5GB de banda/mês. Enquanto o uso ficar longe disso, migrar só adiciona um serviço, credenciais e um ponto de falha. Se chegar perto do limite, aí compensa comparar com Cloudflare R2, que não cobra egress. Uma versão anterior deste projeto já previa R2 e uma fila Redis/BullMQ no `.env.example`, mas nada disso foi implementado — as variáveis foram removidas para a documentação parar de descrever uma arquitetura inexistente.
+
+## Backup e restauração
+
+O `.github/workflows/backup-do-banco.yml` roda toda segunda-feira e
+guarda duas coisas:
+
+- **`db/schema.sql`**, versionado aqui. É o desenho do banco — funções,
+  políticas de RLS, gatilhos. A regra de negócio do FloatVideo mora no
+  Postgres, e este arquivo é a única cópia dela fora do Supabase.
+- **O despejo com dados**, no Cloudflare R2, em `backups/`.
+
+Os quatro arquivos numerados desta pasta são só o começo da história: as
+migrações seguintes foram aplicadas direto no Supabase e vivem na tabela
+`supabase_migrations.schema_migrations`. Quem precisar reconstruir o
+banco deve partir do `schema.sql`, não deles.
+
+Para restaurar num Postgres novo:
+
+```
+pg_restore --no-owner --no-privileges -d "postgresql://..." arquivo.dump
+```
